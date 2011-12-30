@@ -10,47 +10,51 @@
 #
 
 #
-# The calling Makefile must have set SRCROOT and NUTTXROOT to the
-# root of the working tree and the top-level NuttX tree.
-# Both should contain 'nuttx' and 'apps' directories as required.
-#
-# CONFIG must be set to the NuttX configuration that will be built.
+# The calling Makefile must have set SRCROOT to the root of the working tree,
+# and CONFIG must be set to the NuttX configuration that will be built.
 #
 # BUILDROOT can be set to locate the work area, otherwise it will be
-# located in /tmp/nxbuild
+# located in $(SRCROOT)/../build
 #
 # LOCAL_NUTTX can be set to a directory to be merged with the NuttX source directory.
 # LOCAL_APPS can be set to a directory to be merged with the NuttX apps directory.
+# If neither are set, they default to $(SRCROOT)/nuttx and $(SRCROOT)/apps respectively
+# if either is present.
 #
 ifeq ($(SRCROOT),)
 $(error Must set SRCROOT to the working tree root)
 endif
-ifeq ($(NUTTXROOT),)
-$(error Must set NUTTXROOT to the toplevel NuttX checkout/distribution directory)
-endif
 
-#BUILDROOT	?= $(shell mktemp -d -t nxbuild)
-BUILDROOT	?= /tmp/nxbuild
+NUTTXROOT	?= $(SRCROOT)/../dist
+BUILDROOT	?= $(abspath $(SRCROOT)/../build/$(lastword $(subst /, ,$(SRCROOT))))
+LOCAL_NUTTX	:= $(wildcard $(SRCROOT)/nuttx)
+LOCAL_APPS	:= $(wildcard $(SRCROOT)/apps)
+
 $(info working in $(BUILDROOT))
+
+METATARGETS	 = installsrc cleanbuild
 
 ifeq ($(MAKECMDGOALS),)
 MAKECMDGOALS	 = all
 endif
 
+ifeq ($(filter $(METATARGETS),$(MAKECMDGOALS)),)
 $(MAKECMDGOALS): installsrc
 	@echo Building...
 	@(cd $(BUILDROOT)/nuttx && make $(MAKECMDGOALS))
+endif
 
 installsrc:
 	@echo Copying NuttX and stock applications...
-	@rsync -av --exclude=.svn --exclude=.git $(NUTTXROOT)/* $(BUILDROOT)
+	@mkdir -p $(BUILDROOT)
+	@rsync -a --exclude=.svn --exclude=.git $(NUTTXROOT)/* $(BUILDROOT)
 ifneq ($(LOCAL_NUTTX),)
 	@echo Merging local NuttX tree...
-	@rsync -av --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_NUTTX)/* $(BUILDROOT)/nuttx
+	@rsync -a --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_NUTTX)/* $(BUILDROOT)/nuttx
 endif
 ifneq ($(LOCAL_APPS),)
 	@echo Merging local applications tree...
-	@rsync -av --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_APPS)/* $(BUILDROOT)/apps
+	@rsync -a --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_APPS)/* $(BUILDROOT)/apps
 endif
 	@echo Configuring...
 	@(cd $(BUILDROOT)/nuttx/tools && ./configure.sh $(CONFIG))
@@ -58,7 +62,5 @@ endif
 cleanbuild:
 	@echo Cleaning build area...
 	@rm -rf $(BUILDROOT)
-	@echo Remaking build area...
-	@mkdir -p $(BUILDROOT)
 
-.PHONY:	installsrc cleanbuild
+.PHONY:	$(METATARGETS)

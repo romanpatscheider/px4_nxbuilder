@@ -40,14 +40,12 @@ CONFIGURED_APPS += examples/nsh
 # The NSH application library
 
 CONFIGURED_APPS += nshlib
+CONFIGURED_APPS += px4/sensors
 
 # Applications configured as an NX built-in commands
 
-ifeq ($(CONFIG_NET),y)
-CONFIGURED_APPS += netutils/uiplib
-CONFIGURED_APPS += netutils/resolv
-CONFIGURED_APPS += netutils/webclient
-CONFIGURED_APPS += netutils/tftpc
+ifeq ($(CONFIG_ADC),y)
+CONFIGURED_APPS += examples/adc
 endif
 
 ifeq ($(CONFIG_PWM),y)

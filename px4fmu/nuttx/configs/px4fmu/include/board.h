@@ -45,9 +45,9 @@
 #ifndef __ASSEMBLY__
 # include <stdint.h>
 #endif
-#include "stm32_rcc.h"
-#include "stm32_sdio.h"
-#include "stm32_internal.h"
+//#include "stm32_rcc.h"
+//#include "stm32_sdio.h"
+//#include "stm32_internal.h"
 
 /************************************************************************************
  * Definitions
@@ -79,8 +79,8 @@
 
 /* HSI - 16 MHz RC factory-trimmed
  * LSI - 32 KHz RC
- * HSE - On-board crystal frequency is 25MHz
- * LSE - 32.768 kHz
+ * HSE - On-board crystal frequency is 24MHz
+ * LSE - not installed
  */
 
 #define STM32_BOARD_XTAL        24000000ul
@@ -88,7 +88,7 @@
 #define STM32_HSI_FREQUENCY     16000000ul
 #define STM32_LSI_FREQUENCY     32000
 #define STM32_HSE_FREQUENCY     STM32_BOARD_XTAL
-#define STM32_LSE_FREQUENCY     32768
+//#define STM32_LSE_FREQUENCY     32768
 
 /* Main PLL Configuration.
  *
@@ -184,15 +184,6 @@
 #  define SDIO_SDXFR_CLKDIV     (3 << SDIO_CLKCR_CLKDIV_SHIFT)
 #endif
 
-/* Ethernet *************************************************************************/
-/* We need to provide clocking to the MII PHY via MCO1 (PA8) */
-
-#if defined(CONFIG_NET) && defined(CONFIG_STM32_ETHMAC)
-
-#  error "Ethernet is not supported on this board."
-
-#endif
-
 /* LED definitions ******************************************************************/
 /* PX4 has two LEDs that we will encode as: */
 
@@ -204,12 +195,6 @@
 #define LED_SIGNAL        5  /* LED? + LED? */
 #define LED_ASSERTION     6  /* LED? + LED? + LED? */
 #define LED_PANIC         7  /* N/C  + N/C  + N/C + LED? */
-
-/* Button definitions ***************************************************************/
-/* PX4FMU has no buttons: */
-
-// XXX this can probably be removed
-#define NUM_BUTTONS        0
 
 /* Alternate function pin selections ************************************************/
 
@@ -283,6 +268,13 @@
 #define GPIO_SPI3_MOSI	GPIO_SPI3_MOSI_1
 #define GPIO_SPI3_SCK	GPIO_SPI3_SCK_2
 #define GPIO_SPI3_NSS	GPIO_SPI3_NSS_2
+
+/*
+ * Use these in place of the spi_dev_e enumeration to
+ * select a specific SPI device on SPI1
+ */
+#define PX4_SPIDEV_GYRO		1
+#define PX4_SPIDEV_ACCEL	2
 
 /************************************************************************************
  * Public Data

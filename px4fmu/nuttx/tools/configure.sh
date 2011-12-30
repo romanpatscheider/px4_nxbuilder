@@ -166,3 +166,5 @@ if [ ! -z "${appdir}" ]; then
   fi
 fi
 install -C "${TOPDIR}/.configX" "${TOPDIR}/.config"
+rm -f ${TOPDIR}/.configX
+

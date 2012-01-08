@@ -110,8 +110,6 @@
 struct up_dev_s
 {
   struct uart_dev_s dev; /* generic UART device */
-  uint32_t usartbase; /* Base address of USART registers */
-  uint32_t apbclock;  /* PCLK 1 or 2 frequency */
   uint32_t baud;      /* Configured baud */
   uint16_t ie;        /* Saved interrupt mask bits value */
   uint16_t sr;        /* Saved status bits */
@@ -119,7 +117,15 @@ struct up_dev_s
   uint8_t  parity;    /* 0=none, 1=odd, 2=even */
   uint8_t  bits;      /* Number of bits (7 or 8) */
   bool     stopbits2; /* true: Configure with 2 stop bits instead of 1 */
-  int      (*vector)(int irq, void *context); /* interrupt handler */
+
+  /* fields below are constant - could be moved to flash */
+  const uint32_t apbclock;  /* PCLK 1 or 2 frequency */
+  const uint32_t usartbase; /* Base address of USART registers */
+  int      (* const vector)(int irq, void *context); /* interrupt handler */
+  uint32_t  tx_gpio;
+  uint32_t  rx_gpio;
+  uint32_t  rts_gpio;
+  uint32_t  cts_gpio;
 };
 
 /****************************************************************************
@@ -208,14 +214,23 @@ static struct up_dev_s g_usart1priv =
       .ops      = &g_uart_ops,
       //.priv     = &g_usart1priv,
     },
-  .usartbase      = STM32_USART1_BASE,
-  .apbclock       = STM32_PCLK2_FREQUENCY,
   .baud           = CONFIG_USART1_BAUD,
   .irq            = STM32_IRQ_USART1,
   .parity         = CONFIG_USART1_PARITY,
   .bits           = CONFIG_USART1_BITS,
   .stopbits2      = CONFIG_USART1_2STOP,
+
+  .usartbase      = STM32_USART1_BASE,
+  .apbclock       = STM32_PCLK2_FREQUENCY,
   .vector         = up_interrupt_usart1,
+  .tx_gpio        = GPIO_USART1_TX,
+  .rx_gpio        = GPIO_USART1_RX,
+#ifdef GPIO_USART1_CTS
+  .cts_gpio       = GPIO_USART1_CTS,
+#endif
+#ifdef GPIO_USART1_RTS
+  .rts_gpio       = GPIO_USART1_RTS,
+#endif
 };
 
 static int up_interrupt_usart1(int irq, void *context)
@@ -246,14 +261,23 @@ static struct up_dev_s g_usart2priv =
       .ops      = &g_uart_ops,
       //.priv     = &g_usart2priv,
     },
-  .usartbase      = STM32_USART2_BASE,
-  .apbclock       = STM32_PCLK1_FREQUENCY,
   .baud           = CONFIG_USART2_BAUD,
   .irq            = STM32_IRQ_USART2,
   .parity         = CONFIG_USART2_PARITY,
   .bits           = CONFIG_USART2_BITS,
   .stopbits2      = CONFIG_USART2_2STOP,
+
+  .usartbase      = STM32_USART2_BASE,
+  .apbclock       = STM32_PCLK1_FREQUENCY,
   .vector         = up_interrupt_usart2,
+  .tx_gpio        = GPIO_USART2_TX,
+  .rx_gpio        = GPIO_USART2_RX,
+#ifdef GPIO_USART2_CTS
+  .cts_gpio       = GPIO_USART2_CTS,
+#endif
+#ifdef GPIO_USART2_RTS
+  .rts_gpio       = GPIO_USART2_RTS,
+#endif
 };
 
 static int up_interrupt_usart2(int irq, void *context)
@@ -284,14 +308,23 @@ static struct up_dev_s g_usart3priv =
       .ops      = &g_uart_ops,
       //.priv     = &g_usart3priv,
     },
-  .usartbase      = STM32_USART3_BASE,
-  .apbclock       = STM32_PCLK1_FREQUENCY,
   .baud           = CONFIG_USART3_BAUD,
   .irq            = STM32_IRQ_USART3,
   .parity         = CONFIG_USART3_PARITY,
   .bits           = CONFIG_USART3_BITS,
   .stopbits2      = CONFIG_USART3_2STOP,
+
+  .usartbase      = STM32_USART3_BASE,
+  .apbclock       = STM32_PCLK1_FREQUENCY,
   .vector         = up_interrupt_usart3,
+  .tx_gpio        = GPIO_USART3_TX,
+  .rx_gpio        = GPIO_USART3_RX,
+#ifdef GPIO_USART3_CTS
+  .cts_gpio       = GPIO_USART3_CTS,
+#endif
+#ifdef GPIO_USART3_RTS
+  .rts_gpio       = GPIO_USART3_RTS,
+#endif
 };
 
 static int up_interrupt_usart3(int irq, void *context)
@@ -322,14 +355,23 @@ static struct up_dev_s g_usart4priv =
       .ops      = &g_uart_ops,
       //.priv     = &g_usart4priv,
     },
-  .usartbase      = STM32_UART4_BASE,
-  .apbclock       = STM32_PCLK1_FREQUENCY,
   .baud           = CONFIG_USART4_BAUD,
   .irq            = STM32_IRQ_UART4,
   .parity         = CONFIG_USART4_PARITY,
   .bits           = CONFIG_USART4_BITS,
   .stopbits2      = CONFIG_USART4_2STOP,
+
+  .usartbase      = STM32_UART4_BASE,
+  .apbclock       = STM32_PCLK1_FREQUENCY,
   .vector         = up_interrupt_usart4,
+  .tx_gpio        = GPIO_UART4_TX,
+  .rx_gpio        = GPIO_UART4_RX,
+#ifdef GPIO_USART4_CTS
+  .cts_gpio       = GPIO_UART4_CTS,
+#endif
+#ifdef GPIO_USART4_RTS
+  .rts_gpio       = GPIO_UART4_RTS,
+#endif
 };
 
 static int up_interrupt_usart4(int irq, void *context)
@@ -360,14 +402,23 @@ static struct up_dev_s g_usart5priv =
       .ops      = &g_uart_ops,
       //.priv     = &g_usart5priv,
     },
-  .usartbase      = STM32_UART5_BASE,
-  .apbclock       = STM32_PCLK1_FREQUENCY,
   .baud           = CONFIG_USART5_BAUD,
   .irq            = STM32_IRQ_UART5,
   .parity         = CONFIG_USART5_PARITY,
   .bits           = CONFIG_USART5_BITS,
   .stopbits2      = CONFIG_USART5_2STOP,
+
+  .usartbase      = STM32_UART5_BASE,
+  .apbclock       = STM32_PCLK1_FREQUENCY,
   .vector         = up_interrupt_usart5,
+  .tx_gpio        = GPIO_UART5_TX,
+  .rx_gpio        = GPIO_UART5_RX,
+#ifdef GPIO_USART5_CTS
+  .cts_gpio       = GPIO_UART5_CTS,
+#endif
+#ifdef GPIO_USART5_RTS
+  .rts_gpio       = GPIO_UART5_RTS,
+#endif
 };
 
 static int up_interrupt_usart5(int irq, void *context)
@@ -398,14 +449,23 @@ static struct up_dev_s g_usart6priv =
       .ops      = &g_uart_ops,
       //.priv     = &g_usart6priv,
     },
-  .usartbase      = STM32_USART6_BASE,
-  .apbclock       = STM32_PCLK2_FREQUENCY,
   .baud           = CONFIG_USART6_BAUD,
   .irq            = STM32_IRQ_USART6,
   .parity         = CONFIG_USART6_PARITY,
   .bits           = CONFIG_USART6_BITS,
   .stopbits2      = CONFIG_USART6_2STOP,
   .vector         = up_interrupt_usart6,
+
+  .usartbase      = STM32_USART6_BASE,
+  .apbclock       = STM32_PCLK2_FREQUENCY,
+  .tx_gpio        = GPIO_USART6_TX,
+  .rx_gpio        = GPIO_USART6_RX,
+#ifdef GPIO_USART6_CTS
+  .cts_gpio       = GPIO_USART6_CTS,
+#endif
+#ifdef GPIO_USART6_RTS
+  .rts_gpio       = GPIO_USART6_RTS,
+#endif
 };
 
 static int up_interrupt_usart6(int irq, void *context)
@@ -549,8 +609,24 @@ static int up_setup(struct uart_dev_s *dev)
   uint32_t regval;
 
   /* Note: The logic here depends on the fact that that the USART module
-   * was enabled and the pins were configured in stm32_lowsetup().
+   * was enabled in stm32_lowsetup().
+   *
+   * On STM32F1xx devices, that function is also responsible for configuring
+   * pin function remapping.
    */
+
+  /* Configure pins for USART use */
+
+  stm32_configgpio(priv->tx_gpio);
+  stm32_configgpio(priv->rx_gpio);
+  if (priv->cts_gpio != 0)
+    {
+      stm32_configgpio(priv->cts_gpio);
+    }
+  if (priv->rts_gpio != 0)
+    {
+      stm32_configgpio(priv->rts_gpio);
+    }
 
   /* Configure CR2 */
   /* Clear STOP, CLKEN, CPOL, CPHA, LBCL, and interrupt enable bits */

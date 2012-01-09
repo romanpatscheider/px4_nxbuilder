@@ -1,9 +1,5 @@
-/************************************************************************************
- * configs/px4fmu/src/up_boot.c
- * arch/arm/src/board/up_boot.c
- *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+/*
+ *   Copyright (C) 2012 Michael Smith. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -15,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
+ * 3. Neither the name of the author or the names of contributors may be
  *    used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -31,8 +27,7 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- ************************************************************************************/
+ */
 
 /************************************************************************************
  * Included Files
@@ -71,20 +66,9 @@
 
 void stm32_boardinitialize(void)
 {
-  /* Configure SPI chip selects if 1) SPI is not disabled, and 2) the weak function
-   * stm32_spiinitialize() has been brought into the link.
-   */
+	/* configure SPI interfaces */
+	stm32_spiinitialize();
 
-#if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || defined(CONFIG_STM32_SPI3)
-  if (stm32_spiinitialize)
-    {
-      stm32_spiinitialize();
-    }
-#endif
-
-  /* Configure on-board LEDs if LED support has been selected. */
-
-#ifdef CONFIG_ARCH_LEDS
-  up_ledinit();
-#endif
+	/* configure LEDs */
+	up_ledinit();
 }

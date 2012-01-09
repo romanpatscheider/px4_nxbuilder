@@ -49,6 +49,9 @@
 #include <nuttx/mmcsd.h>
 
 #include "stm32_internal.h"
+#include "px4fmu-internal.h"
+
+#include "up_hrt.h"
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -88,6 +91,14 @@ int nsh_archinitialize(void)
 {
   FAR struct spi_dev_s *spi;
   int result;
+
+  /* configure the high-resolution time/callout interface */
+#ifdef CONFIG_HRT_TIMER
+  hrt_init(CONFIG_HRT_TIMER);
+#endif
+
+  /* initialise the user GPIOs */
+  px4fmu_gpio_init();
 
   /* Configure SPI-based devices */
 

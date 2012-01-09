@@ -74,7 +74,12 @@
 #define GPIO_SPI_CS_ACCEL	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN15)
 #define GPIO_SPI_CS_SDCARD	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTA|GPIO_PIN4)
 
-
+/* User GPIOs */
+#define GPIO_GPIO0_INPUT	(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN4)
+#define GPIO_GPIO1_INPUT	(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN4)
+#define GPIO_GPIO0_OUTPUT	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN4)
+#define GPIO_GPIO1_OUTPUT	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN4)
+#define GPIO_GPIO_DIR		(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN13)
 
 // XXX additional GPIOs should be defined here
 
@@ -100,7 +105,18 @@
  *
  ****************************************************************************************************/
 
-extern void weak_function stm32_spiinitialize(void);
+extern void stm32_spiinitialize(void);
+
+/****************************************************************************************************
+ * Name: px4fmu_gpio_init
+ *
+ * Description:
+ *   Called to configure the PX4FMU user GPIOs
+ *
+ ****************************************************************************************************/
+
+extern void px4fmu_gpio_init(void);
+
 
 // XXX additional SPI chipselect functions required?
 

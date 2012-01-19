@@ -1,3 +1,5 @@
 build/*
 dist
 
+px4fmu.sublime-project
+px4fmu.sublime-workspace

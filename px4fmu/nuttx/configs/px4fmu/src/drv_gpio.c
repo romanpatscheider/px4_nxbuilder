@@ -49,7 +49,7 @@
 #include "stm32_internal.h"
 #include "px4fmu-internal.h"
 
-#include "drv_gpio.h"
+#include <arch/board/drv_gpio.h>
 
 static int	px4fmu_gpio_ioctl(struct file *filep, int cmd, unsigned long arg);
 

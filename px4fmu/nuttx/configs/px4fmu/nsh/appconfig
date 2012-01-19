@@ -40,9 +40,10 @@ CONFIGURED_APPS += examples/nsh
 # The NSH application library
 
 CONFIGURED_APPS += nshlib
-CONFIGURED_APPS += px4/sensors
 
 # Applications configured as an NX built-in commands
+
+CONFIGURED_APPS += px4/sensors px4/tests
 
 ifeq ($(CONFIG_ADC),y)
 CONFIGURED_APPS += examples/adc

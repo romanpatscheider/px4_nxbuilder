@@ -52,6 +52,7 @@
 #include "px4fmu-internal.h"
 
 #include "up_hrt.h"
+#include <arch/board/drv_lis331.h>
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -102,7 +103,6 @@ int nsh_archinitialize(void)
 
   /* Configure SPI-based devices */
 
-#if defined(CONFIG_STM32_SPI1)
   spi = up_spiinitialize(1);
   if (!spi)
     {
@@ -111,8 +111,7 @@ int nsh_archinitialize(void)
     }
   message("nsh_archinitialize: Successfully initialized SPI port 0\n");
 
-
-#endif /* SPI1 */
+  lis331_attach(spi);
 
 #if defined(CONFIG_STM32_SPI3)
   /* Get the SPI port */

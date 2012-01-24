@@ -111,7 +111,7 @@ int nsh_archinitialize(void)
     }
   message("nsh_archinitialize: Successfully initialized SPI port 0\n");
 
-  lis331_attach(spi);
+  lis331_attach(spi, 0);
 
 #if defined(CONFIG_STM32_SPI3)
   /* Get the SPI port */

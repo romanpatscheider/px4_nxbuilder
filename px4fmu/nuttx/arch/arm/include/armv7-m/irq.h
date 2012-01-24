@@ -71,13 +71,8 @@
 #define REG_R9              (7)  /* R9 */
 #define REG_R10             (8)  /* R10 */
 #define REG_R11             (9)  /* R11 */
-
-#ifdef CONFIG_NUTTX_KERNEL
-#  define REG_EXC_RETURN    (10) /* EXC_RETURN */
-#  define SW_INT_REGS       (11)
-#else
-#  define SW_INT_REGS       (10)
-#endif
+#define REG_EXC_RETURN      (10) /* EXC_RETURN */
+#define SW_INT_REGS         (11)
 
 /* The total number of registers saved by software */
 

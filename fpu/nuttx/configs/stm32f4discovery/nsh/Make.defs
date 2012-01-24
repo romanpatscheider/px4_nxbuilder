@@ -1,5 +1,5 @@
 ############################################################################
-# configs/px4fmu/common/Make.defs
+# configs/stm32f4discovery/nsh/Make.defs
 #
 #   Copyright (C) 2011 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,23 +33,40 @@
 #
 ############################################################################
 
-#
-# Generic Make.defs for the PX4FMU
-# Do not specify/use this file directly - it is included by config-specific
-# Make.defs in the per-config directories.
-#
+include ${TOPDIR}/.config
 
-#
-# We only support building with the ARM bare-metal toolchain from
-# https://launchpad.net/gcc-arm-embedded on Windows, Linux or Mac OS.
-#
+# Setup for the selected toolchain
 
-CROSSDEV = arm-none-eabi-
-MAXOPTIMIZATION = -O2
+ifeq ($(CONFIG_STM32_CODESOURCERYW),y)
+  # CodeSourcery under Windows
+  CROSSDEV = arm-none-eabi-
+  WINTOOL = y
+endif
+ifeq ($(CONFIG_STM32_CODESOURCERYL),y)
+  # CodeSourcery under Linux
+  CROSSDEV = arm-none-eabi-
+  MAXOPTIMIZATION = -O2
+endif
+ifeq ($(CONFIG_STM32_DEVKITARM),y)
+  # devkitARM under Windows
+  CROSSDEV = arm-eabi-
+  WINTOOL = y
+endif
+ifeq ($(CONFIG_STM32_RAISONANCE),y)
+  # Raisonance RIDE7 under Windows
+  CROSSDEV = arm-none-eabi-
+  WINTOOL = y
+endif
+ifeq ($(CONFIG_STM32_BUILDROOT),y)
+  # NuttX buildroot under Linux or Cygwin
+  CROSSDEV = arm-elf-
+  MAXOPTIMIZATION = -Os
+endif
+
 ifeq ($(CONFIG_ARCH_FPU),y)
-  ARCHCPUFLAGS += -mcpu=cortex-m4 -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+  ARCHCPUFLAGS = -mcpu=cortex-m4 -mthumb -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 else
-  ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
+  ARCHCPUFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=soft
 endif
 
 LDSCRIPT = ld.script
@@ -68,7 +85,7 @@ else
   MKDEP = $(TOPDIR)/tools/mkdeps.sh
   ARCHINCLUDES = -I. -isystem $(TOPDIR)/include
   ARCHXXINCLUDES = -I. -isystem $(TOPDIR)/include -isystem $(TOPDIR)/include/cxx
-  ARCHSCRIPT = -T$(TOPDIR)/configs/$(CONFIG_ARCH_BOARD)/common/$(LDSCRIPT)
+  ARCHSCRIPT = -T$(TOPDIR)/configs/$(CONFIG_ARCH_BOARD)/nsh/$(LDSCRIPT)
 endif
 
 CC = $(CROSSDEV)gcc
@@ -120,22 +137,22 @@ endif
 
 define PREPROCESS
 	@echo "CPP: $1->$2"
-	$(CPP) $(CPPFLAGS) $1 -o $2
+	@$(CPP) $(CPPFLAGS) $1 -o $2
 endef
 
 define COMPILE
 	@echo "CC: $1"
-	$(CC) -c $(CFLAGS) $1 -o $2
+	@$(CC) -c $(CFLAGS) $1 -o $2
 endef
 
 define COMPILEXX
 	@echo "CXX: $1"
-	$(CXX) -c $(CXXFLAGS) $1 -o $2
+	@$(CXX) -c $(CXXFLAGS) $1 -o $2
 endef
 
 define ASSEMBLE
 	@echo "AS: $1"
-	$(CC) -c $(AFLAGS) $1 -o $2
+	@$(CC) -c $(AFLAGS) $1 -o $2
 endef
 
 define ARCHIVE

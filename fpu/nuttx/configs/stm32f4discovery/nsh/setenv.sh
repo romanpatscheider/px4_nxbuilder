@@ -1,5 +1,5 @@
-############################################################################
-# configs/stm3240g-eval/nsh/appconfig
+#!/bin/bash
+# configs/stm32f4discovery/nsh/setenv.sh
 #
 #   Copyright (C) 2011 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -31,35 +31,37 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
 
-# Path to example in apps/examples containing the user_start entry point
+if [ "$_" = "$0" ] ; then
+  echo "You must source this script, not run it!" 1>&2
+  exit 1
+fi
 
-CONFIGURED_APPS += examples/nsh
+WD=`pwd`
+if [ ! -x "setenv.sh" ]; then
+  echo "This script must be executed from the top-level NuttX build directory"
+  exit 1
+fi
 
-CONFIGURED_APPS += system/readline
+if [ -z "${PATH_ORIG}" ]; then
+  export PATH_ORIG="${PATH}"
+fi
 
-# The NSH application library
+# This the Cygwin path to the location where I installed the RIDE
+# toolchain under windows.  You will also have to edit this if you install
+# the RIDE toolchain in any other location
+#export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/Raisonance/Ride/arm-gcc/bin"
 
-CONFIGURED_APPS += nshlib
+# This the Cygwin path to the location where I installed the CodeSourcery
+# toolchain under windows.  You will also have to edit this if you install
+# the CodeSourcery toolchain in any other location
+export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/CodeSourcery/Sourcery G++ Lite/bin"
 
-# The CMSIS library
+# This the Cygwin path to the location where I build the buildroot
+# toolchain.
+#export TOOLCHAIN_BIN="${WD}/../misc/buildroot/build_arm_nofpu/staging_dir/bin"
 
-CONFIGURED_APPS += CMSISlib
+# Add the path to the toolchain to the PATH varialble
+export PATH="${TOOLCHAIN_BIN}:/sbin:/usr/sbin:${PATH_ORIG}"
 
-# Applications configured as an NX built-in commands
-
-#CONFIGURED_APPS += px4/sensors px4/tests
-
-ifeq ($(CONFIG_ADC),y)
-#CONFIGURED_APPS += examples/adc
-endif
-
-ifeq ($(CONFIG_PWM),y)
-#CONFIGURED_APPS += examples/pwm
-endif
-
-ifeq ($(CONFIG_CAN),y)
-#CONFIGURED_APPS += examples/can
-endif
-
+echo "PATH : ${PATH}"

@@ -1,5 +1,5 @@
 ############################################################################
-# configs/stm3240g-eval/nsh/appconfig
+# configs/stm32f4discovery/nsh/appconfig
 #
 #   Copyright (C) 2011 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -37,29 +37,16 @@
 
 CONFIGURED_APPS += examples/nsh
 
-CONFIGURED_APPS += system/readline
-
 # The NSH application library
 
 CONFIGURED_APPS += nshlib
 
-# The CMSIS library
-
-CONFIGURED_APPS += CMSISlib
-
 # Applications configured as an NX built-in commands
 
-#CONFIGURED_APPS += px4/sensors px4/tests
-
 ifeq ($(CONFIG_ADC),y)
-#CONFIGURED_APPS += examples/adc
+CONFIGURED_APPS += examples/adc
 endif
 
 ifeq ($(CONFIG_PWM),y)
-#CONFIGURED_APPS += examples/pwm
+CONFIGURED_APPS += examples/pwm
 endif
-
-ifeq ($(CONFIG_CAN),y)
-#CONFIGURED_APPS += examples/can
-endif
-

@@ -56,6 +56,13 @@ MEMORY
 
 OUTPUT_ARCH(arm)
 ENTRY(_stext)
+
+/* 
+ * Ensure that abort() is present in the final object.  The exception handling
+ * code pulled in by libgcc.a requires it (and that code cannot be easily avoided).
+ */
+EXTERN(abort)
+
 SECTIONS
 {
 	.text : {

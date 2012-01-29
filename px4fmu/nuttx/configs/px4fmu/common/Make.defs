@@ -39,38 +39,14 @@
 # Make.defs in the per-config directories.
 #
 
-# Setup for the selected toolchain
+#
+# We only support building with the ARM bare-metal toolchain from
+# https://launchpad.net/gcc-arm-embedded on Windows, Linux or Mac OS.
+#
 
-ifeq ($(CONFIG_STM32_CODESOURCERYW),y)
-  # CodeSourcery under Windows
-  CROSSDEV = arm-none-eabi-
-  WINTOOL = y
-  ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
-endif
-ifeq ($(CONFIG_STM32_CODESOURCERYL),y)
-  # CodeSourcery under Linux
-  CROSSDEV = arm-none-eabi-
-  ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
-  MAXOPTIMIZATION = -O2
-endif
-ifeq ($(CONFIG_STM32_DEVKITARM),y)
-  # devkitARM under Windows
-  CROSSDEV = arm-eabi-
-  WINTOOL = y
-  ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
-endif
-ifeq ($(CONFIG_STM32_RAISONANCE),y)
-  # Raisonance RIDE7 under Windows
-  CROSSDEV = arm-none-eabi-
-  WINTOOL = y
-  ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
-endif
-ifeq ($(CONFIG_STM32_BUILDROOT),y)
-  # NuttX buildroot under Linux or Cygwin
-  CROSSDEV = arm-elf-
-  ARCHCPUFLAGS = -mtune=cortex-m3 -march=armv7-m -mfloat-abi=soft
-  MAXOPTIMIZATION = -Os
-endif
+CROSSDEV = arm-none-eabi-
+ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
+MAXOPTIMIZATION = -O2
 
 LDSCRIPT = ld.script
 

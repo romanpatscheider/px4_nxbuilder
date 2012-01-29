@@ -25,10 +25,9 @@ be present when first you check this project out.
 
 Detail steps (as of Feb. 2012):
 
-0) Download and install either this toolchain or Windows GCC
-https://github.com/MikeSmith/summon-arm-toolchain
-http://www.mentor.com/embedded-software/sourcery-tools/sourcery-codebench/editions/lite-edition/
-
+0) Download and install this toolchain
+  https://github.com/MikeSmith/gcc-arm-embedded-macosx (for Mac OS X)
+  https://launchpad.net/gcc-arm-embedded (for Linux/Windows)
 1) Download: http://sourceforge.net/projects/nuttx/files/nuttx/nuttx-6.14/nuttx-6.14.tar.gz/download
 2) Download: http://sourceforge.net/projects/nuttx/files/nuttx/nuttx-6.14/apps-6.14.tar.gz/download
 3) Extract both files

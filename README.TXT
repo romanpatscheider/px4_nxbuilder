@@ -1,7 +1,8 @@
 A simple build skeleton for multiple NuttX configurations.
 
 This skeleton assumes that you have tools installed that suit the configuration you
-are building; it will not invoke the buildroot.
+are building; it will not invoke the buildroot.  (Step 0 below references a
+suitable toolchain).
 
 Make a directory or symlink called 'dist' and either unpack the NuttX distribution
 inside it, or point it to the top-level directory where you have checked out NuttX.

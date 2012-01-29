@@ -93,6 +93,14 @@ CONFIG_ARCH_CALIBRATION=n
 CONFIG_ARCH_DMA=n
 
 #
+# CMSIS options
+#
+#    CONFIG_DSPLIB_TARGET - Target for the CMSIS DSP library, one of
+#	CortexM0, CortexM3 or CortexM4 (with fpu)
+#
+CONFIG_CMSIS_DSPLIB_TARGET=CortexM4
+
+#
 # Identify toolchain and linker options
 #
 CONFIG_STM32_CODESOURCERYW=n

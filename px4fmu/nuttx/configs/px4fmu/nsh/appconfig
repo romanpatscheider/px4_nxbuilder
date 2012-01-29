@@ -41,6 +41,10 @@ CONFIGURED_APPS += examples/nsh
 
 CONFIGURED_APPS += nshlib
 
+# The CMSIS library
+
+CONFIGURED_APPS += CMSISlib
+
 # Applications configured as an NX built-in commands
 
 CONFIGURED_APPS += px4/sensors px4/tests

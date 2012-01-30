@@ -89,13 +89,11 @@
 	.thumb_func
 	.type	up_savefpu, function
 up_savefpu:
-#if 0
 	add		r1, r0, #(4*REG_S0)		/* R1=Address of FP register storage */
 	vstmia	r1!, {s0-s15}			/* save s0-s15 */
 	vstmia	r1!, {s16-s31}			/* save s16-s31 */
 	vmrs	r2, fpscr				/* get the floating point control and status register */
 	str		r2, [r1]				/* save the FPCSR */
-#endif
 	bx		lr
 
 	.size	up_savefpu, .-up_savefpu
@@ -122,13 +120,11 @@ up_savefpu:
 	.thumb_func
 	.type	up_restorefpu, function
 up_restorefpu:
-#if 0
 	add		r1, r0, #(4*REG_S0)		/* R1=Address of FP register storage */
 	vldmia	r1!, {s0-s15}			/* restore s0-s15 */
 	vldmia	r1!, {s16-s31}			/* restore s16-s31 */
 	ldr		r2, [r1]				/* Fetch the floating point control and status register */
 	vmsr	fpscr, r2				/* Restore the FPCSR */
-#endif
 	bx		lr
 
 	.size	up_restorefpu, .-up_restorefpu

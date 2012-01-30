@@ -131,6 +131,11 @@ void up_initial_state(_TCB *tcb)
    *
    * If the kernel build is not selected, then all threads run in
    * privileged thread mode.
+   *
+   * XXX Regardless of the CONFIG_ARCH_FPU setting, don't mark the
+   * context as having valid FP state.  If we do this, something 
+   * bad happens to malloc, suggesting that we're not quite setting
+   * the stack up right
    */
 
 #ifdef CONFIG_NUTTX_KERNEL
@@ -138,16 +143,16 @@ void up_initial_state(_TCB *tcb)
     {
       /* It is a kernel thread.. set privileged thread mode */
 
-      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_PRIVTHR;
+      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_STD_CONTEXT | EXC_RETURN_THREAD_MODE;
     }
   else
     {
       /* It is a normal task or a pthread.  Set user mode */
 
-      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_UNPRIVTHR;
+      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_STD_CONTEXT | EXC_RETURN_THREAD_MODE | EXC_RETURN_PROCESS_STACK;
     }
 #else
-  xcp->regs[REG_EXC_RETURN] = EXC_RETURN_PRIVTHR;
+  xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_STD_CONTEXT | EXC_RETURN_THREAD_MODE;
 #endif
 
   /* Enable or disable interrupts, based on user configuration */

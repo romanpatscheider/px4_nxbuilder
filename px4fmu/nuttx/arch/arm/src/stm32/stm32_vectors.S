@@ -237,11 +237,10 @@ stm32_common:
 	 * values to the stack.
 	 */
 
-	/* We may also need to restore FPU registers.  This is not done in
-	 * normal interrupt save/restore because the cost is prohibitive.  This
-	 * is only done when switching contexts.  A consequence of this is that
-	 * floating point operations may not be performed in interrupt handling
-	 * logic.
+	/* We may also need to restore the non-volatile FPU registers.  This is not 
+	 * done innormal interrupt restore because the hardware save/restores the
+	 * volatile registers, and any called function will save/restore the
+	 * non-volatile registers as required.
 	 */
 
 #ifdef CONFIG_ARCH_FPU

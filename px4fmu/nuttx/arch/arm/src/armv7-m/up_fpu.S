@@ -72,7 +72,7 @@
  *
  * Description:
  *   Given the pointer to a register save area (in R0), save the state of the
- *   floating point registers.
+ *   non-volatile floating point registers.
  *
  * C Function Prototype:
  *   void up_savefpu(uint32_t *regs);
@@ -89,11 +89,8 @@
 	.thumb_func
 	.type	up_savefpu, function
 up_savefpu:
-	add		r1, r0, #(4*REG_S0)		/* R1=Address of FP register storage */
-	vstmia	r1!, {s0-s15}			/* save s0-s15 */
-	vstmia	r1!, {s16-s31}			/* save s16-s31 */
-	vmrs	r2, fpscr				/* get the floating point control and status register */
-	str		r2, [r1]				/* save the FPCSR */
+	add		r1, r0, #(4*REG_S16)    /* R1=Address of FP register storage */
+	vstm	r1, {s16-s31}           /* save s16-s31 */
 	bx		lr
 
 	.size	up_savefpu, .-up_savefpu
@@ -103,7 +100,7 @@ up_savefpu:
  *
  * Description:
  *   Given the pointer to a register save area (in R0), restore the state of the
- *   floating point registers.
+ *   non-volatile floating point registers.
  *
  * C Function Prototype:
  *   void up_restorefpu(const uint32_t *regs);
@@ -120,11 +117,8 @@ up_savefpu:
 	.thumb_func
 	.type	up_restorefpu, function
 up_restorefpu:
-	add		r1, r0, #(4*REG_S0)		/* R1=Address of FP register storage */
-	vldmia	r1!, {s0-s15}			/* restore s0-s15 */
-	vldmia	r1!, {s16-s31}			/* restore s16-s31 */
-	ldr		r2, [r1]				/* Fetch the floating point control and status register */
-	vmsr	fpscr, r2				/* Restore the FPCSR */
+	add		r1, r0, #(4*REG_S16)	/* R1=Address of FP register storage */
+	vldm	r1, {s16-s31}			/* restore s16-s31 */
 	bx		lr
 
 	.size	up_restorefpu, .-up_restorefpu

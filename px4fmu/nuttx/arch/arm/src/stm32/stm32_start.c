@@ -78,9 +78,12 @@
  *   Configure the FPU.  The the MCU has an FPU, then enable full access
  *   to coprocessors CP10 and CP11.
  *
- *   Disable automatic FPU context save/restore, as the current context switch
- *   model does not know how to handle it.  This ensures that the processor
- *   will only stack a basic frame on exception entry.
+ *   Ensure that FPCCR.LSPEN is disabled, so that we don't have to contend
+ *   with the lazy FP context save behaviour.  Clear FPCCR.ASPEN since we
+ *   are going to turn on CONTROL.FPCA for all contexts.
+ *
+ *   Set CONTROL.FPCA so that we always get the extended context frame with
+ *   the volatile FP registers stacked above the basic context.
  *
  ****************************************************************************/
 
@@ -88,6 +91,9 @@
 #  define stm32_fpuconfig() \
 { \
   uint32_t regval;\
+  regval = getcontrol(); \
+  regval |= 1<<2; \
+  setcontrol(regval); \
   regval = getreg32(NVIC_FPCCR); \
   regval &= ~((1 << 31) | (1 << 30)); \
   putreg32(regval, NVIC_FPCCR); \

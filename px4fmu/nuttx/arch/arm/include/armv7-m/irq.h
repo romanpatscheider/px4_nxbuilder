@@ -363,6 +363,30 @@ static inline void setipsr(uint32_t ipsr)
       : "memory");
 }
 
+/* Get/set CONTROL */
+
+static inline uint32_t getcontrol(void)
+{
+  uint32_t control;
+  __asm__ __volatile__
+    (
+     "\tmrs  %0, control\n"
+     : "=r" (control)
+     :
+     : "memory");
+  return control;
+}
+
+static inline void setcontrol(uint32_t control)
+{
+  __asm__ __volatile__
+    (
+      "\tmsr control, %0\n"
+      :
+      : "r" (control)
+      : "memory");
+}
+
 #endif /* __ASSEMBLY__ */
 
 /****************************************************************************

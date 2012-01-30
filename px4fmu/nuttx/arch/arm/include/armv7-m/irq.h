@@ -92,17 +92,49 @@
 #define REG_R15             (SW_XCPT_REGS+6) /* R15 = PC */
 #define REG_XPSR            (SW_XCPT_REGS+7) /* xPSR */
 
-#define HW_XCPT_REGS        (8)
+#ifndef CONFIG_ARCH_FPU
+#  define HW_XCPT_REGS      (8)
+#else
+
+/* If the FPU is enabled, the hardware also saves the volatile FP registers */
+
+#  define REG_D0            (SW_XCPT_REGS+8)  /* D0 */
+#  define REG_S0            (SW_XCPT_REGS+8)  /* S0 */
+#  define REG_S1            (SW_XCPT_REGS+9)  /* S1 */
+#  define REG_D1            (SW_XCPT_REGS+10) /* D1 */
+#  define REG_S2            (SW_XCPT_REGS+10) /* S2 */
+#  define REG_S3            (SW_XCPT_REGS+11) /* S3 */
+#  define REG_D2            (SW_XCPT_REGS+12) /* D2 */
+#  define REG_S4            (SW_XCPT_REGS+12) /* S4 */
+#  define REG_S5            (SW_XCPT_REGS+13) /* S5 */
+#  define REG_D3            (SW_XCPT_REGS+14) /* D3 */
+#  define REG_S6            (SW_XCPT_REGS+14) /* S6 */
+#  define REG_S7            (SW_XCPT_REGS+15) /* S7 */
+#  define REG_D4            (SW_XCPT_REGS+16) /* D4 */
+#  define REG_S8            (SW_XCPT_REGS+16) /* S8 */
+#  define REG_S9            (SW_XCPT_REGS+17) /* S9 */
+#  define REG_D5            (SW_XCPT_REGS+18) /* D5 */
+#  define REG_S10           (SW_XCPT_REGS+18) /* S10 */
+#  define REG_S11           (SW_XCPT_REGS+19) /* S11 */
+#  define REG_D6            (SW_XCPT_REGS+20) /* D6 */
+#  define REG_S12           (SW_XCPT_REGS+20) /* S12 */
+#  define REG_S13           (SW_XCPT_REGS+21) /* S13 */
+#  define REG_D7            (SW_XCPT_REGS+22) /* D7 */
+#  define REG_S14           (SW_XCPT_REGS+22) /* S14 */
+#  define REG_S15           (SW_XCPT_REGS+23) /* S15 */
+#  define REG_FPSCR         (SW_XCPT_REGS+24) /* FPSCR */
+#  define REG_FPReserved    (SW_XCPT_REGS+25) /* Reserved */
+
+#  define HW_XCPT_REGS      (26)
+#endif
+
 #define HW_XCPT_SIZE        (4 * HW_XCPT_REGS)
 
 #define XCPT_REGS           (HW_XCPT_REGS + SW_XCPT_REGS)
 #define XCPT_SIZE           (4 * XCPT_REGS)
 
 /* If the MCU supports a floating point unit, then it will be necessary
- * to save the state of the FPU status register and data registers on
- * each context switch.  These registers are not saved during interrupt
- * level processing, however. So, as a consequence, floating point
- * operations may NOT be performed in interrupt handlers.
+ * to save the state of the volatile FP registers on each context switch.
  *
  * The FPU provides an extension register file containing 32 single-
  * precision registers. These can be viewed as:
@@ -111,59 +143,41 @@
  * - Thirty-two 32-bit single-word registers, S0-S31
  *   S<2n> maps to the least significant half of D<n>
  *   S<2n+1> maps to the most significant half of D<n>.
+ *
+ * The registers S0-15 and FPSCR are considered volatile, in that they
+ * must be saved and restored around function calls.  The registers S15-S31
+ * are considered non-volatile, in that any function using them must save
+ * and restore them.  As a consequence, due to the hardware saving the 
+ * volatile registers at exception entry time it is safe to use floating
+ * point registers in interrupt context.
  */
 
 #ifdef CONFIG_ARCH_FPU
-#  define REG_D0            (XCPT_REGS+0)  /* D0 */
-#  define REG_S0            (XCPT_REGS+0)  /* S0 */
-#  define REG_S1            (XCPT_REGS+1)  /* S1 */
-#  define REG_D1            (XCPT_REGS+2)  /* D1 */
-#  define REG_S2            (XCPT_REGS+2)  /* S2 */
-#  define REG_S3            (XCPT_REGS+3)  /* S3 */
-#  define REG_D2            (XCPT_REGS+4)  /* D2 */
-#  define REG_S4            (XCPT_REGS+4)  /* S4 */
-#  define REG_S5            (XCPT_REGS+5)  /* S5 */
-#  define REG_D3            (XCPT_REGS+6)  /* D3 */
-#  define REG_S6            (XCPT_REGS+6)  /* S6 */
-#  define REG_S7            (XCPT_REGS+7)  /* S7 */
-#  define REG_D4            (XCPT_REGS+8)  /* D4 */
-#  define REG_S8            (XCPT_REGS+8)  /* S8 */
-#  define REG_S9            (XCPT_REGS+9)  /* S9 */
-#  define REG_D5            (XCPT_REGS+10) /* D5 */
-#  define REG_S10           (XCPT_REGS+10) /* S10 */
-#  define REG_S11           (XCPT_REGS+11) /* S11 */
-#  define REG_D6            (XCPT_REGS+12) /* D6 */
-#  define REG_S12           (XCPT_REGS+12) /* S12 */
-#  define REG_S13           (XCPT_REGS+13) /* S13 */
-#  define REG_D7            (XCPT_REGS+14) /* D7 */
-#  define REG_S14           (XCPT_REGS+14) /* S14 */
-#  define REG_S15           (XCPT_REGS+15) /* S15 */
-#  define REG_D8            (XCPT_REGS+16) /* D8 */
-#  define REG_S16           (XCPT_REGS+16) /* S16 */
-#  define REG_S17           (XCPT_REGS+17) /* S17 */
-#  define REG_D9            (XCPT_REGS+18) /* D9 */
-#  define REG_S18           (XCPT_REGS+18) /* S18 */
-#  define REG_S19           (XCPT_REGS+19) /* S19 */
-#  define REG_D10           (XCPT_REGS+20) /* D10 */
-#  define REG_S20           (XCPT_REGS+20) /* S20 */
-#  define REG_S21           (XCPT_REGS+21) /* S21 */
-#  define REG_D11           (XCPT_REGS+22) /* D11 */
-#  define REG_S22           (XCPT_REGS+22) /* S22 */
-#  define REG_S23           (XCPT_REGS+23) /* S23 */
-#  define REG_D12           (XCPT_REGS+24) /* D12 */
-#  define REG_S24           (XCPT_REGS+24) /* S24 */
-#  define REG_S25           (XCPT_REGS+25) /* S25 */
-#  define REG_D13           (XCPT_REGS+26) /* D13 */
-#  define REG_S26           (XCPT_REGS+26) /* S26 */
-#  define REG_S27           (XCPT_REGS+27) /* S27 */
-#  define REG_D14           (XCPT_REGS+28) /* D14 */
-#  define REG_S28           (XCPT_REGS+28) /* S28 */
-#  define REG_S29           (XCPT_REGS+29) /* S29 */
-#  define REG_D15           (XCPT_REGS+30) /* D15 */
-#  define REG_S30           (XCPT_REGS+30) /* S30 */
-#  define REG_S31           (XCPT_REGS+31) /* S31 */
-#  define REG_FPSCR         (XCPT_REGS+32) /* Floating point status and control */
-#  define FPU_REGS          (33)
+#  define REG_D8            (XCPT_REGS+0) /* D8 */
+#  define REG_S16           (XCPT_REGS+0) /* S16 */
+#  define REG_S17           (XCPT_REGS+1) /* S17 */
+#  define REG_D9            (XCPT_REGS+2) /* D9 */
+#  define REG_S18           (XCPT_REGS+2) /* S18 */
+#  define REG_S19           (XCPT_REGS+3) /* S19 */
+#  define REG_D10           (XCPT_REGS+4) /* D10 */
+#  define REG_S20           (XCPT_REGS+4) /* S20 */
+#  define REG_S21           (XCPT_REGS+5) /* S21 */
+#  define REG_D11           (XCPT_REGS+6) /* D11 */
+#  define REG_S22           (XCPT_REGS+6) /* S22 */
+#  define REG_S23           (XCPT_REGS+7) /* S23 */
+#  define REG_D12           (XCPT_REGS+8) /* D12 */
+#  define REG_S24           (XCPT_REGS+8) /* S24 */
+#  define REG_S25           (XCPT_REGS+9) /* S25 */
+#  define REG_D13           (XCPT_REGS+10) /* D13 */
+#  define REG_S26           (XCPT_REGS+10) /* S26 */
+#  define REG_S27           (XCPT_REGS+11) /* S27 */
+#  define REG_D14           (XCPT_REGS+12) /* D14 */
+#  define REG_S28           (XCPT_REGS+12) /* S28 */
+#  define REG_S29           (XCPT_REGS+13) /* S29 */
+#  define REG_D15           (XCPT_REGS+14) /* D15 */
+#  define REG_S30           (XCPT_REGS+14) /* S30 */
+#  define REG_S31           (XCPT_REGS+15) /* S31 */
+#  define FPU_REGS          (16)
 #else
 #  define FPU_REGS          (0)
 #endif

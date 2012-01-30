@@ -41,6 +41,7 @@
 #include <nuttx/config.h>
 
 #include <arch/irq.h>
+#include "exc_return.h"
 
 #include "chip.h"
 
@@ -188,15 +189,12 @@ stm32_common:
 
 	/* Complete the context save */
 
-	/* The EXC_RETURN value will be 0xfffffff9 (privileged thread) or 0xfffffff1
-	 * (handler mode) if the state is on the MSP.  It can only be on the PSP if
-	 * EXC_RETURN is 0xfffffffd (unprivileged thread)
-	 */
+	/* The EXC_RETURN value tells us whether the context is on the MSP or PSP */
 
-	adds	r2, r14, #3				/* If R14=0xfffffffd, then r2 == 0 */
-	ite		ne						/* Next two instructions are condition */
-	mrsne	r1, msp					/* R1=The main stack pointer */
-	mrseq	r1, psp					/* R1=The process stack pointer */
+	tst		r14, #EXC_RETURN_PROCESS_STACK /* nonzero if context on process stack */
+	ite     eq                      /* next two instructions conditional */
+	mrseq	r1, msp					/* R1=The main stack pointer */
+	mrsne	r1, psp					/* R1=The process stack pointer */
 
 	mov		r2, r1					/* R2=Copy of the main/process stack pointer */
 	add		r2, #HW_XCPT_SIZE		/* R2=MSP/PSP before the interrupt was taken */
@@ -264,15 +262,12 @@ stm32_common:
 1:
 	ldmia	r1!, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
 2:
-	/* The EXC_RETURN value will be 0xfffffff9 (privileged thread) or 0xfffffff1
-	 * (handler mode) if the state is on the MSP.  It can only be on the PSP if
-	 * EXC_RETURN is 0xfffffffd (unprivileged thread)
-	 */
+	/* The EXC_RETURN value tells us whether the context is on the MSP or PSP */
 
-	adds	r0, r14, #3				/* If R14=0xfffffffd, then r0 == 0 */
-	ite		ne						/* Next two instructions are condition */
-	msrne	msp, r1					/* R1=The main stack pointer */
-	msreq	psp, r1					/* R1=The process stack pointer */
+	tst		r14, #EXC_RETURN_PROCESS_STACK /* nonzero if context on process stack */
+	ite     eq                      /* next two instructions conditional */
+	msreq	msp, r1					/* R1=The main stack pointer */
+	msrne	psp, r1					/* R1=The process stack pointer */
 
     /* Restore the interrupt state */
 

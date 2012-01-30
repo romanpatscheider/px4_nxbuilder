@@ -49,7 +49,7 @@ MAXOPTIMIZATION = -O2
 ifeq ($(CONFIG_ARCH_FPU),y)
   ARCHCPUFLAGS += -mcpu=cortex-m4 -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 else
-  ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
+  ARCHCPUFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=soft
 endif
 
 LDSCRIPT = ld.script

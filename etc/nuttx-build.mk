@@ -47,14 +47,15 @@ endif
 installsrc:
 	@echo Copying NuttX and stock applications...
 	@mkdir -p $(BUILDROOT)
-	@rsync -a --exclude=.svn --exclude=.git $(NUTTXROOT)/* $(BUILDROOT)
+	@rsync -aL --exclude=.svn --exclude=.git $(NUTTXROOT)/* $(BUILDROOT)
 ifneq ($(LOCAL_NUTTX),)
 	@echo Merging local NuttX tree...
+	@echo "rsync -aL --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_NUTTX)/* $(BUILDROOT)/nuttx"
 	@rsync -a --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_NUTTX)/* $(BUILDROOT)/nuttx
 endif
 ifneq ($(LOCAL_APPS),)
 	@echo Merging local applications tree...
-	@rsync -a --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_APPS)/* $(BUILDROOT)/apps
+	@rsync -aL --exclude=.svn --exclude=.git --exclude=$(BUILDROOT) $(LOCAL_APPS)/* $(BUILDROOT)/apps
 endif
 	@echo Configuring...
 	@(cd $(BUILDROOT)/nuttx/tools && ./configure.sh $(CONFIG))

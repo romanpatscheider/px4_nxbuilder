@@ -47,6 +47,8 @@
  * Definitions
  ****************************************************************************/
 int system_type = MAV_FIXED_WING;
+mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
+uint8_t chan = MAVLINK_COMM_0;
 
 /****************************************************************************
  * Private Data
@@ -55,6 +57,9 @@ int system_type = MAV_FIXED_WING;
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+void handleMessage(mavlink_message_t * msg) {
+    mavlink_msg_statustext_send(chan,0,"received msg");
+}
 
 /****************************************************************************
  * user_start
@@ -62,11 +67,38 @@ int system_type = MAV_FIXED_WING;
 
 int user_start(int argc, char *argv[])
 {
+    // print text
+    printf("Hello, mavlink!!\n");
+    usleep(100000);
+
+    // initialize
+    mavlink_message_t msg;
+    mavlink_status_t status;
+    status.packet_rx_drop_count = 0;
+
+    // start comm loop
     while(1) {
-        printf("Hello, mavlink!!\n");
-        mavlink_msg_heartbeat_send(MAVLINK_COMM_0,system_type,MAV_AUTOPILOT_GENERIC);
+        // sleep
         usleep(100000);
+
+        // send
+        mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC);
+
+        // receive
+        // TODO figure out how to do non-blocking read
+        /*
+        uint8_t ch = EOF;
+        while(comm_receive_ch(chan,ch)!=EOF) {
+            if (mavlink_parse_char(chan,ch,&msg,&status)) {
+                handleMessage(&msg);
+            }
+        }
+        if (ch==EOF) {
+            status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
+        }
+        */
     }
     return 0;
 }
+
 

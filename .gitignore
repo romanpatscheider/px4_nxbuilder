@@ -1,4 +1,5 @@
 build/*
+tags
 dist
 .DS_Store
 px4fmu.sublime-project

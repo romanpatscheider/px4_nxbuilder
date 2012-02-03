@@ -16,7 +16,7 @@
  
    Lines also in your main.c, e.g. by reading these parameter from EEPROM.
  */
-mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
+extern mavlink_system_t mavlink_system;
  
 /**
  * @brief Send one char (uint8_t) over a comm channel
@@ -28,8 +28,25 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
     if (chan == MAVLINK_COMM_0)
     {
-        putchar(ch);
+        fputc(ch,stdout);
     }
 }
- 
+
+/**
+ * @brief Read one char (uint8_t) over a comm channel
+ *
+ * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
+ * @param ch Character to read
+ */
+static inline uint8_t comm_receive_ch(mavlink_channel_t chan, uint8_t ch)
+{
+    ch = EOF;
+    if (chan == MAVLINK_COMM_0)
+    {
+        // TODO need non-blocking read
+        //ch = fgetc(stdin);
+    }
+    return ch;
+}
+
 #endif /* MAVLINK_BRIDGE_HEADER_H */

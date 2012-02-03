@@ -39,11 +39,14 @@
 
 #include <nuttx/config.h>
 #include <stdio.h>
-#include "mavlink-0.9/mavlink_types.h"
+#include "mavlink_bridge_header.h"
+#include "mavlink-0.9/common/mavlink.h"
+#include "mavlink-0.9/pixhawk/pixhawk.h"
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
+int system_type = MAV_FIXED_WING;
 
 /****************************************************************************
  * Private Data
@@ -59,7 +62,11 @@
 
 int user_start(int argc, char *argv[])
 {
-  printf("Hello, mavlink!!\n");
-  return 0;
+    while(1) {
+        printf("Hello, mavlink!!\n");
+        mavlink_msg_heartbeat_send(MAVLINK_COMM_0,system_type,MAV_AUTOPILOT_GENERIC);
+        usleep(100000);
+    }
+    return 0;
 }
 

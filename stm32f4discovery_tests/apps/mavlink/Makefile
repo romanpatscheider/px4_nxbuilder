@@ -79,13 +79,11 @@ $(COBJS): %$(OBJEXT): %.c
 
 context:
 
-.depend: Makefile $(SRCS) $(PWD)/mavlink/include/mavlink-0.9/mavlink_types.h
+.depend: Makefile $(SRCS) include
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 
-$(PWD)/mavlink/include/mavlink-0.9/mavlink_types.h: Makefile
-	@echo PWD: $(PWD);
-	@echo CFLAGS: $(CFLAGS);
+include: Makefile generate.sh
 	@./generate.sh	
 
 depend: .depend

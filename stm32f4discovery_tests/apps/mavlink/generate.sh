@@ -19,8 +19,8 @@ git clone https://github.com/tridge/pymavlink.git -b master  pymavlink
 cd pymavlink && git checkout $pymavlink_tag && rm -rf .git && cd ..
 
 # generate the includes
-./pymavlink/generator/mavgen.py --lang=C --wire-protocol=0.9 --output=include/mavlink-0.9 mavlink-0.9/message_definitions/common.xml
-./pymavlink/generator/mavgen.py --lang=C --wire-protocol=1.0 --output=include/mavlink-1.0 mavlink-1.0/message_definitions/common.xml
+./pymavlink/generator/mavgen.py --lang=C --wire-protocol=0.9 --output=include/mavlink-0.9 mavlink-0.9/message_definitions/pixhawk.xml
+./pymavlink/generator/mavgen.py --lang=C --wire-protocol=1.0 --output=include/mavlink-1.0 mavlink-1.0/message_definitions/pixhawk.xml
 
 # cleanup
 rm -rf mavlink-0.9 mavlink-1.0 pymavlink 

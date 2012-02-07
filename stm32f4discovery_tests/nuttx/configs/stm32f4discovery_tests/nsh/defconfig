@@ -1194,6 +1194,14 @@ CONFIG_EXAMPLES_USBSERIAL_TRACECONTROLLER=n
 CONFIG_EXAMPLES_USBSERIAL_TRACEINTERRUPTS=n
 
 #
+# Settings for  mavlink
+#
+# CONFIG_MAVLINK - Enable MAVLINK app
+# CONFIG_NSH_BUILTIN_APPS - Build the ADC test as an NSH built-in function.
+#   Default: Built as a standalone problem
+CONFIG_MAVLINK=y
+
+#
 # Settings for examples/adc
 #
 # CONFIG_ADC - Enabled ADC support

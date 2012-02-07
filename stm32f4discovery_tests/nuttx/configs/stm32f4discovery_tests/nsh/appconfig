@@ -43,6 +43,10 @@ CONFIGURED_APPS += nshlib
 
 # Applications configured as an NX built-in commands
 
+ifeq ($(CONFIG_MAVLINK),y)
+CONFIGURED_APPS += mavlink
+endif
+
 ifeq ($(CONFIG_ADC),y)
 CONFIGURED_APPS += examples/adc
 endif

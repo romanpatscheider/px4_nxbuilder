@@ -65,7 +65,7 @@ void handleMessage(mavlink_message_t * msg) {
  * user_start
  ****************************************************************************/
 
-int user_start(int argc, char *argv[])
+int mavlink_main(int argc, char *argv[])
 {
     // print text
     printf("Hello, mavlink!!\n");

@@ -1,8 +1,9 @@
 ############################################################################
-# apps/examples/hello/Makefile
+# Makefile
 #
-#   Copyright (C) 2008, 2010-2011 Gregory Nutt. All rights reserved.
-#   Author: Gregory Nutt <spudmonkey@racsa.co.cr>
+#   Copyright (C) 2011 Uros Platise. All rights reserved.
+#   Author: Uros Platise <uros.platise@isotel.eu>
+#           Gregory Nutt <spudmonkey@racsa.co.cr>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,14 +34,29 @@
 #
 ############################################################################
 
+# TODO, this makefile should run make under the app dirs, instead of
+# sourcing the Make.defs!
+
 -include $(TOPDIR)/.config
 -include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
-# Hello, World! Example
+ifeq ($(WINTOOL),y)
+INCDIROPT	= -w
+endif
+
+# Mavlink Application
+# TODO: appname can be automatically extracted from the directory name
+
+APPNAME		= mavlink
+PRIORITY	= SCHED_PRIORITY_DEFAULT
+STACKSIZE	= 768
+
+
+CFLAGS		+= -I $(PWD)/mavlink/include
 
 ASRCS		=
-CSRCS		= main.c
+CSRCS		= mavlink.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))
@@ -56,14 +72,12 @@ endif
 
 ROOTDEPPATH	= --dep-path .
 
-CFLAGS		+= -I $(PWD)/mavlink/include
-
 # Common build
 
 VPATH		= 
 
-all: .built
-.PHONY: clean depend distclean
+all:	.built
+.PHONY: context depend clean distclean
 
 $(AOBJS): %$(OBJEXT): %.S
 	$(call ASSEMBLE, $<, $@)
@@ -77,14 +91,23 @@ $(COBJS): %$(OBJEXT): %.c
 	done ; )
 	@touch .built
 
-context:
+# Register application
+
+.context:
+	$(call REGISTER,$(APPNAME),$(PRIORITY),$(STACKSIZE),$(APPNAME)_main)
+	@touch $@
+
+context: .context
+
+# Mavlink includes
+include:
+	@./generate.sh
+
+# Create dependencies
 
 .depend: Makefile $(SRCS) include
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
-
-include: Makefile generate.sh
-	@./generate.sh	
 
 depend: .depend
 
@@ -93,6 +116,3 @@ clean:
 	$(call CLEAN)
 
 distclean: clean
-	@rm -f Make.dep .depend
-
--include Make.dep

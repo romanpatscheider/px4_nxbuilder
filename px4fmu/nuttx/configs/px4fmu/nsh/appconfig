@@ -41,6 +41,7 @@ CONFIGURED_APPS += system/readline
 
 # The NSH application library
 
+CONFIGURED_APPS += system/readline
 CONFIGURED_APPS += nshlib
 
 # The CMSIS library

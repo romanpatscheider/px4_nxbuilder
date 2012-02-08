@@ -198,8 +198,9 @@ stm32_common:
 
 	mov		r2, r1					/* R2=Copy of the main/process stack pointer */
 	add		r2, #HW_XCPT_SIZE		/* R2=MSP/PSP before the interrupt was taken */
+                                    /* (ignoring the xPSR[9] alignment bit) */
 	mrs		r3, primask				/* R3=Current PRIMASK setting */
-	stmdb	r1!, {r2-r11,r14}		/* Save the remaining registers plus the SP value */
+	stmdb	r1!, {r2-r11,r14}		/* Save the remaining registers plus the SP/PRIMASK values */
 
 	/* Disable interrupts, select the stack to use for interrupt handling
 	 * and call up_doirq to handle the interrupt
@@ -209,18 +210,18 @@ stm32_common:
 
 	/* If CONFIG_ARCH_INTERRUPTSTACK is defined, we will use a special interrupt
 	 * stack pointer.  The way that this is done here prohibits nested interrupts!
-	 * Otherwise, we will re-use the main stack for interrupt level processing.
+	 * Otherwise, we will use the stack that was current when the interrupt was taken.
 	 */
 
 #if CONFIG_ARCH_INTERRUPTSTACK > 3
 	ldr		sp, =g_intstackbase
 	str		r1, [sp, #-4]!			/* Save the MSP on the interrupt stack */
-	bl		up_doirq				/* R0=IRQ, R1=register save (msp) */
+	bl		up_doirq				/* R0=IRQ, R1=register save area on stack */
 	ldr		r1, [sp, #+4]!			/* Recover R1=main stack pointer */
 #else
-	mov		sp, r1					/* We are using the main stack pointer */
-	bl		up_doirq				/* R0=IRQ, R1=register save (msp) */
-	mov		r1, sp					/* Recover R1=main stack pointer */
+	msr     msp, r1                 /* We are using the main stack pointer */
+	bl		up_doirq				/* R0=IRQ, R1=register save area on stack */
+	mrs     r1, msp					/* Recover R1=main stack pointer */
 #endif
 
 	/* On return from up_doirq, R0 will hold a pointer to register context
@@ -238,21 +239,29 @@ stm32_common:
 	 */
 
 	/* We may also need to restore the non-volatile FPU registers.  This is not 
-	 * done innormal interrupt restore because the hardware save/restores the
+	 * done in normal interrupt restore because the hardware save/restores the
 	 * volatile registers, and any called function will save/restore the
 	 * non-volatile registers as required.
 	 */
 
 #ifdef CONFIG_ARCH_FPU
-	bl		up_restorefpu			/* Restore the FPU registers */
+	bl		up_restorefpu			/* Restore the non-volatile FPU registers */
 #endif
 
-	add		r1, r0, #SW_XCPT_SIZE	/* R1=Address of HW save area in reg array */
-	ldmia	r1, {r4-r11}			/* Fetch eight registers in HW save area */
-	ldr	r1, [r0, #(4*REG_SP)]		/* R1=Value of SP before interrupt */
-	stmdb	r1!, {r4-r11}			/* Store eight registers in HW save area */
-	ldmia	r0, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
+	/* Copy the saved register context to the stack */
+	/* XXX this needs polish - should use multiples, etc. */
 
+	mov		r4, #HW_XCPT_SIZE		/* bytes to copy */
+	add		r2, r0, #SW_XCPT_SIZE	/* R1=Address of HW save area in reg array */
+	ldr		r1, [r0, #(4*REG_SP)]	/* R2=Value of SP before interrupt */
+	sub		r1, r1, #XCPT_SIZE		/* clumsy fixup - should do better */
+3:
+	subs	r4, r4, #4
+	ldr		r3, [r2, r4]
+	str		r3, [r1, r4]
+	bne		3b
+
+	ldmia	r0, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
 	b		2f						/* Re-join common logic */
 
 	/* We are returning with no context switch.  We simply need to "unwind"

@@ -143,16 +143,23 @@ void up_initial_state(_TCB *tcb)
     {
       /* It is a kernel thread.. set privileged thread mode */
 
-      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_STD_CONTEXT | EXC_RETURN_THREAD_MODE;
+      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE |
+                                  EXC_RETURN_STD_CONTEXT |
+                                  EXC_RETURN_THREAD_MODE;
     }
   else
     {
       /* It is a normal task or a pthread.  Set user mode */
 
-      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_STD_CONTEXT | EXC_RETURN_THREAD_MODE | EXC_RETURN_PROCESS_STACK;
+      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE |
+                                  EXC_RETURN_STD_CONTEXT |
+                                  EXC_RETURN_THREAD_MODE |
+                                  EXC_RETURN_PROCESS_STACK;
     }
 #else
-  xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_STD_CONTEXT | EXC_RETURN_THREAD_MODE;
+  xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE |
+                              //EXC_RETURN_STD_CONTEXT |
+                              EXC_RETURN_THREAD_MODE;
 #endif
 
   /* Enable or disable interrupts, based on user configuration */

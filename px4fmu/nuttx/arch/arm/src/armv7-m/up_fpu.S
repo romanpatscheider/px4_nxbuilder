@@ -74,6 +74,8 @@
  *   Given the pointer to a register save area (in R0), save the state of the
  *   non-volatile floating point registers.
  *
+ *   Note that we clobber R2 here.  R1 preserved to simplify the calling context.
+ *
  * C Function Prototype:
  *   void up_savefpu(uint32_t *regs);
  *
@@ -89,8 +91,8 @@
 	.thumb_func
 	.type	up_savefpu, function
 up_savefpu:
-	add		r1, r0, #(4*REG_S16)    /* R1=Address of FP register storage */
-	vstm	r1, {s16-s31}           /* save s16-s31 */
+	add		r2, r0, #(4*REG_S16)    /* R1=Address of FP register storage */
+	vstm	r2, {s16-s31}           /* save s16-s31 */
 	bx		lr
 
 	.size	up_savefpu, .-up_savefpu
@@ -117,8 +119,8 @@ up_savefpu:
 	.thumb_func
 	.type	up_restorefpu, function
 up_restorefpu:
-	add		r1, r0, #(4*REG_S16)	/* R1=Address of FP register storage */
-	vldm	r1, {s16-s31}			/* restore s16-s31 */
+	add		r2, r0, #(4*REG_S16)	/* R1=Address of FP register storage */
+	vldm	r2, {s16-s31}			/* restore s16-s31 */
 	bx		lr
 
 	.size	up_restorefpu, .-up_restorefpu

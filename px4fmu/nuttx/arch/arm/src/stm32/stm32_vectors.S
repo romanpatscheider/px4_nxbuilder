@@ -215,9 +215,9 @@ stm32_common:
 
 #if CONFIG_ARCH_INTERRUPTSTACK > 3
 	ldr		sp, =g_intstackbase
-	str		r1, [sp, #-4]!			/* Save the MSP on the interrupt stack */
+	push	r1						/* Save the MSP on the interrupt stack */
 	bl		up_doirq				/* R0=IRQ, R1=register save area on stack */
-	ldr		r1, [sp, #+4]!			/* Recover R1=main stack pointer */
+	pop		r1						/* Recover R1=main stack pointer */
 #else
 	msr     msp, r1                 /* We are using the main stack pointer */
 	bl		up_doirq				/* R0=IRQ, R1=register save area on stack */
@@ -238,28 +238,33 @@ stm32_common:
 	 * values to the stack.
 	 */
 
-	/* We may also need to restore the non-volatile FPU registers.  This is not 
-	 * done in normal interrupt restore because the hardware save/restores the
-	 * volatile registers, and any called function will save/restore the
-	 * non-volatile registers as required.
-	 */
+	/* Copy the saved register context to the stack */
+	/* XXX this copy is redundant in most cases - this context is already there */
+	/* XXX the value at REG_SP should be the bottom of the frame on the return stack, not the top */
+	/*     but changing this requires fixing up_initialstate which affects all armv7m */
+
+	ldr		r1, [r0, #(4*REG_SP)]	/* R1=Value of SP before interrupt */
+	sub		r1, r1, #HW_XCPT_SIZE	/* clumsy fixup - see above */
+	add		r2, r0, #SW_XCPT_SIZE	/* R2=Address of HW save area in reg array */
+	mov		r3, r1					/* R3=Address of save area on return stack */
+	ldmia	r2!, {r4-r11}			/* Copy basic frame from save area */
+	stmia	r3!, {r4-r11}			/* ... to the return stack */
 
 #ifdef CONFIG_ARCH_FPU
-	bl		up_restorefpu			/* Restore the non-volatile FPU registers */
-#endif
 
-	/* Copy the saved register context to the stack */
-	/* XXX this needs polish - should use multiples, etc. */
+	/* We need to copy the new values for the volatile FP registers and the FPSCR to
+	 * the return stack, as well as restore the non-volatile registers directly from
+	 * the save area.
+	 */
 
-	mov		r4, #HW_XCPT_SIZE		/* bytes to copy */
-	add		r2, r0, #SW_XCPT_SIZE	/* R2=Address of HW save area in reg array */
-	ldr		r1, [r0, #(4*REG_SP)]	/* R1=Value of SP before interrupt */
-	sub		r1, r1, #HW_XCPT_SIZE	/* clumsy fixup - should do better */
-3:
-	subs	r4, r4, #4
-	ldr		r3, [r2, r4]
-	str		r3, [r1, r4]
-	bne		3b
+	vldmia	r2!, {s15-s31}			/* Copy the nonvolatile FP registers */
+	ldmia	r2!, {r4-r5}			/* ... FPSCR & Reserved from the save area */
+	vstmia	r3!, {s15-s31}			/* ... to the return stack */
+	stmia	r3!, {r4-r5}			/* update r2/r3 after all copies for debugging purposes */
+
+	bl		up_restorefpu			/* Restore the non-volatile FPU registers (clobbers R2) */
+
+#endif /* CONFIG_ARCH_FPU */
 
 	ldmia	r0, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
 	b		2f						/* Re-join common logic */
@@ -282,7 +287,7 @@ stm32_common:
 	msr		primask, r3				/* Restore interrupts */
 
 	/* Always return with R14 containing the special value that will: (1)
-	 * return to thread mode, and (2) continue to use the MSP
+	 * return to thread mode, and (2) select the correct stack.
 	 */
 
 	bx		r14						/* And return */

@@ -137,9 +137,13 @@ void up_initial_state(_TCB *tcb)
    */
 
   xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_THREAD_MODE;
+
 #ifndef CONFIG_ARCH_FPU
+
   xcp->regs[REG_EXC_RETURN] |= EXC_RETURN_STD_CONTEXT;
+
 #else
+
   {
     unsigned i;
 
@@ -148,7 +152,7 @@ void up_initial_state(_TCB *tcb)
       xcp->regs[REG_S0 + i] = i;
       xcp->regs[REG_S16 + i] = 16 + i;
     }
-    xcp->regs[REG_FPSCR] = 0;
+    xcp->regs[REG_FPSCR] = 0;	// XXX initial FPSCR should be configurable
     xcp->regs[REG_FPReserved] = 0;
   }
 #endif

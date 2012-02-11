@@ -32,11 +32,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ************************************************************************************/
-/*
- * When this file is assembled, it will require the following GCC options:
- *
- * -mcpu=cortex-m3 -mfloat-abi=hard -mfpu=vfp -meabi=5
- */
+
 
 /************************************************************************************
  * Included Files
@@ -91,7 +87,7 @@
 	.thumb_func
 	.type	up_savefpu, function
 up_savefpu:
-	add		r2, r0, #(4*REG_S16)    /* R1=Address of FP register storage */
+	add		r2, r0, #(4*REG_S16)    /* R2=Address of FP register storage */
 	vstm	r2, {s16-s31}           /* save s16-s31 */
 	bx		lr
 
@@ -103,6 +99,8 @@ up_savefpu:
  * Description:
  *   Given the pointer to a register save area (in R0), restore the state of the
  *   non-volatile floating point registers.
+ *
+ *   Note that we clobber R2 here.  R1 preserved to simplify the calling context.
  *
  * C Function Prototype:
  *   void up_restorefpu(const uint32_t *regs);
@@ -119,7 +117,7 @@ up_savefpu:
 	.thumb_func
 	.type	up_restorefpu, function
 up_restorefpu:
-	add		r2, r0, #(4*REG_S16)	/* R1=Address of FP register storage */
+	add		r2, r0, #(4*REG_S16)	/* R2=Address of FP register storage */
 	vldm	r2, {s16-s31}			/* restore s16-s31 */
 	bx		lr
 

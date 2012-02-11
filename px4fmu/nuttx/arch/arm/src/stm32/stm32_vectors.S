@@ -237,7 +237,7 @@ stm32_common:
 
 	/* We are returning with a pending context switch.  This case is different
 	 * because in this case, the register save structure does not lie on the
-	 * stack but, rather, are within a TCB structure.  We'll have to copy some
+	 * stack but, rather within a TCB structure.  We'll have to copy some
 	 * values to the stack.
 	 */
 

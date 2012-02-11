@@ -183,6 +183,9 @@ handlers:
  *      R0 contains the IRQ number
  *      R14 Contains the EXC_RETURN value
  *      We are in handler mode and the current SP is the MSP
+ *
+ * If CONFIG_ARCH_FPU is set, the volatile FP registers are on the return stack
+ * immediately above REG_XPSR.  The non-volatile FP registers are not stacked.
  */
 
 stm32_common:
@@ -275,7 +278,7 @@ stm32_common:
 1:
 	ldmia	r1!, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
 2:
-	/* The EXC_RETURN value tells us whether the context is on the MSP or PSP */
+	/* The EXC_RETURN value tells us whether we are returning on the MSP or PSP */
 
 	tst		r14, #EXC_RETURN_PROCESS_STACK /* nonzero if context on process stack */
 	ite     eq                      /* next two instructions conditional */

@@ -252,9 +252,9 @@ stm32_common:
 	/* XXX this needs polish - should use multiples, etc. */
 
 	mov		r4, #HW_XCPT_SIZE		/* bytes to copy */
-	add		r2, r0, #SW_XCPT_SIZE	/* R1=Address of HW save area in reg array */
-	ldr		r1, [r0, #(4*REG_SP)]	/* R2=Value of SP before interrupt */
-	sub		r1, r1, #XCPT_SIZE		/* clumsy fixup - should do better */
+	add		r2, r0, #SW_XCPT_SIZE	/* R2=Address of HW save area in reg array */
+	ldr		r1, [r0, #(4*REG_SP)]	/* R1=Value of SP before interrupt */
+	sub		r1, r1, #HW_XCPT_SIZE	/* clumsy fixup - should do better */
 3:
 	subs	r4, r4, #4
 	ldr		r3, [r2, r4]

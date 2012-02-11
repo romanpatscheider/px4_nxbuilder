@@ -132,40 +132,40 @@ void up_initial_state(_TCB *tcb)
    * If the kernel build is not selected, then all threads run in
    * privileged thread mode.
    *
-   * XXX Regardless of the CONFIG_ARCH_FPU setting, don't mark the
-   * context as having valid FP state.  If we do this, something 
-   * bad happens to malloc, suggesting that we're not quite setting
-   * the stack up right
+   * If FPU support is not configured, set the bit that indicates that
+   * the context does not include the volatile FP registers.
    */
 
-#ifdef CONFIG_NUTTX_KERNEL
-  if ((tcb->flags & TCB_FLAG_TTYPE_MASK) == TCB_FLAG_TTYPE_KERNEL)
-    {
-      /* It is a kernel thread.. set privileged thread mode */
+  xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE | EXC_RETURN_THREAD_MODE;
+#ifndef CONFIG_ARCH_FPU
+  xcp->regs[REG_EXC_RETURN] |= EXC_RETURN_STD_CONTEXT;
+#else
+  {
+    unsigned i;
 
-      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE |
-                                  EXC_RETURN_STD_CONTEXT |
-                                  EXC_RETURN_THREAD_MODE;
+    // XXX magic numbers in the FP registers
+    for (i = 0; i < 16; i++) {
+      xcp->regs[REG_S0 + i] = i;
+      xcp->regs[REG_S16 + i] = 16 + i;
     }
-  else
+    xcp->regs[REG_FPSCR] = 0;
+    xcp->regs[REG_FPReserved] = 0;
+  }
+#endif
+
+#ifdef CONFIG_NUTTX_KERNEL
+  if ((tcb->flags & TCB_FLAG_TTYPE_MASK) != TCB_FLAG_TTYPE_KERNEL)
     {
       /* It is a normal task or a pthread.  Set user mode */
 
-      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE |
-                                  EXC_RETURN_STD_CONTEXT |
-                                  EXC_RETURN_THREAD_MODE |
-                                  EXC_RETURN_PROCESS_STACK;
+      xcp->regs[REG_EXC_RETURN] = EXC_RETURN_PROCESS_STACK;
     }
-#else
-  xcp->regs[REG_EXC_RETURN] = EXC_RETURN_BASE |
-                              //EXC_RETURN_STD_CONTEXT |
-                              EXC_RETURN_THREAD_MODE;
 #endif
 
   /* Enable or disable interrupts, based on user configuration */
 
-# ifdef CONFIG_SUPPRESS_INTERRUPTS
+#ifdef CONFIG_SUPPRESS_INTERRUPTS
   xcp->regs[REG_PRIMASK] = 1;
-# endif
+#endif
 }
 

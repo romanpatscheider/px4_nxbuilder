@@ -212,6 +212,9 @@ stm32_common:
 	 * or after calling up_doirq.  The compiler is free to use them at any time as long
 	 * as they are restored before returning, so we can't assume that we can get at the
 	 * true values of these registers in any routine called from here.
+	 *
+	 * XXX we could do all this saving lazily on the context switch side if we knew where to put
+	 *     the registers.
 	 */
 
 	vstmdb	r1!, {s16-s31}			/* Save the non-volatile FP context */
@@ -259,7 +262,9 @@ stm32_common:
 	/* Copy the hardware-saved context to the stack, and restore the software
 	 * saved context directly.
 	 *
-	 * XXX is this only required on the first return to a fresh thread context?
+	 * XXX In the normal case, it appears that this entire operation is unnecessary;
+	 *     context switch time would be improved if we could work out when the stack
+	 *     is dirty and avoid the work...
 	 */
     add     r1, r0, #SW_XCPT_SIZE   /* R1=Address of HW save area in reg array */
     ldmia   r1!, {r4-r11}           /* Fetch eight registers in HW save area */

@@ -81,7 +81,7 @@
 #  endif
 #endif
 
-/* Determine which device to use as the system loggin device */
+/* Determine which device to use as the system logging device */
 
 #ifndef CONFIG_SYSLOG
 #  undef CONFIG_RAMLOG_SYSLOG
@@ -100,16 +100,7 @@
  */
 
 #if defined(CONFIG_ARCH_CORTEXM3) || defined(CONFIG_ARCH_CORTEXM4)
-#  ifdef CONFIG_ARCH_FPU
-#    define up_savestate(regs) \
-       do { \
-         up_copystate(regs, (uint32_t*)current_regs); \
-         up_savefpu(regs); \
-       } \
-       while (0)
-#  else
-#    define up_savestate(regs)  up_copystate(regs, (uint32_t*)current_regs)
-#  endif
+#  define up_savestate(regs)    up_copystate(regs, (uint32_t*)current_regs)
 #  define up_restorestate(regs) (current_regs = regs)
 #else
 #  define up_savestate(regs)    up_copystate(regs, (uint32_t*)current_regs)

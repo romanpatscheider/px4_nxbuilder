@@ -203,6 +203,21 @@ stm32_common:
 	add		r2, #HW_XCPT_SIZE		/* R2=MSP/PSP before the interrupt was taken */
                                     /* (ignoring the xPSR[9] alignment bit) */
 	mrs		r3, primask				/* R3=Current PRIMASK setting */
+
+#ifdef CONFIG_ARCH_FPU
+
+	/* Save the non-volatile FP registers here.
+	 *
+	 * This routine is the only point where we can save these registers; either before
+	 * or after calling up_doirq.  The compiler is free to use them at any time as long
+	 * as they are restored before returning, so we can't assume that we can get at the
+	 * true values of these registers in any routine called from here.
+	 */
+
+	vstmdb	r1!, {s16-s31}			/* Save the non-volatile FP context */
+
+#endif
+
 	stmdb	r1!, {r2-r11,r14}		/* Save the remaining registers plus the SP/PRIMASK values */
 
 	/* Disable interrupts, select the stack to use for interrupt handling
@@ -241,44 +256,43 @@ stm32_common:
 	 * values to the stack.
 	 */
 
-	/* Copy the saved register context to the stack */
-	/* XXX this copy is redundant in most cases - this context is already there */
-	/* XXX the value at REG_SP should be the bottom of the frame on the return stack, not the top */
-	/*     but changing this requires fixing up_initialstate which affects all armv7m */
-
-	ldr		r1, [r0, #(4*REG_SP)]	/* R1=Value of SP before interrupt */
-	sub		r1, r1, #HW_XCPT_SIZE	/* clumsy fixup - see above */
-	add		r2, r0, #SW_XCPT_SIZE	/* R2=Address of HW save area in reg array */
-	mov		r3, r1					/* R3=Address of save area on return stack */
-	ldmia	r2!, {r4-r11}			/* Copy basic frame from save area */
-	stmia	r3!, {r4-r11}			/* ... to the return stack */
-
-#ifdef CONFIG_ARCH_FPU
-
-	/* We need to copy the new values for the volatile FP registers and the FPSCR to
-	 * the return stack, as well as restore the non-volatile registers directly from
-	 * the save area.
+	/* Copy the hardware-saved context to the stack, and restore the software
+	 * saved context directly.
+	 *
+	 * XXX is this only required on the first return to a fresh thread context?
 	 */
+    add     r1, r0, #SW_XCPT_SIZE   /* R1=Address of HW save area in reg array */
+    ldmia   r1!, {r4-r11}           /* Fetch eight registers in HW save area */
+#ifdef CONFIG_ARCH_FPU
+	vldmia	r1!, {s0-s15}			/* Fetch sixteen FP registers in HW save area */
+	ldmia	r1, {r2-r3}				/* Fetch FPSCR and Reserved in HW save area */
+#endif
+    ldr     r1, [r0, #(4*REG_SP)]   /* R1=Value of SP before interrupt */
+#ifdef CONFIG_ARCH_FPU
+	stmdb	r1!, {r2-r3}			/* Store FPSCR and Reserved on the return stack */
+    vstmdb	r1!, {s0-s15}			/* Store sixteen FP registers on the return stack */
+#endif
+    stmdb   r1!, {r4-r11}           /* Store eight registers on the return stack */
+    ldmia   r0!, {r2-r11,r14}       /* Recover R4-R11, r14 + 2 temp values */
+#ifdef CONFIG_ARCH_FPU
+    vldmia  r0, {s16-s31}			/* Recover S16-S31 */
+#endif
 
-	vldmia	r2!, {s15-s31}			/* Copy the nonvolatile FP registers */
-	ldmia	r2!, {r4-r5}			/* ... FPSCR & Reserved from the save area */
-	vstmia	r3!, {s15-s31}			/* ... to the return stack */
-	stmia	r3!, {r4-r5}			/* update r2/r3 after all copies for debugging purposes */
-
-	bl		up_restorefpu			/* Restore the non-volatile FPU registers (clobbers R2) */
-
-#endif /* CONFIG_ARCH_FPU */
-
-	ldmia	r0, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
 	b		2f						/* Re-join common logic */
 
-	/* We are returning with no context switch.  We simply need to "unwind"
-	 * the same stack frame that we created
-	 */
 1:
+	/* We are returning with no context switch.  We simply need to "unwind"
+	 * the same stack frame that we created at entry.
+	 */
+
 	ldmia	r1!, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
+#ifdef CONFIG_ARCH_FPU
+    vldmia  r1!, {s16-s31}			/* Recover S16-S31 */
+#endif
+
 2:
-	/* The EXC_RETURN value tells us whether we are returning on the MSP or PSP */
+	/* The EXC_RETURN value tells us whether we are returning on the MSP or PSP 
+	 */
 
 	tst		r14, #EXC_RETURN_PROCESS_STACK /* nonzero if context on process stack */
 	ite     eq                      /* next two instructions conditional */

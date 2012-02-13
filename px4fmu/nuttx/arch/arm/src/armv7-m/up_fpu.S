@@ -42,6 +42,8 @@
 
 #include <arch/irq.h>
 
+#include "nvic.h"
+
 #ifdef CONFIG_ARCH_FPU
 
 /************************************************************************************
@@ -52,6 +54,7 @@
  * Global Symbols
  ************************************************************************************/
 
+ 	.globl		up_initfpu
 	.globl		up_savefpu
 	.globl		up_restorefpu
 
@@ -62,6 +65,54 @@
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
+
+/************************************************************************************
+ * Name: up_initfpu
+ *
+ * Description:
+ *   Perform one-time FPU initialisation at early startup time.
+ *
+ *   Set CONTROL.FPCA so that we always get the extended context frame with
+ *   the volatile FP registers stacked above the basic context.
+ *
+ *   Ensure that FPCCR.LSPEN is disabled, so that we don't have to contend
+ *   with the lazy FP context save behaviour.  Clear FPCCR.ASPEN since we
+ *   are going to turn on CONTROL.FPCA for all contexts.
+ *
+ * C Function Prototype:
+ *   void up_initfpu(void);
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ * 
+ ************************************************************************************/
+
+	.thumb_func
+	.type	up_initfpu, function
+up_initfpu:
+	mrs	r0, control			/* Set CONTROL.FPCA */
+	orr	r0, r0, #4
+	msr	control, r0
+
+	movw	r1, #(NVIC_FPCCR & 0xffff)	/* Clear FPCCR.LSPEN, FPCCR.ASPEN */
+	movt	r1, #(NVIC_FPCCR >> 16)
+	ldr	r0, [r1]
+	bic	r0, r0, #(1<<31 | 1<<30)
+	str	r0, [r1]
+
+	movw	r1, #(NVIC_CPACR & 0xffff)	/* Enable CP10 and CP11 */
+	movt	r1, #(NVIC_CPACR >> 16)
+	ldr	r0, [r1]
+	orr	r0, r0, #((3<<(2*10)) | (3<<(2*11)))
+	str	r0, [r1]
+
+	bx		lr
+
+	.size	up_initfpu, .-up_initfpu
+
 
 /************************************************************************************
  * Name: up_restorefpu

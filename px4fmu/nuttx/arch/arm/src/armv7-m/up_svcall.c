@@ -271,10 +271,7 @@ int up_svcall(int irq, FAR void *context)
       case SYS_save_context:
         {
           DEBUGASSERT(regs[REG_R1] != 0);
-          memcpy((uint32_t*)regs[REG_R1], regs, XCPT_SIZE);
-#ifdef CONFIG_ARCH_FPU
-          up_savefpu((uint32_t*)regs[REG_R1]);
-#endif
+          memcpy((uint32_t*)regs[REG_R1], regs, XCPTCONTEXT_SIZE);
         }
         break;
 
@@ -319,10 +316,7 @@ int up_svcall(int irq, FAR void *context)
       case SYS_switch_context:
         {
           DEBUGASSERT(regs[REG_R1] != 0 && regs[REG_R2] != 0);
-          memcpy((uint32_t*)regs[REG_R1], regs, XCPT_SIZE);
-#ifdef CONFIG_ARCH_FPU
-          up_savefpu((uint32_t*)regs[REG_R1]);
-#endif
+          memcpy((uint32_t*)regs[REG_R1], regs, XCPTCONTEXT_SIZE);
           current_regs = (uint32_t*)regs[REG_R2];
         }
         break;

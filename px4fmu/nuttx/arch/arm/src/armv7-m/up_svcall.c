@@ -79,7 +79,7 @@
  * And you must explicitly define DEBUG_SVCALL below:
  */
 
-#define DEBUG_SVCALL         /* Define to debug SVCall */
+#undef DEBUG_SVCALL         /* Define to debug SVCall */
 #ifdef DEBUG_SVCALL
 # define svcdbg(format, arg...) slldbg(format, ##arg)
 #else

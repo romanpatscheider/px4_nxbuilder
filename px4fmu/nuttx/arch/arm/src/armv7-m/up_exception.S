@@ -190,7 +190,7 @@ exception_common:
 
 	ldmia	r1!, {r2-r11,r14}		/* Recover R4-R11, r14 + 2 temp values */
 #ifdef CONFIG_ARCH_FPU
-    vldmia  r1!, {s16-s31}			/* Recover S16-S31 */
+    vldmia  r1!, {s16-s31}			/* Recover S16-S31 XXX NOT REQUIRED SHOULD JUST BUMP R1 */
 #endif
 
 2:

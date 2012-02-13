@@ -144,17 +144,9 @@ void up_initial_state(_TCB *tcb)
 
 #else
 
-  {
-    unsigned i;
+  xcp->regs[REG_FPSCR] = 0; // XXX initial FPSCR should be configurable
+  xcp->regs[REG_FPReserved] = 0;
 
-    // XXX magic numbers in the FP registers
-    for (i = 0; i < 16; i++) {
-      xcp->regs[REG_S0 + i] = i;
-      xcp->regs[REG_S16 + i] = 16 + i;
-    }
-    xcp->regs[REG_FPSCR] = 0;	// XXX initial FPSCR should be configurable
-    xcp->regs[REG_FPReserved] = 0;
-  }
 #endif
 
 #ifdef CONFIG_NUTTX_KERNEL

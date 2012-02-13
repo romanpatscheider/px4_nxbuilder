@@ -55,7 +55,8 @@ MEMORY
 }
 
 OUTPUT_ARCH(arm)
-ENTRY(_stext)
+ENTRY(__start)
+EXTERN(_vectors)
 
 /* 
  * Ensure that abort() is present in the final object.  The exception handling

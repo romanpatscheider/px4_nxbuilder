@@ -1,8 +1,7 @@
 /************************************************************************************
- * arch/arm/src/stm32/stm32_vectors.S
- * arch/arm/src/chip/stm32_vectors.S
+ * arch/arm/src/stm32/chip.h
  *
- *   Copyright (C) 2009-2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2011 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,31 +33,51 @@
  *
  ************************************************************************************/
 
+#ifndef __ARCH_ARM_SRC_STM32_CHIP_H
+#define __ARCH_ARM_SRC_STM32_CHIP_H
+
 /************************************************************************************
  * Included Files
  ************************************************************************************/
 
 #include <nuttx/config.h>
 
+/* Include the chip capabilities file */
+
+#include <arch/stm32/chip.h>
+
+/* Include the chip pin and vector configuration files */
+
+#if defined(CONFIG_STM32_STM32F10XX)
+#  if defined(CONFIG_ARCH_CHIP_STM32F103ZET6) 
+#    include "chip/stm32f103ze_pinmap.h"
+#    include "chip/stm32f10xxx_vectors.h"
+#  elif defined(CONFIG_ARCH_CHIP_STM32F103RET6)
+#    include "chip/stm32f103re_pinmap.h"
+#    include "chip/stm32f10xxx_vectors.h"
+#  elif defined(CONFIG_ARCH_CHIP_STM32F103VCT6)
+#    include "chip/stm32f103vc_pinmap.h"
+#    include "chip/stm32f10xxx_vectors.h"
+#  elif defined(CONFIG_ARCH_CHIP_STM32F107VC)
+#    include "chip/stm32f107vc_pinmap.h"
+#    include "chip/stm32f10xxx_vectors.h"
+#  else
+#    error "Unsupported STM32F10XXX chip"
+#  endif
+#elif defined(CONFIG_STM32_STM32F40XX)
+#  include "chip/stm32f40xxx_pinmap.h"
+#  include "chip/stm32f40xxx_vectors.h"
+#else
+#  error "Unsupported STM32 chip"
+#endif
+
+/* Include only the mchip emory map. */
+
+#include "chip/stm32_memorymap.h"
+
 /************************************************************************************
- * .rodata
+ * Pre-processor Definitions
  ************************************************************************************/
 
-	.section	.rodata, "a"
-
-/* Variables: _sbss is the start of the BSS region (see ld.script) _ebss is the end
- * of the BSS regsion (see ld.script). The idle task stack starts at the end of BSS
- * and is of size CONFIG_IDLETHREAD_STACKSIZE.  The IDLE thread is the thread that
- * the system boots on and, eventually, becomes the idle, do nothing task that runs
- * only when there is nothing else to run.  The heap continues from there until the
- * end of memory.  See g_heapbase below.
- */
-
-	.globl	g_heapbase
-	.type	g_heapbase, object
-g_heapbase:
-	.long	_ebss+CONFIG_IDLETHREAD_STACKSIZE
-	.size	g_heapbase, .-g_heapbase
-
-	.end
+#endif /* __ARCH_ARM_SRC_STM32_CHIP_H */
 

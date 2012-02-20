@@ -258,6 +258,25 @@
 #define GPIO_I2C3_SDA	GPIO_I2C3_SDA_1
 
 /*
+ * I2C busses
+ */
+#define PX4_I2C_BUS_ESC		1
+#define PX4_I2C_BUS_ONBOARD	2
+#define PX4_I2C_BUS_EXPANSION	3
+
+/*
+ * Devices on the onboard bus.
+ *
+ * Note that these are unshifted addresses.
+ */
+#define PX4_I2C_OBDEV_HMC5883	0x1e
+#define PX4_I2C_OBDEV_MS5611	NOTDEFINED
+#define PX4_I2C_OBDEV_EEPROM	0x50
+
+#define PX4_I2C_OBDEV_PX4IO_BL	0x18
+#define PX4_I2C_OBDEV_PX4IO	0x19
+
+/*
  * SPI
  */
 #define GPIO_SPI1_MISO	GPIO_SPI1_MISO_1

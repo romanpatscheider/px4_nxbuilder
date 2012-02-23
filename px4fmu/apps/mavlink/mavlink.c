@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <pthread.h>
 #include <stdio.h>
 #include "mavlink_bridge_header.h"
 #include "mavlink-1.0/common/mavlink.h"
@@ -51,14 +52,46 @@ mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsy
 uint8_t chan = MAVLINK_COMM_0;
 // TODO get correct custom_mode
 uint32_t custom_mode = 0;
+
+pthread_mutex_t mutex_stdin;
+
+
+void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+static void *receiveloop(void *arg)
+{
 
+
+	for(;;) {
+		printf("This is the pthread looping... \n");
+		uint8_t ch = EOF;
+		mavlink_message_t msg;
+		mavlink_status_t status;
+
+
+		while(comm_receive_ch(chan,ch, &mutex_stdin)!=EOF) {
+		// printf("DEBUG: waiting for data \n");
+				if (mavlink_parse_char(chan,ch,&msg,&status)) {
+					handleMessage(&msg);
+				}
+		}
+
+
+		if (ch==EOF) {
+				 status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
+			 }
+
+		usleep(100000);
+		// Read from the socket
+  }
+}
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
+	printf("DEBUG: received msg \n");
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
@@ -77,6 +110,15 @@ int mavlink_main(int argc, char *argv[])
     mavlink_status_t status;
     status.packet_rx_drop_count = 0;
 
+    //init mutex
+   	pthread_mutex_init (&mutex_stdin, NULL);
+   	pthread_mutex_unlock (&mutex_stdin);
+
+    //create pthread for receiving commands
+    pthread_t receive_thread;
+    pthread_create (&receive_thread, NULL, receiveloop, NULL);
+
+
     // start comm loop
     while(1) {
         // sleep
@@ -84,7 +126,14 @@ int mavlink_main(int argc, char *argv[])
 
         // send
 	    // TODO give correct MAV_MODE
+
+        int result = pthread_mutex_lock (&mutex_stdin);
+        printf("main:lock \n");
+        //printf("DEBUG: result = %d \n", result);
+
         mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+        pthread_mutex_unlock (&mutex_stdin);
+        printf("main:unlock \n");
 
         // receive
         // TODO figure out how to do non-blocking read
@@ -99,6 +148,9 @@ int mavlink_main(int argc, char *argv[])
             status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
         }
         */
+
+
+
     }
     return 0;
 }

@@ -38,13 +38,19 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
  * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
  * @param ch Character to read
  */
-static inline uint8_t comm_receive_ch(mavlink_channel_t chan, uint8_t ch)
+static inline uint8_t comm_receive_ch(mavlink_channel_t chan, uint8_t ch, pthread_mutex_t *mut)
 {
     ch = EOF;
     if (chan == MAVLINK_COMM_0)
     {
         // TODO need non-blocking read
-        //ch = fgetc(stdin);
+
+    	int result = pthread_mutex_lock (mut);
+    	printf("comm_receive_ch:lock \n");
+    	//printf("DEBUG: result = %d \n", result);
+        ch = fgetc(stdin);
+        pthread_mutex_unlock (mut);
+        printf("comm_receive_ch:unlock \n");
     }
     return ch;
 }

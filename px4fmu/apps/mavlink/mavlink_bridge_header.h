@@ -4,7 +4,7 @@
  
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
  
-#include "mavlink-0.9/mavlink_types.h"
+#include "mavlink-1.0/mavlink_types.h"
  
 /* Struct that stores the communication settings of this system.
    you can also define / alter these settings elsewhere, as long

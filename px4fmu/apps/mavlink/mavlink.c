@@ -40,16 +40,17 @@
 #include <nuttx/config.h>
 #include <stdio.h>
 #include "mavlink_bridge_header.h"
-#include "mavlink-0.9/common/mavlink.h"
-#include "mavlink-0.9/pixhawk/pixhawk.h"
+#include "mavlink-1.0/common/mavlink.h"
+#include "mavlink-1.0/pixhawk/pixhawk.h"
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
-int system_type = MAV_FIXED_WING;
+int system_type = MAV_TYPE_FIXED_WING;
 mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
 uint8_t chan = MAVLINK_COMM_0;
-
+// TODO get correct custom_mode
+uint32_t custom_mode = 0;
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -82,7 +83,8 @@ int mavlink_main(int argc, char *argv[])
         usleep(100000);
 
         // send
-        mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC);
+	    // TODO give correct MAV_MODE
+        mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 
         // receive
         // TODO figure out how to do non-blocking read

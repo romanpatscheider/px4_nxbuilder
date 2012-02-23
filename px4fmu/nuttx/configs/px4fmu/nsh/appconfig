@@ -51,7 +51,7 @@ CONFIGURED_APPS += CMSISlib
 CONFIGURED_APPS += system/i2c
 
 #CONFIGURED_APPS	+= px4/px4io
-#CONFIGURED_APPS += px4/sensors px4/tests
+CONFIGURED_APPS += px4/sensors px4/tests
 
 ifeq ($(CONFIG_ADC),y)
 #CONFIGURED_APPS += examples/adc

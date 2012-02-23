@@ -1,10 +1,9 @@
 /****************************************************************************
- * examples/px4/sensors/sensors.h
+ * drivers/sensors/lm75.c
+ * Character driver for the STMicro LM-75 Temperature Sensor
  *
  *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Copyright (C) 2011-2012 Michael Smith. All rights reserved.
- *   Authors: Michael Smith <DrZiplok@me.com>
- *		Gregory Nutt <gnutt@nuttx.org>
+ *   Author: Gregory Nutt <spudmonkey@racsa.co.cr>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,53 +34,81 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_PX4_SENSORS_H
-#define __APPS_PX4_SENSORS_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-/****************************************************************************
- * Definitions
- ****************************************************************************/
+#include <sys/types.h>
 
-/* Debug ********************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <debug.h>
 
-#ifdef CONFIG_CPP_HAVE_VARARGS
-#  ifdef CONFIG_DEBUG
-#    define message(...) lib_rawprintf(__VA_ARGS__)
-#    define msgflush()
-#  else
-#    define message(...) printf(__VA_ARGS__)
-#    define msgflush() fflush(stdout)
-#  endif
-#else
-#  ifdef CONFIG_DEBUG
-#    define message lib_rawprintf
-#    define msgflush()
-#  else
-#    define message printf
-#    define msgflush() fflush(stdout)
-#  endif
-#endif
+#include <arch/board/board.h>
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
 
-/****************************************************************************
- * Public Variables
- ****************************************************************************/
+#include <nuttx/i2c.h>
 
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
+int lm75_readb16(uint8_t regaddr,
+                        FAR b16_t *regvalue)
+{
+  uint8_t buffer[2];
+  int ret;
+  uint8_t
 
-int	l3gd20_test(struct spi_dev_s *spi);
-int	bma180_test(struct spi_dev_s *spi);
-int hmc5883l_test(struct i2c_dev_s *i2c);
+  /* Write the register address */
 
-#endif /* __APPS_PX4_SENSORS_H */
+  I2C_SETADDRESS(priv->i2c, priv->addr, 7);
+  ret = I2C_WRITE(priv->i2c, &regaddr, 1);
+  if (ret < 0)
+    {
+      lm75dbg("I2C_WRITE failed: %d\n", ret);
+      return ret;
+    }
+
+  /* Restart and read 16-bits from the register (discarding 7) */
+
+  ret = I2C_READ(priv->i2c, buffer, 2);
+  if (ret < 0)
+    {
+      lm75dbg("I2C_READ failed: %d\n", ret);
+      return ret;
+    }
+
+  /* Data format is:  TTTTTTTT Txxxxxxx where TTTTTTTTT is a nine-bit,
+   * signed temperature value with LSB = 0.5 degrees centigrade.  So the
+   * raw data is b8_t
+   */
+
+  *regvalue = b8tob16((b8_t)buffer[0] << 8 | (b8_t)buffer[1]);
+  lm75dbg("addr: %02x value: %08x ret: %d\n", regaddr, *regvalue, ret);
+  return OK;
+}
+
+
+//static int lm75_writeb16(FAR struct lm75_dev_s *priv, uint8_t regaddr,
+//                         b16_t regval)
+//{
+//  uint8_t buffer[3];
+//  b8_t regb8;
+//
+//  lm75dbg("addr: %02x value: %08x\n", regaddr, regval);
+//
+//  /* Set up a 3 byte message to send */
+//
+//  buffer[0] = regaddr;
+//
+//  regb8 = b16tob8(regval);
+//  buffer[1] = (uint8_t)(regb8 >> 8);
+//  buffer[2] = (uint8_t)regb8;
+//
+//  /* Write the register address followed by the data (no RESTART) */
+//
+//  I2C_SETADDRESS(priv->i2c, priv->addr, 7);
+//  return I2C_WRITE(priv->i2c, buffer, 3);
+//}

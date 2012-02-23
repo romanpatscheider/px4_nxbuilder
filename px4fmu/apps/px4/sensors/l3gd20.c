@@ -137,13 +137,21 @@ read_fifo(struct spi_dev_s *spi)
 }
 
 int
-l3g4200_test(struct spi_dev_s *spi)
+l3gd20_test(struct spi_dev_s *spi)
 {
 	uint8_t	id;
 
 	id = read_reg(spi, ADDR_WHO_AM_I);
 
-	message("got id 0x%02x\n", id);
+	if (id == 0xD4)
+	{
+		message("SUCCESS:\n");
+	}
+	else
+	{
+		message("FAIL\n");
+	}
+	message("got id 0x%02x, expected ID 0xd4\n", id);
 
 	return 0;
 }

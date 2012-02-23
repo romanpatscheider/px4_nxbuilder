@@ -53,6 +53,7 @@
 #include <arch/board/board.h>
 
 #include <nuttx/spi.h>
+#include <nuttx/i2c.h>
 
 #include "sensors.h"
 
@@ -95,19 +96,43 @@ int sensors_main(int argc, char *argv[])
 
 	spi = up_spiinitialize(1);
 	if (!spi) {
-      		message("Failed to initialize SPI port 1\n");
-      		goto out;
-      	}
+		message("Failed to initialize SPI port 1\n");
+		goto out;
+	}
 
-      	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-      	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
-      	SPI_SETFREQUENCY(spi, 100000);
-      	SPI_SETBITS(spi, 8);
-      	SPI_SETMODE(spi, SPIDEV_MODE3);
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+	SPI_SETFREQUENCY(spi, 100000);
+	SPI_SETBITS(spi, 8);
+	SPI_SETMODE(spi, SPIDEV_MODE3);
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
 
-      	l3g4200_test(spi);
+	l3gd20_test(spi);
+	bma180_test(spi);
+	l3gd20_test(spi);
+	bma180_test(spi);
 
-out:
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+		SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+
+	struct i2c_dev_s *i2c;
+	i2c = up_i2cinitialize(2);
+	if (!i2c) {
+		message("Failed to initialize I2C bus 2\n");
+		goto out;
+	}
+
+	I2C_SETADDRESS(i2c, 0x3D, 7);
+	uint8_t regaddr = 10;
+	int ret = I2C_WRITE(i2c, &regaddr, 1);
+	if (ret < 0)
+	{
+		message("I2C_WRITE failed: %d\n", ret);
+	}
+
+
+	out:
 	SPI_LOCK(spi, false);
    	msgflush();
 	return result;

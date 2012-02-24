@@ -39,6 +39,7 @@
 
 #include <nuttx/config.h>
 #include <pthread.h>
+#include <poll.h>
 #include <stdio.h>
 #include "mavlink_bridge_header.h"
 #include "mavlink-1.0/common/mavlink.h"
@@ -70,13 +71,30 @@ static void *receiveloop(void *arg)
 		mavlink_message_t msg;
 		mavlink_status_t status;
 
+		struct pollfd fds;
+		        int ret;
+		        fds.fd = 0; /* this is STDIN */
+		        fds.events = POLLIN;
 
-		while(comm_receive_ch(chan,ch, &mutex_stdin)!=EOF) {
-		// printf("DEBUG: waiting for data \n");
+
+		printf("DEBUG: Waiting for reading... \n");
+		int res = poll(&fds, 1, -1);
+		printf("DEBUG: Poll res = %d... \n", res);
+
+		printf("DEBUG: Starting reading... \n");
+//		pthread_mutex_lock (&mutex_stdin);
+//		printf("receiveloop:lock \n");
+		while((ch = comm_receive_ch(chan,ch) ) !=EOF) {
+			printf("DEBUG: reading char...\n");
 				if (mavlink_parse_char(chan,ch,&msg,&status)) {
+					printf("DEBUG: char parsed...\n");
 					handleMessage(&msg);
 				}
+			printf("DEBUG: read char: %c\n",ch);
 		}
+//        pthread_mutex_unlock (&mutex_stdin);
+//        printf("receiveloop:unlock \n");
+
 
 
 		if (ch==EOF) {
@@ -127,13 +145,13 @@ int mavlink_main(int argc, char *argv[])
         // send
 	    // TODO give correct MAV_MODE
 
-        int result = pthread_mutex_lock (&mutex_stdin);
-        printf("main:lock \n");
+//        pthread_mutex_lock (&mutex_stdin);
+//        printf("main:lock \n");
         //printf("DEBUG: result = %d \n", result);
 
         mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
-        pthread_mutex_unlock (&mutex_stdin);
-        printf("main:unlock \n");
+//        pthread_mutex_unlock (&mutex_stdin);
+//        printf("main:unlock \n");
 
         // receive
         // TODO figure out how to do non-blocking read

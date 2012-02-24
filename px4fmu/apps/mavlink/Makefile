@@ -50,7 +50,7 @@ endif
 
 APPNAME		= mavlink
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 768
+STACKSIZE	= 1400
 
 
 CFLAGS		+= -I $(PWD)/mavlink/include

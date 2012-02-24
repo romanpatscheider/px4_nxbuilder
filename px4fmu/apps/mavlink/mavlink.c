@@ -37,6 +37,7 @@
  * Included Files
  ****************************************************************************/
 
+
 #include <nuttx/config.h>
 #include <pthread.h>
 #include <poll.h>
@@ -77,20 +78,20 @@ static void *receiveloop(void *arg)
 		        fds.events = POLLIN;
 
 
-		printf("DEBUG: Waiting for reading... \n");
+//		printf("DEBUG: Waiting for reading... \n");
 		int res = poll(&fds, 1, -1);
-		printf("DEBUG: Poll res = %d... \n", res);
+//		printf("DEBUG: Poll res = %d... \n", res);
 
-		printf("DEBUG: Starting reading... \n");
+//		printf("DEBUG: Starting reading... \n");
 //		pthread_mutex_lock (&mutex_stdin);
 //		printf("receiveloop:lock \n");
 		while((ch = comm_receive_ch(chan,ch) ) !=EOF) {
-			printf("DEBUG: reading char...\n");
+//			printf("DEBUG: reading char...\n");
 				if (mavlink_parse_char(chan,ch,&msg,&status)) {
-					printf("DEBUG: char parsed...\n");
+//					printf("DEBUG: char parsed...\n");
 					handleMessage(&msg);
 				}
-			printf("DEBUG: read char: %c\n",ch);
+//			printf("DEBUG: read char: %c\n",ch);
 		}
 //        pthread_mutex_unlock (&mutex_stdin);
 //        printf("receiveloop:unlock \n");
@@ -101,7 +102,7 @@ static void *receiveloop(void *arg)
 				 status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
 			 }
 
-		usleep(100000);
+//		usleep(100000);
 		// Read from the socket
   }
 }
@@ -129,13 +130,14 @@ int mavlink_main(int argc, char *argv[])
     status.packet_rx_drop_count = 0;
 
     //init mutex
-   	pthread_mutex_init (&mutex_stdin, NULL);
-   	pthread_mutex_unlock (&mutex_stdin);
+//   	pthread_mutex_init (&mutex_stdin, NULL);
+//   	pthread_mutex_unlock (&mutex_stdin);
 
     //create pthread for receiving commands
     pthread_t receive_thread;
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
 
+//    mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 
     // start comm loop
     while(1) {
@@ -149,7 +151,17 @@ int mavlink_main(int argc, char *argv[])
 //        printf("main:lock \n");
         //printf("DEBUG: result = %d \n", result);
 
+//        printf("before heartbeat\n");
+
         mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+
+
+//        while(1) {
+//        	printf("a \n");
+//        	usleep(5000000);
+//
+//        }
+
 //        pthread_mutex_unlock (&mutex_stdin);
 //        printf("main:unlock \n");
 
@@ -168,7 +180,7 @@ int mavlink_main(int argc, char *argv[])
         */
 
 
-
+//        printf("in main \n");
     }
     return 0;
 }

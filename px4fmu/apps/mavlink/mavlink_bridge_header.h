@@ -85,14 +85,27 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
  * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
  * @param ch Character to read
  */
-static inline uint8_t comm_receive_ch(mavlink_channel_t chan, uint8_t ch)
+static inline uint8_t comm_receive_ch(mavlink_channel_t chan, uint8_t ch, FILE *uart)
 {
+	printf("DEBUG: start comm_receive_ch \n");
+	uint8_t * ch2;
+	*ch2 = EOF;
+
     ch = EOF;
     if (chan == MAVLINK_COMM_0)
     {
         // TODO need non-blocking read
 
-        ch = fgetc(stdin);
+//        ch = fgetc(stdin);
+
+    	printf("DEBUG: start reading char \n");
+
+
+
+		//int res = fread (ch2, 1, 1, s0);
+        ch = fgetc(uart);
+
+		printf("DEBUG: read char: %x \n", ch);
 
     }
     return ch;

@@ -42,6 +42,7 @@
 #include <pthread.h>
 #include <poll.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include "mavlink_bridge_header.h"
 #include "mavlink-1.0/common/mavlink.h"
 #include "mavlink-1.0/pixhawk/pixhawk.h"
@@ -65,7 +66,8 @@ void handleMessage(mavlink_message_t * msg);
 static void *receiveloop(void *arg)
 {
 
-
+	FILE *s0;
+	s0 = fopen("/dev/ttyS0","rb");
 	for(;;) {
 		printf("This is the pthread looping... \n");
 		uint8_t ch = EOF;
@@ -74,29 +76,38 @@ static void *receiveloop(void *arg)
 
 		struct pollfd fds;
 		        int ret;
-		        fds.fd = 0; /* this is STDIN */
+		        fds.fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY | O_NDELAY);
 		        fds.events = POLLIN;
 
 
 //		printf("DEBUG: Waiting for reading... \n");
-		int res = poll(&fds, 1, -1);
+//		        int res = poll(&fds, 1, -1);
 //		printf("DEBUG: Poll res = %d... \n", res);
 
 //		printf("DEBUG: Starting reading... \n");
-//		pthread_mutex_lock (&mutex_stdin);
 //		printf("receiveloop:lock \n");
-		while((ch = comm_receive_ch(chan,ch) ) !=EOF) {
+
+
+		while(1) {
+			int res = poll(&fds, 1, -1);
+//			if((ch = comm_receive_ch(chan,ch, s0) )!= EOF)
+//				break;
+			ch = comm_receive_ch(chan,ch, s0);
 //			printf("DEBUG: reading char...\n");
+			if((ch = comm_receive_ch(chan,ch, s0) )!= EOF) {
 				if (mavlink_parse_char(chan,ch,&msg,&status)) {
-//					printf("DEBUG: char parsed...\n");
+					printf("DEBUG: char parsed...\n");
 					handleMessage(&msg);
+					break;
 				}
+
+			}
+			else {
+				break;
+			}
 //			printf("DEBUG: read char: %c\n",ch);
 		}
-//        pthread_mutex_unlock (&mutex_stdin);
-//        printf("receiveloop:unlock \n");
-
-
+		printf("DEBUG: out of loop...\n");
 
 		if (ch==EOF) {
 				 status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
@@ -105,6 +116,8 @@ static void *receiveloop(void *arg)
 //		usleep(100000);
 		// Read from the socket
   }
+	fclose(s0);
+
 }
 /****************************************************************************
  * Public Functions

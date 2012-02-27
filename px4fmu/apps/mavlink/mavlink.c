@@ -87,22 +87,24 @@ static void *receiveloop(void *arg)
 //		printf("DEBUG: Starting reading... \n");
 //		printf("receiveloop:lock \n");
 
-
+		int res = poll(&fds, 1, -1);
 		while(1) {
-			int res = poll(&fds, 1, -1);
+
 //			if((ch = comm_receive_ch(chan,ch, s0) )!= EOF)
 //				break;
-			ch = comm_receive_ch(chan,ch, s0);
+//			ch = comm_receive_ch(chan, s0);
 //			printf("DEBUG: reading char...\n");
-			if((ch = comm_receive_ch(chan,ch, s0) )!= EOF) {
+			if((ch = comm_receive_ch(chan, s0) )!= EOF) {
+				printf("DEBUG: char received...\n");
 				if (mavlink_parse_char(chan,ch,&msg,&status)) {
 					printf("DEBUG: char parsed...\n");
 					handleMessage(&msg);
-					break;
+					//break;
 				}
 
 			}
 			else {
+				printf("DEBUG: break...\n");
 				break;
 			}
 //			printf("DEBUG: read char: %c\n",ch);

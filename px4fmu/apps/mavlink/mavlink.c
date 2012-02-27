@@ -61,40 +61,46 @@ void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static void *receiveloop(void *arg)
+static void *receiveloop(void *arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
+{
+
+	uint8_t ch = EOF;
+	mavlink_message_t msg;
+	mavlink_status_t status;
+
+	FILE * uart1 = fopen ("/dev/ttyS0","rb");
+
+	while(1) {
+		ch = comm_receive_ch(chan, uart1 ); //get one char
+
+		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
+			handleMessage(&msg);
+
+		usleep(1); //pthread_yield seems not to work
+
+	}
+
+
+	fclose(uart1);
+
+}
+
+
+static void *heartbeatloop(void *arg)
 {
 	while(1) {
-//		printf("This is the pthread looping... \n");
+		// sleep
+		usleep(100000);
 
-		uint8_t ch = EOF;
-		mavlink_message_t msg;
-		mavlink_status_t status;
-
-		FILE * s0 = fopen ("/dev/ttyS0","rb");
-
-		while(1) {
-//			printf("DEBUG: reading char...\n");
-			ch = comm_receive_ch(chan, s0 );
-			usleep(1);
-//			printf("DEBUG: char received...\n");
-			if (mavlink_parse_char(chan,ch,&msg,&status)) {
-//				printf("DEBUG: char parsed...\n");
-				handleMessage(&msg);
-			}
-//			printf("DEBUG: read char: %c\n",ch);
-		}
-//		printf("DEBUG: out of loop...\n");
-
-		fclose(s0);
-  }
-
+		mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+	}
 
 }
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
-//	printf("DEBUG: received msg \n");
+	printf("DEBUG: received msg \n");
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
@@ -108,22 +114,19 @@ int mavlink_main(int argc, char *argv[])
     printf("Hello, mavlink!!\n");
     usleep(100000);
 
-    // initialize
-    mavlink_message_t msg;
-    mavlink_status_t status;
-    status.packet_rx_drop_count = 0;
 
-    //create pthread for receiving commands
+    //create pthreads
+    pthread_t heartbeat_thread;
     pthread_t receive_thread;
+
+    pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
 
 
-    // start comm loop
     while(1) {
         // sleep
-        usleep(100000);
+        sleep(1);
 
-        mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
     }
     return 0;
 }

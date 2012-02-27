@@ -33,10 +33,10 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
     if (chan == MAVLINK_COMM_0)
     {
 
-		FILE *s0;
-		s0 = fopen("/dev/ttyS0","wb");
-		fwrite (ch, 1, length, s0);
-		fclose(s0);
+		FILE *uart;
+		uart = fopen("/dev/ttyS0","wb");
+		fwrite (ch, 1, length, uart);
+		fclose(uart);
 
 
     }

@@ -32,48 +32,11 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
 
     if (chan == MAVLINK_COMM_0)
     {
-    	//printf("in mavlink_send_uart_bytes\n");
-
-//    	FILE *s0;
-//		s0 = fopen("/dev/ttyS0","wb");
-//		fputs ("a" , s0);
-//		fclose(s0);
-//
-//    	FILE *s1;
-//		s1 = fopen("/dev/ttyS1","wb");
-//		fputs ("b" , s1);
-//		fclose(s1);
-//
-//    	FILE *s2;
-//		s2 = fopen("/dev/ttyS2","wb");
-//		fputs ("c" , s2);
-//		fclose(s2);
-//
-//    	FILE *s3;
-//		s3 = fopen("/dev/ttyS3","wb");
-//		fputs ("d" , s3);
-//		fclose(s3);
 
 		FILE *s0;
 		s0 = fopen("/dev/ttyS0","wb");
 		fwrite (ch, 1, length, s0);
 		fclose(s0);
-
-//		FILE *s1;
-//		s0 = fopen("/dev/ttyS1","wb");
-//		fwrite (ch, 1, length, s1);
-//		fclose(s1);
-//
-//		FILE *s2;
-//		s0 = fopen("/dev/ttyS2","wb");
-//		fwrite (ch, 1, length, s2);
-//		fclose(s2);
-//
-//		FILE *s3;
-//		s0 = fopen("/dev/ttyS3","wb");
-//		fwrite (ch, 1, length, s3);
-//		fclose(s3);
-
 
 
     }
@@ -87,26 +50,12 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
  */
 static inline uint8_t comm_receive_ch(mavlink_channel_t chan, FILE *uart)
 {
-	printf("DEBUG: start comm_receive_ch \n");
 
 	uint8_t ch = EOF;
+
     if (chan == MAVLINK_COMM_0)
     {
-        // TODO need non-blocking read
-
-//        ch = fgetc(stdin);
-
-    	printf("DEBUG: start reading char \n");
-
-    	usleep(10000);
-
-		//int res = fread (ch2, 1, 1, s0);
-        //ch = fgetc(uart);
-
     	fread ( &ch, 1, 1, uart );
-
-		printf("DEBUG: read char: %x \n", ch);
-
     }
     return ch;
 }

@@ -56,8 +56,6 @@ uint8_t chan = MAVLINK_COMM_0;
 // TODO get correct custom_mode
 uint32_t custom_mode = 0;
 
-pthread_mutex_t mutex_stdin;
-
 
 void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
@@ -65,67 +63,38 @@ void handleMessage(mavlink_message_t * msg);
  ****************************************************************************/
 static void *receiveloop(void *arg)
 {
+	while(1) {
+//		printf("This is the pthread looping... \n");
 
-	FILE *s0;
-	s0 = fopen("/dev/ttyS0","rb");
-	for(;;) {
-		printf("This is the pthread looping... \n");
 		uint8_t ch = EOF;
 		mavlink_message_t msg;
 		mavlink_status_t status;
 
-		struct pollfd fds;
-		        int ret;
-		        fds.fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY | O_NDELAY);
-		        fds.events = POLLIN;
+		FILE * s0 = fopen ("/dev/ttyS0","rb");
 
-
-//		printf("DEBUG: Waiting for reading... \n");
-//		        int res = poll(&fds, 1, -1);
-//		printf("DEBUG: Poll res = %d... \n", res);
-
-//		printf("DEBUG: Starting reading... \n");
-//		printf("receiveloop:lock \n");
-
-		int res = poll(&fds, 1, -1);
 		while(1) {
-
-//			if((ch = comm_receive_ch(chan,ch, s0) )!= EOF)
-//				break;
-//			ch = comm_receive_ch(chan, s0);
 //			printf("DEBUG: reading char...\n");
-			if((ch = comm_receive_ch(chan, s0) )!= EOF) {
-				printf("DEBUG: char received...\n");
-				if (mavlink_parse_char(chan,ch,&msg,&status)) {
-					printf("DEBUG: char parsed...\n");
-					handleMessage(&msg);
-					//break;
-				}
-
-			}
-			else {
-				printf("DEBUG: break...\n");
-				break;
+			ch = comm_receive_ch(chan, s0 );
+			usleep(1);
+//			printf("DEBUG: char received...\n");
+			if (mavlink_parse_char(chan,ch,&msg,&status)) {
+//				printf("DEBUG: char parsed...\n");
+				handleMessage(&msg);
 			}
 //			printf("DEBUG: read char: %c\n",ch);
 		}
-		printf("DEBUG: out of loop...\n");
+//		printf("DEBUG: out of loop...\n");
 
-		if (ch==EOF) {
-				 status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
-			 }
-
-//		usleep(100000);
-		// Read from the socket
+		fclose(s0);
   }
-	fclose(s0);
+
 
 }
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
-	printf("DEBUG: received msg \n");
+//	printf("DEBUG: received msg \n");
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
@@ -144,58 +113,17 @@ int mavlink_main(int argc, char *argv[])
     mavlink_status_t status;
     status.packet_rx_drop_count = 0;
 
-    //init mutex
-//   	pthread_mutex_init (&mutex_stdin, NULL);
-//   	pthread_mutex_unlock (&mutex_stdin);
-
     //create pthread for receiving commands
     pthread_t receive_thread;
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
 
-//    mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 
     // start comm loop
     while(1) {
         // sleep
         usleep(100000);
 
-        // send
-	    // TODO give correct MAV_MODE
-
-//        pthread_mutex_lock (&mutex_stdin);
-//        printf("main:lock \n");
-        //printf("DEBUG: result = %d \n", result);
-
-//        printf("before heartbeat\n");
-
         mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
-
-
-//        while(1) {
-//        	printf("a \n");
-//        	usleep(5000000);
-//
-//        }
-
-//        pthread_mutex_unlock (&mutex_stdin);
-//        printf("main:unlock \n");
-
-        // receive
-        // TODO figure out how to do non-blocking read
-        /*
-        uint8_t ch = EOF;
-        while(comm_receive_ch(chan,ch)!=EOF) {
-            if (mavlink_parse_char(chan,ch,&msg,&status)) {
-                handleMessage(&msg);
-            }
-        }
-        if (ch==EOF) {
-            status.packet_rx_drop_count = status.packet_rx_drop_count + 1;
-        }
-        */
-
-
-//        printf("in main \n");
     }
     return 0;
 }

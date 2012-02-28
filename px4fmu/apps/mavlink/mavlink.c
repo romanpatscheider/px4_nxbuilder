@@ -56,22 +56,19 @@ uint8_t chan = MAVLINK_COMM_0;
 // TODO get correct custom_mode
 uint32_t custom_mode = 0;
 
-
 void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static void *receiveloop(void *arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
+static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
 
 	uint8_t ch = EOF;
 	mavlink_message_t msg;
 	mavlink_status_t status;
 
-	FILE * uart1 = fopen ("/dev/ttyS0","rb");
-
 	while(1) {
-		ch = comm_receive_ch(chan, uart1 ); //get one char
+		ch = comm_receive_ch(chan); //get one char
 
 		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
 			handleMessage(&msg);
@@ -80,13 +77,10 @@ static void *receiveloop(void *arg) //runs as a pthread and listens to uart1 ("/
 
 	}
 
-
-	fclose(uart1);
-
 }
 
 
-static void *heartbeatloop(void *arg)
+static void *heartbeatloop(void * arg)
 {
 	while(1) {
 		// sleep
@@ -114,6 +108,10 @@ int mavlink_main(int argc, char *argv[])
     printf("Hello, mavlink!!\n");
     usleep(100000);
 
+    //open uart
+	uart_read = fopen ("/dev/ttyS0","rb");
+	uart_write = fopen ("/dev/ttyS0","wb");
+
     //create pthreads
     pthread_t heartbeat_thread;
     pthread_t receive_thread;
@@ -124,6 +122,10 @@ int mavlink_main(int argc, char *argv[])
     //wait for threads to complete:
     pthread_join(heartbeat_thread, NULL);
     pthread_join(receive_thread, NULL);
+
+    //close uart
+	fclose(uart_read);
+	fclose(uart_write);
 
     return 0;
 }

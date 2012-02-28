@@ -83,7 +83,6 @@ CONFIG_DRAM_START=0x20000000
 CONFIG_DRAM_END=(CONFIG_DRAM_START+CONFIG_DRAM_SIZE)
 CONFIG_ARCH_IRQPRIO=y
 CONFIG_ARCH_FPU=y
-CONFIG_ARMV7M_CMNVECTOR=y
 CONFIG_ARCH_INTERRUPTSTACK=n
 CONFIG_ARCH_STACKDUMP=y
 CONFIG_ARCH_BOOTLOADER=n
@@ -91,6 +90,8 @@ CONFIG_ARCH_LEDS=y
 CONFIG_ARCH_BUTTONS=n
 CONFIG_ARCH_CALIBRATION=n
 CONFIG_ARCH_DMA=n
+
+CONFIG_ARMV7M_CMNVECTOR=y
 
 #
 # CMSIS options
@@ -118,6 +119,29 @@ CONFIG_STM32_JTAG_NOJNTRST_ENABLE=n
 CONFIG_STM32_JTAG_SW_ENABLE=n
 
 #
+# On-chip TCM SRAM configuration
+#
+# CONFIG_STM32_TCMEXCLUDE - Exclude TCM SRAM from the HEAP.  You would need
+#   to do this if DMA is enabled to prevent non-DMA-able TCM memory from
+#   being a part of the stack.
+#
+
+#
+# On-board FSMC SRAM configuration
+#
+# CONFIG_STM32_FSMC - Required.  See below
+# CONFIG_MM_REGIONS - Required.  Must be 2 or 3 (see above)
+#
+# CONFIG_STM32_FSMC_SRAM=y - Indicates that SRAM is available via the
+#   FSMC (as opposed to an LCD or FLASH).
+# CONFIG_HEAP2_BASE - The base address of the SRAM in the FSMC address space
+# CONFIG_HEAP2_END - The end (+1) of the SRAM in the FSMC address space
+#
+#CONFIG_STM32_FSMC_SRAM=n
+#CONFIG_HEAP2_BASE=0x64000000
+#qCONFIG_HEAP2_END=(0x64000000+(2*1024*1024))
+
+#
 #  Individual subsystems can be enabled:
 #
 # This set is exhaustive for PX4FMU and should be safe to cut and
@@ -127,8 +151,8 @@ CONFIG_STM32_JTAG_SW_ENABLE=n
 CONFIG_STM32_CRC=n
 CONFIG_STM32_BKPSRAM=y
 CONFIG_STM32_CCMDATARAM=n
-CONFIG_STM32_DMA1=y
-CONFIG_STM32_DMA2=y
+CONFIG_STM32_DMA1=n
+CONFIG_STM32_DMA2=n
 CONFIG_STM32_ETHMAC=n
 CONFIG_STM32_OTGHS=n
 # AHB2:

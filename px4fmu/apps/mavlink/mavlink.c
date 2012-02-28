@@ -56,6 +56,10 @@ uint8_t chan = MAVLINK_COMM_0;
 // TODO get correct custom_mode
 uint32_t custom_mode = 0;
 
+//threads:
+pthread_t heartbeat_thread;
+pthread_t receive_thread;
+
 void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
@@ -94,7 +98,20 @@ static void *heartbeatloop(void * arg)
  * Public Functions
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
-	printf("DEBUG: got a message \n");
+	printf("Mavlink: got a message \n");
+
+	//check for terminate command
+	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
+	{
+		printf("Mavlink: Terminating... \n");
+
+		//terminate other threads:
+		pthread_cancel(heartbeat_thread);
+
+		//terminate this thread (receive_thread)
+		pthread_exit(NULL);
+
+	}
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
@@ -120,7 +137,6 @@ int mavlink_main(int argc, char *argv[])
 			if(argc > i+1)
 			{
 				uart_name = argv[i+1];
-				printf("set uart to %s\n", uart_name);
 			}
 			else
 			{
@@ -131,13 +147,11 @@ int mavlink_main(int argc, char *argv[])
 	}
 
     //open uart
+    printf("Mavlink uart is %s\n", uart_name);
 	uart_read = fopen (uart_name,"rb");
 	uart_write = fopen (uart_name,"wb");
 
     //create pthreads
-    pthread_t heartbeat_thread;
-    pthread_t receive_thread;
-
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
 

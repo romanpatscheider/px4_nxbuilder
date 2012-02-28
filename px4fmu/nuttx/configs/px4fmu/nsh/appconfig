@@ -48,10 +48,14 @@ CONFIGURED_APPS += CMSISlib
 
 # Applications configured as an NX built-in commands
 
+ifeq ($(CONFIG_MAVLINK),y)
+CONFIGURED_APPS += mavlink
+endif
+
 CONFIGURED_APPS += system/i2c
 
 #CONFIGURED_APPS	+= px4/px4io
-#CONFIGURED_APPS += px4/sensors px4/tests
+CONFIGURED_APPS += px4/sensors px4/tests
 
 ifeq ($(CONFIG_ADC),y)
 #CONFIGURED_APPS += examples/adc

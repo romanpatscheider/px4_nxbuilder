@@ -60,6 +60,10 @@ endif
 	@echo Configuring...
 	@(cd $(BUILDROOT)/nuttx/tools && ./configure.sh $(CONFIG))
 
+upload:
+	$(SRCROOT)../../px4_bootloader/px_mkfw.py --prototype $(SRCROOT)../../px4_bootloader/prototype.px4 --image $(SRCROOT)../build/px4fmu/nuttx/nuttx.bin > $(SRCROOT)../nuttx.px4
+	python $(SRCROOT)../../px4_bootloader/px_uploader.py $(SRCROOT)../nuttx.px4 --port /dev/ttyACM0
+
 cleanbuild:
 	@echo Cleaning build area...
 	@rm -rf $(BUILDROOT)

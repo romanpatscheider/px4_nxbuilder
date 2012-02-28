@@ -1,10 +1,8 @@
 /****************************************************************************
- * examples/px4/sensors/sensors.h
+ * examples/hello/main.c
  *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Copyright (C) 2011-2012 Michael Smith. All rights reserved.
- *   Authors: Michael Smith <DrZiplok@me.com>
- *		Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2008, 2011 Gregory Nutt. All rights reserved.
+ *   Author: Gregory Nutt <spudmonkey@racsa.co.cr>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,53 +33,123 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_PX4_SENSORS_H
-#define __APPS_PX4_SENSORS_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+
 #include <nuttx/config.h>
+#include <pthread.h>
+#include <poll.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include "mavlink_bridge_header.h"
+#include "mavlink-1.0/common/mavlink.h"
+#include "mavlink-1.0/pixhawk/pixhawk.h"
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
+int system_type = MAV_TYPE_FIXED_WING;
+mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
+uint8_t chan = MAVLINK_COMM_0;
+// TODO get correct custom_mode
+uint32_t custom_mode = 0;
 
-/* Debug ********************************************************************/
+void handleMessage(mavlink_message_t * msg);
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
+{
 
-#ifdef CONFIG_CPP_HAVE_VARARGS
-#  ifdef CONFIG_DEBUG
-#    define message(...) lib_rawprintf(__VA_ARGS__)
-#    define msgflush()
-#  else
-#    define message(...) printf(__VA_ARGS__)
-#    define msgflush() fflush(stdout)
-#  endif
-#else
-#  ifdef CONFIG_DEBUG
-#    define message lib_rawprintf
-#    define msgflush()
-#  else
-#    define message printf
-#    define msgflush() fflush(stdout)
-#  endif
-#endif
+	uint8_t ch = EOF;
+	mavlink_message_t msg;
+	mavlink_status_t status;
+
+	while(1) {
+		ch = comm_receive_ch(chan); //get one char
+
+		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
+			handleMessage(&msg);
+
+		usleep(1); //pthread_yield seems not to work
+
+	}
+
+}
+
+
+static void *heartbeatloop(void * arg)
+{
+	while(1) {
+		// sleep
+		usleep(100000);
+
+		mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+	}
+
+}
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+void handleMessage(mavlink_message_t * msg) {
+	printf("DEBUG: got a message \n");
+    mavlink_msg_statustext_send(chan,0,"received msg");
+}
 
 /****************************************************************************
- * Public Types
+ * user_start
  ****************************************************************************/
 
-/****************************************************************************
- * Public Variables
- ****************************************************************************/
+int mavlink_main(int argc, char *argv[])
+{
+    // print text
+    printf("Hello, mavlink!!\n");
+    usleep(100000);
 
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
+    //default values for arguments
+    char * uart_name = "/dev/ttyS0";
 
-int	l3gd20_test(struct spi_dev_s *spi);
-int	bma180_test(struct spi_dev_s *spi);
-int hmc5883l_test(struct i2c_dev_s *i2c);
+    //read arguments
+    int i;
+    for (i = 1; i < argc; i++) //argv[0] is "mavlink"
+	{
+		if (strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--uart") == 0)  //uart set
+		{
+			if(argc > i+1)
+			{
+				uart_name = argv[i+1];
+				printf("set uart to %s\n", uart_name);
+			}
+			else
+			{
+				printf("useage: mavlink -u devicename\n");
+				return 0;
+			}
+		}
+	}
 
-#endif /* __APPS_PX4_SENSORS_H */
+    //open uart
+	uart_read = fopen (uart_name,"rb");
+	uart_write = fopen (uart_name,"wb");
+
+    //create pthreads
+    pthread_t heartbeat_thread;
+    pthread_t receive_thread;
+
+    pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
+    pthread_create (&receive_thread, NULL, receiveloop, NULL);
+
+    //wait for threads to complete:
+    pthread_join(heartbeat_thread, NULL);
+    pthread_join(receive_thread, NULL);
+
+    //close uart
+	fclose(uart_read);
+	fclose(uart_write);
+
+    return 0;
+}
+
+

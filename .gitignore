@@ -4,3 +4,7 @@ dist
 .DS_Store
 px4fmu.sublime-project
 px4fmu.sublime-workspace
+.~lock*
+.cproject
+.project
+*.px4

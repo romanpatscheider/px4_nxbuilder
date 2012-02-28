@@ -108,9 +108,31 @@ int mavlink_main(int argc, char *argv[])
     printf("Hello, mavlink!!\n");
     usleep(100000);
 
+    //default values for arguments
+    char * uart_name = "/dev/ttyS0";
+
+    //read arguments
+    int i;
+    for (i = 1; i < argc; i++) //argv[0] is "mavlink"
+	{
+		if (strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--uart") == 0)  //uart set
+		{
+			if(argc > i+1)
+			{
+				uart_name = argv[i+1];
+				printf("set uart to %s\n", uart_name);
+			}
+			else
+			{
+				printf("useage: mavlink -u devicename\n");
+				return 0;
+			}
+		}
+	}
+
     //open uart
-	uart_read = fopen ("/dev/ttyS0","rb");
-	uart_write = fopen ("/dev/ttyS0","wb");
+	uart_read = fopen (uart_name,"rb");
+	uart_write = fopen (uart_name,"wb");
 
     //create pthreads
     pthread_t heartbeat_thread;

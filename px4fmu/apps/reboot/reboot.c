@@ -1,8 +1,8 @@
 /****************************************************************************
- * px4/sensors/tests_main.c
+ * apps/reboot.c
  *
- *   Copyright (C) 2012 Michael Smith. All rights reserved.
- *   Authors: Michael Smith <DrZiplok@me.com>
+ *   Copyright (C) 2012 Lorenz Meier. All rights reserved.
+ *   Author: Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,117 +37,54 @@
  * Included Files
  ****************************************************************************/
 
+
 #include <nuttx/config.h>
-
-#include <sys/types.h>
-
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <debug.h>
-
-#include <arch/board/board.h>
-
-#include <nuttx/spi.h>
-
-#include "tests.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Definitions
  ****************************************************************************/
-
-/****************************************************************************
- * Private Types
- ****************************************************************************/
-
-/****************************************************************************
- * Private Function Prototypes
- ****************************************************************************/
-
-static int test_help(int argc, char *argv[]);
-static int test_all(int argc, char *argv[]);
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
-struct {
-	const char 	*name;
-	int		(* fn)(int argc, char *argv[]);
-	unsigned	options;
-#define OPT_NOHELP	(1<<0)
-#define OPT_NOALLTEST	(1<<1)
-} tests[] = {
-	{"sensors",	test_sensors,	0},
-	{"gpio",	test_gpio,	0},
-	{"hrt",		test_hrt,	0},
-	{"all",		test_all,	OPT_NOALLTEST},
-	{"help",	test_help,	OPT_NOALLTEST | OPT_NOHELP},
-	{NULL,		NULL}
-};
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-static int
-test_help(int argc, char *argv[])
-{
-	unsigned	i;
-	
-	printf("Available tests:\n");
-	for (i = 0; tests[i].name; i++)
-		printf("  %s\n", tests[i].name);
-	return 0;
-}
-
-static int
-test_all(int argc, char *argv[])
-{
-	unsigned	i;
-	char		*args[2] = {"all", NULL};
-	
-	printf("Running all tests...\n\n");
-	for (i = 0; tests[i].name; i++) {
-		printf("  %s:\n", tests[i].name);
-		if (tests[i].fn(1, args)) {
-			printf("  FAIL\n");
-		} else {
-			printf("  PASS\n");			
-		}
-	}
-	return 0;
-}
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: tests_main
+ * user_start
  ****************************************************************************/
 
-int tests_main(int argc, char *argv[])
+int reboot_main(int argc, char *argv[])
 {
-	unsigned	i;
+    // print text
+    printf("Rebooting system - ending tasks and performing hard reset");
+    usleep(100000);
 
-	if (argc < 2) {
-		printf("tests: missing test name - 'tests help' for a list of tests\n");
-		return 1;
-	}
-
-	for (i = 0; tests[i].name; i++) {
-		if (!strcmp(tests[i].name, argv[1]))
-			return tests[i].fn(argc - 1, argv + 1);
-	}
-
-	printf("tests: no test called '%s' - 'tests help' for a list of tests\n", argv[1]);
-	return 1;
+    /* Sending kill signal to other tasks */
+    // FIXME Implement
+    
+    /* Waiting maximum time for all to exit */
+    
+    /* Resetting CPU */
+    // FIXME Need check for ARM architecture here
+    #ifndef NVIC_AIRCR
+    #define NVIC_AIRCR (*((uint32_t*)0xE000ED0C))
+    //#define NVIC_AIRCR 0xE000ED0C
+    #endif
+    
+    /* Set the SYSRESETREQ bit to force a reset */
+    NVIC_AIRCR |= (1 << 2);
+    
+//    uint32_t regval = getreg32(NVIC_AIRCR);
+//    regval |= (1 << 2);
+//    putreg32(regval, NVIC_AIRCR);
+    
+    /* Should never reach here */
+    return 0;
 }
+
+

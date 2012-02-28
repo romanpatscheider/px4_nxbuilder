@@ -94,7 +94,16 @@ void up_ledinit(void)
 
 void up_ledon(int led)
 {
-  // do something sensible for LED code (led)
+	if (led == 0)
+	{
+		/* Pull down to switch on */
+		stm32_gpiowrite(GPIO_LED1, false);
+	}
+	if (led == 1)
+	{
+		/* Pull down to switch on */
+		stm32_gpiowrite(GPIO_LED2, false);
+	}
 }
 
 /****************************************************************************
@@ -103,7 +112,16 @@ void up_ledon(int led)
 
 void up_ledoff(int led)
 {
-  // do something sensible for LED code (led)
+	if (led == 0)
+	{
+		/* Pull up to switch off */
+		stm32_gpiowrite(GPIO_LED1, true);
+	}
+	if (led == 1)
+	{
+		/* Pull up to switch off */
+		stm32_gpiowrite(GPIO_LED2, true);
+	}
 }
 
 #endif /* CONFIG_ARCH_LEDS */

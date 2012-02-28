@@ -24,7 +24,7 @@
 #define ADDR_INCREMENT			(1<<6)
 
 #define ADDR_WHO_AM_I			0x0f
-#define WHO_I_AM				0xd3
+#define WHO_I_AM				0xd4
 
 #define ADDR_CTRL_REG1			0x20		/* sample rate constants are in the public header */
 #define REG1_POWER_NORMAL			(1<<3)
@@ -145,13 +145,13 @@ l3gd20_test(struct spi_dev_s *spi)
 
 	if (id == 0xD4)
 	{
-		message("SUCCESS:\n");
+		message("L3GD20 SUCCESS: 0x%02x\n", id);
 	}
 	else
 	{
-		message("FAIL\n");
+		message("L3GD20 FAIL: 0x%02x\n", id);
 	}
-	message("got id 0x%02x, expected ID 0xd4\n", id);
+	//message("got id 0x%02x, expected ID 0xd4\n", id);
 
 	return 0;
 }

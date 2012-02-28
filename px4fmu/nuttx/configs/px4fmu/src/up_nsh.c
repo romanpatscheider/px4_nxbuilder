@@ -50,9 +50,11 @@
 
 #include "stm32_internal.h"
 #include "px4fmu-internal.h"
+#include <arch/board/board.h>
 
 #include "up_hrt.h"
-#include <arch/board/drv_lis331.h>
+#include <arch/board/drv_bma180.h>
+#include <arch/board/drv_l3gd20.h>
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -98,20 +100,57 @@ int nsh_archinitialize(void)
   hrt_init(CONFIG_HRT_TIMER);
 #endif
 
-  /* initialise the user GPIOs */
+  /* Initialise the user GPIOs */
   px4fmu_gpio_init();
+
+  /* Initialize the user leds */
+  up_ledinit(); // FIXME this might init the leds twice, but no harm
+  up_ledoff(LED_BLUE);
+  up_ledoff(LED_AMBER);
+
+  up_ledon(LED_BLUE);
 
   /* Configure SPI-based devices */
 
   spi = up_spiinitialize(1);
   if (!spi)
-    {
-      message("nsh_archinitialize: Failed to initialize SPI port 0\n");
-      return -ENODEV;
-    }
+  {
+	  message("nsh_archinitialize: Failed to initialize SPI port 0\n");
+	  return -ENODEV;
+  }
+
+  // Setup 10 MHz clock (maximum rate the BMA180 can sustain)
+  SPI_SETFREQUENCY(spi, 10000000);
+  SPI_SETBITS(spi, 8);
+  SPI_SETMODE(spi, SPIDEV_MODE3);
+  SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+  SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+  usleep(20);
+
   message("nsh_archinitialize: Successfully initialized SPI port 0\n");
 
-  lis331_attach(spi, 0);
+  int gyro_attempts = 1;
+  int gyro_ok = 0;
+
+  while (gyro_attempts < 10)
+	  {
+	  gyro_ok = l3gd20_attach(spi, PX4_SPIDEV_GYRO);
+	  gyro_attempts++;
+	  if (gyro_ok) break;
+	  }
+
+  int acc_attempts = 1;
+  int acc_ok = 0;
+
+  while (acc_attempts < 10)
+  {
+	  acc_ok = bma180_attach(spi, PX4_SPIDEV_ACCEL);
+	  acc_attempts++;
+	  if (acc_ok) break;
+  }
+
+  // FIXME Report back sensor status
+
 
 #if defined(CONFIG_STM32_SPI3)
   /* Get the SPI port */

@@ -100,26 +100,30 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
-	SPI_SETFREQUENCY(spi, 100000);
-	SPI_SETBITS(spi, 8);
-	SPI_SETMODE(spi, SPIDEV_MODE3);
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+//	SPI_SETFREQUENCY(spi, 100000);
+//	SPI_SETBITS(spi, 8);
+//	SPI_SETMODE(spi, SPIDEV_MODE3);
+//	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+//	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+	int cycles = 0;
+	while(cycles < 100000)
+	{
+		cycles++;
+	}
 
-	l3gd20_test(spi);
-	bma180_test(spi);
-	l3gd20_test(spi);
-	bma180_test(spi);
-
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-		SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+	int i;
+	for (i = 0; i < 10; i++)
+	{
+		l3gd20_test(spi);
+		bma180_test(spi);
+		printf("# %d of 10\n", i+1);
+		usleep(50000);
+	}
 
 	struct i2c_dev_s *i2c;
 	i2c = up_i2cinitialize(2);
 	if (!i2c) {
-		message("Failed to initialize I2C bus 2\n");
+		message("Failed to initialize I2C bus 2, waited %d cycles\n", cycles);
 		goto out;
 	}
 
@@ -133,7 +137,7 @@ int sensors_main(int argc, char *argv[])
 
 
 	out:
-	SPI_LOCK(spi, false);
+	//SPI_LOCK(spi, false);
    	msgflush();
 	return result;
 }

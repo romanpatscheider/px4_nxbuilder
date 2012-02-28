@@ -100,7 +100,7 @@ static void *heartbeatloop(void *arg)
  * Public Functions
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
-	printf("DEBUG: received msg \n");
+	printf("DEBUG: got a message \n");
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
@@ -114,7 +114,6 @@ int mavlink_main(int argc, char *argv[])
     printf("Hello, mavlink!!\n");
     usleep(100000);
 
-
     //create pthreads
     pthread_t heartbeat_thread;
     pthread_t receive_thread;
@@ -122,12 +121,10 @@ int mavlink_main(int argc, char *argv[])
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
 
+    //wait for threads to complete:
+    pthread_join(heartbeat_thread, NULL);
+    pthread_join(receive_thread, NULL);
 
-    while(1) {
-        // sleep
-        sleep(1);
-
-    }
     return 0;
 }
 

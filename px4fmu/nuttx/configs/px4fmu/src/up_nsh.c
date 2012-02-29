@@ -136,7 +136,8 @@ int nsh_archinitialize(void)
 	  {
 	  gyro_ok = l3gd20_attach(spi, PX4_SPIDEV_GYRO);
 	  gyro_attempts++;
-	  if (gyro_ok) break;
+	  if (gyro_ok == 0) break;
+	  usleep(50);
 	  }
 
   int acc_attempts = 1;
@@ -146,7 +147,8 @@ int nsh_archinitialize(void)
   {
 	  acc_ok = bma180_attach(spi, PX4_SPIDEV_ACCEL);
 	  acc_attempts++;
-	  if (acc_ok) break;
+	  if (acc_ok == 0) break;
+	  usleep(50);
   }
 
   // FIXME Report back sensor status

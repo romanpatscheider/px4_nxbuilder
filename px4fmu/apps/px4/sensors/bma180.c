@@ -67,5 +67,36 @@ bma180_test(struct spi_dev_s *spi)
 	}
 	//message("got id 0x%02x, expected ID 0x03\n", id);
 
+	struct {					/* status register and data as read back from the device */
+		uint8_t		cmd;
+		int16_t		x;
+		int16_t		y;
+		int16_t		z;
+		uint8_t		temp;
+		uint8_t		status1;
+		uint8_t		status2;
+		uint8_t		status3;
+		uint8_t		status4;
+	} __attribute__((packed))	report;
+
+	report.cmd = 0x02 | DIR_READ | ADDR_INCREMENT;
+
+//	write_reg(spi, ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+//	write_reg(spi, ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+//	write_reg(spi, ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+//
+//	write_reg(spi, ADDR_CTRL_REG4, ((3<<4) & 0x30) | REG4_BDU);
+//
+//
+//	write_reg(spi, ADDR_CTRL_REG1,
+//			(((2<<6) | (1<<4)) & 0xf0) | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
+
+	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, true);
+	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
+	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+
+	message("ACC: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
+	usleep(1000);
+
 	return 0;
 }

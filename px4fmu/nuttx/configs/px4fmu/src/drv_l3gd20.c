@@ -91,8 +91,10 @@
 #define REG1_Y_ENABLE				(1<<0)
 #define REG1_Z_ENABLE				(1<<2)
 
-#define REG4_BDU					(1<<7)
+#define REG4_BDU					(0<<7)
+//#define REG4_BDU					(1<<7) //testing
 #define REG4_BLE					(1<<6)
+#define REG4_SPI_3WIRE				(1<<0)
 
 #define REG5_FIFO_ENABLE			(1<<6)
 #define REG5_REBOOT_MEMORY			(1<<7)
@@ -161,7 +163,7 @@ static void
 set_range(uint8_t range)
 {
 	range &= REG4_RANGE_MASK;
-	write_reg(ADDR_CTRL_REG4, range | REG4_BDU | REG4_BLE);
+	write_reg(ADDR_CTRL_REG4, range | REG4_BDU);
 }
 
 static void
@@ -175,15 +177,8 @@ static bool
 read_fifo(uint16_t *data)
 {
 	struct {					/* status register and data as read back from the device */
-			uint8_t		cmd;
-			uint8_t		status;
-			int16_t		x;
-			int16_t		y;
-			int16_t		z;
-		} __attribute__((packed))	command;
-
-	struct {					/* status register and data as read back from the device */
 		uint8_t		cmd;
+		uint8_t		temp;
 		uint8_t		status;
 		int16_t		x;
 		int16_t		y;
@@ -195,12 +190,22 @@ read_fifo(uint16_t *data)
 	report.y = 0;
 	report.z = 0;
 
-	command.cmd = ADDR_STATUS_REG | DIR_READ | ADDR_INCREMENT;
+	report.cmd = ADDR_OUT_TEMP | DIR_READ | ADDR_INCREMENT;
 
 	/* exchange the report structure with the device */
 	SPI_LOCK(dev.spi, true);
+	SPI_SELECT(dev.spi, dev.spi_id, false);
+	usleep(10);
 	SPI_SELECT(dev.spi, dev.spi_id, true);
-	SPI_EXCHANGE(dev.spi, &command, &report, sizeof(report));
+//	usleep(10);
+//	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
+	report.status = read_reg(ADDR_STATUS_REG);
+	report.x = read_reg(ADDR_STATUS_REG+2);
+	report.x |= (read_reg(ADDR_STATUS_REG+1)<<8);
+	report.y = read_reg(ADDR_STATUS_REG+3);
+	report.y |= (read_reg(ADDR_STATUS_REG+4)<<8);
+	report.z = read_reg(ADDR_STATUS_REG+6);
+	report.z |= (read_reg(ADDR_STATUS_REG+5)<<8);
 	SPI_SELECT(dev.spi, dev.spi_id, false);
 	SPI_LOCK(dev.spi, false);
 
@@ -274,13 +279,16 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 	if (read_reg(ADDR_WHO_AM_I) == WHO_I_AM) {
 
 		/* reset device memory */
-		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
+//		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
 
 		/* set default configuration */
-		write_reg(ADDR_CTRL_REG2, 0);	/* disable interrupt-generating high-pass filters */
-		write_reg(ADDR_CTRL_REG3, 0);	/* no interrupts - we don't use them */
+		/* XXX Enable FIFO later */
 		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
 		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+
+		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
 
 		set_range(L3GD20_RATE_760HZ_LP_50HZ);
 		set_rate(L3GD20_RANGE_500DPS);	/* takes device out of low-power mode */

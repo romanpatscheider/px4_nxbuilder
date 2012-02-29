@@ -101,7 +101,7 @@ static int
 lis331(int argc, char *argv[])
 {
 	int		fd;
-	uint16_t	buf[3];
+	int16_t	buf[3];
 	int		ret;
 
 	fd = open("/dev/lis331", O_RDONLY);
@@ -143,7 +143,7 @@ static int
 l3gd20(int argc, char *argv[])
 {
 	int		fd;
-	uint16_t	buf[3] = {0, 0, 0};
+	int16_t	buf[3] = {0, 0, 0};
 	int		ret;
 
 	fd = open("/dev/l3gd20", O_RDONLY);
@@ -170,7 +170,7 @@ l3gd20(int argc, char *argv[])
 	ret = read(fd, buf, sizeof(buf));
 	if (ret != sizeof(buf)) {
 		printf("\tl3gd20: read1 fail (%d should have been %d)\n", ret, sizeof(buf));
-		return ERROR;
+		//return ERROR;
 	} else {
 		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
 	}
@@ -205,7 +205,7 @@ static int
 bma180(int argc, char *argv[])
 {
 	int		fd;
-	uint16_t	buf[3] = {0, 0, 0};
+	int16_t	buf[3] = {0, 0, 0};
 	int		ret;
     
 	fd = open("/dev/bma180", O_RDONLY);

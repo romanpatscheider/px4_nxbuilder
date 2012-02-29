@@ -125,6 +125,7 @@ int nsh_archinitialize(void)
   }
 
   // Setup 10 MHz clock (maximum rate the BMA180 can sustain)
+  //10000000
   SPI_SETFREQUENCY(spi, 10000000);
   SPI_SETBITS(spi, 8);
   SPI_SETMODE(spi, SPIDEV_MODE3);

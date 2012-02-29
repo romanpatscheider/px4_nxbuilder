@@ -100,15 +100,6 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
-	int i;
-	for (i = 0; i < 10; i++)
-	{
-		l3gd20_test(spi);
-		bma180_test(spi);
-		printf("# %d of 10\n", i+1);
-		usleep(50000);
-	}
-
 	struct i2c_dev_s *i2c;
 	i2c = up_i2cinitialize(2);
 	up_i2cuninitialize(i2c);
@@ -234,6 +225,15 @@ int sensors_main(int argc, char *argv[])
 	    {
 	    	printf("SUCCESS ACESSING EEPROM: %d", retval);
 	    }
+
+		int i;
+		for (i = 0; i < 10; i++)
+		{
+			l3gd20_test(spi);
+			bma180_test(spi);
+			printf("# %d of 10\n", i+1);
+			usleep(50000);
+		}
 
 
 	out:

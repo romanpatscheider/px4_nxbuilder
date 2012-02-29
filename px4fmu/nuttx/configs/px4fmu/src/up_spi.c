@@ -60,7 +60,7 @@
 
 /* Enables debug output from this file (needs CONFIG_DEBUG too) */
 
-#define SPI_DEBUG   /* Define to enable debug */
+#undef SPI_DEBUG   /* Define to enable debug */
 #undef SPI_VERBOSE /* Define to enable verbose debug */
 
 #ifdef SPI_DEBUG
@@ -127,7 +127,7 @@ void weak_function stm32_spiinitialize(void)
 #ifdef CONFIG_STM32_SPI1
 void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)
 {
-	//spidbg("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+	spidbg("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
 	switch (devid) {
 	case PX4_SPIDEV_GYRO:
@@ -152,7 +152,7 @@ uint8_t stm32_spi1status(FAR struct spi_dev_s *dev, enum spi_dev_e devid)
 #ifdef CONFIG_STM32_SPI3
 void stm32_spi3select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)
 {
-	//spidbg("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+	spidbg("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
 	/* there can only be one device on this bus, so always select it */
 	stm32_gpiowrite(GPIO_SPI_CS_SDCARD, !selected);

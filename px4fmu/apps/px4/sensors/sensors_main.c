@@ -100,17 +100,6 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
-//	SPI_SETFREQUENCY(spi, 100000);
-//	SPI_SETBITS(spi, 8);
-//	SPI_SETMODE(spi, SPIDEV_MODE3);
-//	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-//	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
-	int cycles = 0;
-	while(cycles < 100000)
-	{
-		cycles++;
-	}
-
 	int i;
 	for (i = 0; i < 10; i++)
 	{
@@ -122,18 +111,46 @@ int sensors_main(int argc, char *argv[])
 
 	struct i2c_dev_s *i2c;
 	i2c = up_i2cinitialize(2);
+	up_i2cuninitialize(i2c);
+	i2c = up_i2cinitialize(2);
 	if (!i2c) {
-		message("Failed to initialize I2C bus 2, waited %d cycles\n", cycles);
+		message("Failed to initialize I2C bus 2\n");
 		goto out;
 	}
 
-	I2C_SETADDRESS(i2c, 0x3D, 7);
-	uint8_t regaddr = 10;
-	int ret = I2C_WRITE(i2c, &regaddr, 1);
+	uint8_t devaddr = 0x50;
+
+	I2C_SETADDRESS(i2c, devaddr, 7);
+	uint8_t subaddr = 0x0A; // 10
+	int ret = I2C_WRITE(i2c, &subaddr, 1);
 	if (ret < 0)
 	{
 		message("I2C_WRITE failed: %d\n", ret);
 	}
+
+	uint8_t val[1];
+
+	struct i2c_msg_s msgv[2] = {
+	        {
+	            .addr   = devaddr,
+	            .flags  = 0,
+	            .buffer = &subaddr,
+	            .length = 1
+	        },
+	        {
+	            .addr   = devaddr,
+	            .flags  = I2C_M_READ,
+	            .buffer = val,
+	            .length = 1
+	        }
+	    };
+
+	int retval;
+
+	    if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
+	    {
+	    	printf("SUCCESS ACESSING EEPROM: %d", retval);
+	    }
 
 
 	out:

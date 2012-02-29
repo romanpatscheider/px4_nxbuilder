@@ -61,8 +61,9 @@
 int reboot_main(int argc, char *argv[])
 {
     // print text
-    printf("Rebooting system - ending tasks and performing hard reset");
-    usleep(100000);
+    printf("Rebooting system - ending tasks and performing hard reset\n\n");
+    fflush(stdout);
+    usleep(50000);
 
     /* Sending kill signal to other tasks */
     // FIXME Implement
@@ -73,15 +74,13 @@ int reboot_main(int argc, char *argv[])
     // FIXME Need check for ARM architecture here
     #ifndef NVIC_AIRCR
     #define NVIC_AIRCR (*((uint32_t*)0xE000ED0C))
-    //#define NVIC_AIRCR 0xE000ED0C
     #endif
     
     /* Set the SYSRESETREQ bit to force a reset */
-    NVIC_AIRCR |= (1 << 2);
+    NVIC_AIRCR = 0x05fa0004;
     
-//    uint32_t regval = getreg32(NVIC_AIRCR);
-//    regval |= (1 << 2);
-//    putreg32(regval, NVIC_AIRCR);
+    /* Spinning until the board is really reset */
+    while(true);
     
     /* Should never reach here */
     return 0;

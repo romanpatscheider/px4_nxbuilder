@@ -151,6 +151,9 @@ int nsh_archinitialize(void)
 
   // FIXME Report back sensor status
 
+  // Init I2C bus
+
+
 
 #if defined(CONFIG_STM32_SPI3)
   /* Get the SPI port */

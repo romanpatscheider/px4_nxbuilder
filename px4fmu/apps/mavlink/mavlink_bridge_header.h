@@ -59,7 +59,9 @@ static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 
     if (chan == MAVLINK_COMM_0)
     {
+//    	ch = fgetc (uart_read);
     	fread ( &ch, 1, 1, uart_read );
+    	printf("Mavlink: read character: %c\n",ch);
     }
     return ch;
 }

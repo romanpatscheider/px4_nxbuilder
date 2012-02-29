@@ -67,24 +67,21 @@ void handleMessage(mavlink_message_t * msg);
  ****************************************************************************/
 static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
-
+	uint8_t ch = EOF;
+	mavlink_message_t msg;
+	mavlink_status_t status;
 
 
 	while(1) {
-		uint8_t ch = EOF;
-		mavlink_message_t msg;
-		mavlink_status_t status;
 
 		ch = comm_receive_ch(chan); //get one char
-
-		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
-		{
-			handleMessage(&msg);
-		}
-
+//		printf("Mavlink: read one char\n");
+//		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
+//		{
+//			handleMessage(&msg);
+//		}
 
 //		usleep(1); //pthread_yield seems not to work
-//		int yieldres = sched_yield();
 //		printf("Mavlink yieldres = %d", yieldres);
 		int schedres = sched_yield();
 //		printf("Mavlink: schedres=%d\n",schedres);
@@ -160,8 +157,12 @@ int mavlink_main(int argc, char *argv[])
 
     //open uart
     printf("Mavlink uart is %s\n", uart_name);
+
+
+
 	uart_read = fopen (uart_name,"rb");
 	uart_write = fopen (uart_name,"wb");
+
 
 	//set policy
 	pthread_attr_t attr;
@@ -170,9 +171,11 @@ int mavlink_main(int argc, char *argv[])
 	pthread_attr_getstacksize (&attr, &stacksize);
 	printf("Mavlink: stacksize=%d\n",stacksize);
 
-	pthread_attr_setstacksize(&attr, 1000); //TODO: look up, also sync with makefile
+	pthread_attr_setstacksize(&attr, 2000); //TODO: look up, also sync with makefile
 	pthread_attr_getstacksize (&attr, &stacksize);
 	printf("Mavlink: stacksize=%d\n",stacksize);
+
+
 
 
 //	int policy;

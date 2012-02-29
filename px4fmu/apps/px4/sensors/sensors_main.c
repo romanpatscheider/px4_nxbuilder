@@ -118,16 +118,45 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
-	uint8_t devaddr = 0x50;
+#define EEPROM_ADDRESS		0x50
+#define HMC5883L_ADDRESS	0x1E
 
+#define STATUS_REGISTER		0x09 // Of HMC5883L
+
+	uint8_t devaddr = EEPROM_ADDRESS;
+
+	// ATTEMPT EEPROM READ
 	I2C_SETADDRESS(i2c, devaddr, 7);
-	uint8_t subaddr = 0x0A; // 10
+	uint8_t subaddr = 0x00; // 10
 	int ret = I2C_WRITE(i2c, &subaddr, 1);
 	if (ret < 0)
 	{
 		message("I2C_WRITE failed: %d\n", ret);
 	}
+	else
+	{
+		message("I2C_WRITE SUCCEEDED: %d\n", ret);
+	}
 
+	fflush(stdout);
+
+	// ATTEMPT HMC5883L READ
+	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
+	subaddr = STATUS_REGISTER; // 10
+	ret = I2C_READ(i2c, &subaddr, 1);
+	if (ret < 0)
+	{
+		message("I2C_WRITE failed: %d\n", ret);
+	}
+	else
+	{
+		message("I2C_WRITE SUCCEEDED: %d\n", ret);
+	}
+
+	fflush(stdout);
+
+
+	// TESTING CODE, I2C TRANSACTION
 	uint8_t val[1];
 
 	struct i2c_msg_s msgv[2] = {

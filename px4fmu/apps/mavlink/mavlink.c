@@ -47,6 +47,7 @@
 #include "mavlink-1.0/common/mavlink.h"
 #include "mavlink-1.0/pixhawk/pixhawk.h"
 
+
 /****************************************************************************
  * Definitions
  ****************************************************************************/
@@ -67,18 +68,26 @@ void handleMessage(mavlink_message_t * msg);
 static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
 
-	uint8_t ch = EOF;
-	mavlink_message_t msg;
-	mavlink_status_t status;
+
 
 	while(1) {
+		uint8_t ch = EOF;
+		mavlink_message_t msg;
+		mavlink_status_t status;
+
 		ch = comm_receive_ch(chan); //get one char
 
 		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
+		{
 			handleMessage(&msg);
+		}
 
-		usleep(1); //pthread_yield seems not to work
 
+//		usleep(1); //pthread_yield seems not to work
+//		int yieldres = sched_yield();
+//		printf("Mavlink yieldres = %d", yieldres);
+		int schedres = sched_yield();
+//		printf("Mavlink: schedres=%d\n",schedres);
 	}
 
 }
@@ -91,6 +100,9 @@ static void *heartbeatloop(void * arg)
 		usleep(100000);
 
 		mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+
+		int schedres = sched_yield();
+//		printf("Mavlink: schedres=%d\n",schedres);
 	}
 
 }
@@ -101,17 +113,17 @@ void handleMessage(mavlink_message_t * msg) {
 	printf("Mavlink: got a message \n");
 
 	//check for terminate command
-	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
-	{
-		printf("Mavlink: Terminating... \n");
-
-		//terminate other threads:
-		pthread_cancel(heartbeat_thread);
-
-		//terminate this thread (receive_thread)
-		pthread_exit(NULL);
-
-	}
+//	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
+//	{
+//		printf("Mavlink: Terminating... \n");
+//
+//		//terminate other threads:
+//		pthread_cancel(heartbeat_thread);
+//
+//		//terminate this thread (receive_thread)
+//		pthread_exit(NULL);
+//
+//	}
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
@@ -151,9 +163,44 @@ int mavlink_main(int argc, char *argv[])
 	uart_read = fopen (uart_name,"rb");
 	uart_write = fopen (uart_name,"wb");
 
+	//set policy
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	size_t stacksize;
+	pthread_attr_getstacksize (&attr, &stacksize);
+	printf("Mavlink: stacksize=%d\n",stacksize);
+
+	pthread_attr_setstacksize(&attr, 1000); //TODO: look up, also sync with makefile
+	pthread_attr_getstacksize (&attr, &stacksize);
+	printf("Mavlink: stacksize=%d\n",stacksize);
+
+
+//	int policy;
+//	int res = pthread_attr_getschedpolicy(&attr, &policy);
+//	printf("Mavlink: res=%d\n",res);
+//	printf("Mavlink:policy before: %d, %d, %d, %d, %d\n", policy, SCHED_FIFO, SCHED_RR, SCHED_SPORADIC, SCHED_OTHER);
+//	res = pthread_attr_setschedpolicy(&attr, SCHED_RR);
+//	printf("Mavlink: res=%d\n",res);
+//	pthread_attr_getschedpolicy(&attr, &policy);
+//	printf("Mavlink:policy after: %d, %d, %d, %d, %d\n", policy, SCHED_FIFO, SCHED_RR, SCHED_SPORADIC, SCHED_OTHER);
+
+//	struct sched_param  param;
+//	param.sched_priority = 100;
+//	res = pthread_attr_setschedparam(&attr, &param);
+//	printf("Mavlink: res=%d\n",res);
+
+//	struct sched_param  param;
+//	param.sched_priority = 0;
+//	int res = pthread_setschedparam(heartbeat_thread, SCHED_RR, &param);
+//	printf("Mavlink: res=%d\n",res);
+
+
+//	res = pthread_setschedparam(receive_thread, SCHED_RR, &param);
+//	printf("Mavlink: res=%d\n",res);
+
     //create pthreads
-    pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
-    pthread_create (&receive_thread, NULL, receiveloop, NULL);
+    pthread_create (&heartbeat_thread, &attr, heartbeatloop, NULL);
+    pthread_create (&receive_thread, &attr, receiveloop, NULL);
 
     //wait for threads to complete:
     pthread_join(heartbeat_thread, NULL);

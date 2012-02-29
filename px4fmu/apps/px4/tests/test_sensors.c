@@ -55,6 +55,7 @@
 #include "tests.h"
 
 #include <arch/board/drv_lis331.h>
+#include <arch/board/drv_bma180.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -68,7 +69,8 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static int	st_lis331(int argc, char *argv[]);
+static int	lis331(int argc, char *argv[]);
+static int	bma180(int argc, char *argv[]);
 
 /****************************************************************************
  * Private Data
@@ -79,7 +81,8 @@ struct {
 	const char	*path;
 	int		(* test)(int argc, char *argv[]);
 } sensors[] = {
-	{"lis331",	"/dev/lis331",	st_lis331},
+	{"lis331",	"/dev/lis331",	lis331},
+    {"bma180",	"/dev/bma180",	bma180},
 	{NULL, NULL, NULL}
 };
 
@@ -92,7 +95,7 @@ struct {
  ****************************************************************************/
 
 static int
-st_lis331(int argc, char *argv[])
+lis331(int argc, char *argv[])
 {
 	int		fd;
 	uint16_t	buf[3];
@@ -130,6 +133,48 @@ st_lis331(int argc, char *argv[])
 
 	/* XXX more tests here */
 
+	return 0;
+}
+
+static int
+bma180(int argc, char *argv[])
+{
+	int		fd;
+	uint16_t	buf[3];
+	int		ret;
+    
+	fd = open("/dev/bma180", O_RDONLY);
+	if (fd < 0) {
+		printf("BMA180: open fail\n");
+		return ERROR;
+	}
+    
+//	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
+//	    ioctl(fd, LIS331_SETRANGE, LIS331_RANGE_4G)) {
+//	 	
+//		printf("BMA180: ioctl fail\n");
+//		return ERROR;
+//	}
+//    
+//	/* wait at least 100ms, sensor should have data after no more than 20ms */
+//	usleep(100000);
+//    
+//	/* read data - expect samples */
+//	ret = read(fd, buf, sizeof(buf));
+//	if (ret != sizeof(buf)) {
+//		printf("LIS331: read1 fail (%d)\n", ret);
+//		return ERROR;
+//	}
+//    
+//	/* read data - expect no samples (should not be ready again yet) */
+//	ret = read(fd, buf, sizeof(buf));
+//	if (ret != 0) {
+//		printf("LIS331: read2 fail (%d)\n", ret);
+//		return ERROR;
+//	}
+    
+	/* XXX more tests here */
+    
 	return 0;
 }
 

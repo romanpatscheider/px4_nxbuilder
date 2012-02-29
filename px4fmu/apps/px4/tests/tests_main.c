@@ -138,16 +138,16 @@ int tests_main(int argc, char *argv[])
 {
 	unsigned	i;
 
-	if (argc < 1) {
-		printf("test: missing test name - 'test help' for a list of tests\n");
+	if (argc < 2) {
+		printf("tests: missing test name - 'tests help' for a list of tests\n");
 		return 1;
 	}
 
 	for (i = 0; tests[i].name; i++) {
-		if (!strcmp(tests[i].name, argv[0]))
+		if (!strcmp(tests[i].name, argv[1]))
 			return tests[i].fn(argc - 1, argv + 1);
 	}
 
-	printf("test: no test called '%s' - 'test help' for a list of tests\n");
+	printf("tests: no test called '%s' - 'tests help' for a list of tests\n", argv[1]);
 	return 1;
 }

@@ -60,7 +60,7 @@
 
 /* Enables debug output from this file (needs CONFIG_DEBUG too) */
 
-#define SPI_DEBUG   /* Define to enable debug */
+#undef SPI_DEBUG   /* Define to enable debug */
 #undef SPI_VERBOSE /* Define to enable verbose debug */
 
 #ifdef SPI_DEBUG

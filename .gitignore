@@ -7,4 +7,5 @@ px4fmu.sublime-workspace
 .~lock*
 .cproject
 .project
+.settings
 *.px4

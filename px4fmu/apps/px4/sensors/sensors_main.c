@@ -100,40 +100,90 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
-	SPI_SETFREQUENCY(spi, 100000);
-	SPI_SETBITS(spi, 8);
-	SPI_SETMODE(spi, SPIDEV_MODE3);
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-	SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
-
-	l3gd20_test(spi);
-	bma180_test(spi);
-	l3gd20_test(spi);
-	bma180_test(spi);
-
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-		SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+	int i;
+	for (i = 0; i < 10; i++)
+	{
+		l3gd20_test(spi);
+		bma180_test(spi);
+		printf("# %d of 10\n", i+1);
+		usleep(50000);
+	}
 
 	struct i2c_dev_s *i2c;
+	i2c = up_i2cinitialize(2);
+	up_i2cuninitialize(i2c);
 	i2c = up_i2cinitialize(2);
 	if (!i2c) {
 		message("Failed to initialize I2C bus 2\n");
 		goto out;
 	}
 
-	I2C_SETADDRESS(i2c, 0x3D, 7);
-	uint8_t regaddr = 10;
-	int ret = I2C_WRITE(i2c, &regaddr, 1);
+#define EEPROM_ADDRESS		0x50
+#define HMC5883L_ADDRESS	0x1E
+
+#define STATUS_REGISTER		0x09 // Of HMC5883L
+
+	uint8_t devaddr = EEPROM_ADDRESS;
+
+	// ATTEMPT EEPROM READ
+	I2C_SETADDRESS(i2c, devaddr, 7);
+	uint8_t subaddr = 0x00; // 10
+	int ret = I2C_WRITE(i2c, &subaddr, 1);
 	if (ret < 0)
 	{
 		message("I2C_WRITE failed: %d\n", ret);
 	}
+	else
+	{
+		message("I2C_WRITE SUCCEEDED: %d\n", ret);
+	}
+
+	fflush(stdout);
+
+	// ATTEMPT HMC5883L READ
+	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
+	subaddr = STATUS_REGISTER; // 10
+	ret = I2C_READ(i2c, &subaddr, 1);
+	if (ret < 0)
+	{
+		message("I2C_WRITE failed: %d\n", ret);
+	}
+	else
+	{
+		message("I2C_WRITE SUCCEEDED: %d\n", ret);
+	}
+
+	fflush(stdout);
+
+
+	// TESTING CODE, I2C TRANSACTION
+	uint8_t val[1];
+
+	struct i2c_msg_s msgv[2] = {
+	        {
+	            .addr   = devaddr,
+	            .flags  = 0,
+	            .buffer = &subaddr,
+	            .length = 1
+	        },
+	        {
+	            .addr   = devaddr,
+	            .flags  = I2C_M_READ,
+	            .buffer = val,
+	            .length = 1
+	        }
+	    };
+
+	int retval;
+
+	    if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
+	    {
+	    	printf("SUCCESS ACESSING EEPROM: %d", retval);
+	    }
 
 
 	out:
-	SPI_LOCK(spi, false);
+	//SPI_LOCK(spi, false);
    	msgflush();
 	return result;
 }

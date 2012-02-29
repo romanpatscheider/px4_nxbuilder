@@ -52,13 +52,20 @@ ifeq ($(CONFIG_MAVLINK),y)
 CONFIGURED_APPS += mavlink
 endif
 
-CONFIGURED_APPS += system/i2c
+CONFIGURED_APPS += reboot
+#CONFIGURED_APPS += sysctl
 
+CONFIGURED_APPS += system/i2c
+CONFIGURED_APPS += tools/i2c_dev
+
+# Testing stuff
 #CONFIGURED_APPS	+= px4/px4io
-CONFIGURED_APPS += px4/sensors px4/tests
+CONFIGURED_APPS += px4/sensors
+CONFIGURED_APPS += examples/ostest
+CONFIGURED_APPS += px4/tests
 
 ifeq ($(CONFIG_ADC),y)
-#CONFIGURED_APPS += examples/adc
+CONFIGURED_APPS += examples/adc
 endif
 
 ifeq ($(CONFIG_PWM),y)

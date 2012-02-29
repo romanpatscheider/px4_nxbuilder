@@ -55,6 +55,7 @@
 #include "up_hrt.h"
 #include <arch/board/drv_bma180.h>
 #include <arch/board/drv_l3gd20.h>
+#include <arch/board/drv_led.h>
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -110,12 +111,16 @@ int nsh_archinitialize(void)
 
   up_ledon(LED_BLUE);
 
+  /* Configure user-space led driver */
+  px4fmu_led_init();
+
   /* Configure SPI-based devices */
 
   spi = up_spiinitialize(1);
   if (!spi)
   {
 	  message("nsh_archinitialize: Failed to initialize SPI port 0\n");
+	  up_ledon(LED_AMBER);
 	  return -ENODEV;
   }
 
@@ -152,6 +157,10 @@ int nsh_archinitialize(void)
   }
 
   // FIXME Report back sensor status
+  if (acc_ok || gyro_ok)
+  {
+	  up_ledon(LED_AMBER);
+  }
 
   // Init I2C bus
 
@@ -165,6 +174,7 @@ int nsh_archinitialize(void)
   if (!spi)
     {
       message("nsh_archinitialize: Failed to initialize SPI port 3\n");
+      up_ledon(LED_AMBER);
       return -ENODEV;
     }
   message("nsh_archinitialize: Successfully initialized SPI port 3\n");
@@ -177,6 +187,7 @@ int nsh_archinitialize(void)
   if (result != OK)
     {
       message("nsh_archinitialize: Failed to bind SPI port 3 to the MMCSD driver\n");
+      up_ledon(LED_AMBER);
       return -ENODEV;
     }
   message("nsh_archinitialize: Successfully bound SPI port 3 to the MMCSD driver\n");

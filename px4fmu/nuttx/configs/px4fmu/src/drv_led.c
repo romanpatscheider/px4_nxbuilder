@@ -30,62 +30,90 @@
  */
 
 /*
- * Driver for the BOSCH BMA180 MEMS accelerometer
- */
-
-/* IMPORTANT NOTES:
+ * led driver for PX4FMU
  *
- * SPI max. clock frequency: 25 Mhz
- * CS has to be high before transfer,
- * go low right before transfer and
- * go high again right after transfer
- *
+ * This is something of an experiment currently (ha, get it?)
  */
 
-#include <sys/ioctl.h>
+#include <nuttx/config.h>
 
-#define _BMA180BASE	0x6300
-#define BMA180C(_x)	_IOC(_BMA180BASE, _x)
+#include <stdint.h>
+#include <stdbool.h>
+#include <debug.h>
 
-/* 
- * Sets the sensor internal sampling rate, and if a buffer
- * has been configured, the rate at which entries will be
- * added to the buffer.
- */
-#define BMA180_SETRATE		BMA180C(1)
+#include <nuttx/spi.h>
+#include <arch/board/board.h>
 
-#define BMA180_RATE_50Hz		(0<<3)
-#define BMA180_RATE_100Hz		(1<<3)
-#define BMA180_RATE_400Hz		(2<<3)
-#define BMA180_RATE_1000Hz		(3<<3)
+#include "up_arch.h"
+#include "chip.h"
+#include "stm32_internal.h"
+#include "px4fmu-internal.h"
 
-/*
- * Sets the sensor internal range.
- */
-#define BMA180_SETRANGE		BMA180C(2)
+#include <arch/board/drv_led.h>
 
-#define BMA180_RANGE_2G			(0<<4)
-#define BMA180_RANGE_4G			(1<<4)
-#define BMA180_RANGE_8G			(3<<4)
+static int	px4fmu_led_ioctl(struct file *filep, int cmd, unsigned long arg);
+static ssize_t	px4fmu_led_pseudoread(struct file *filp, FAR char *buffer, size_t buflen);
 
-/*
- * Sets the address of a shared BMA180_buffer
- * structure that is maintained by the driver.
- *
- * If zero is passed as the address, disables
- * the buffer updating.
- */
-#define BMA180_SETBUFFER	BMA180C(3)
-
-struct bma180_buffer {
-	uint32_t	size;		/* number of entries in the samples[] array */
-	uint32_t	next;		/* the next entry that will be populated */
-	struct {
-		uint16_t	x;
-		uint16_t	y;
-		uint16_t	z;
-		uint8_t		temp;
-	} samples[];
+static const struct file_operations px4fmu_led_fops = {
+	.read  = px4fmu_led_pseudoread,
+	.ioctl = px4fmu_led_ioctl,
 };
 
-extern int	bma180_attach(struct spi_dev_s *spi, int spi_id);
+struct px4fmu_leds_s
+{
+	uint8_t led_1;
+	uint8_t led_2;
+};
+
+static struct px4fmu_leds_s	leds;
+
+int
+px4fmu_led_init(void)
+{
+	/* register the driver */
+	return register_driver("/dev/led", &px4fmu_led_fops, 0666, NULL);
+}
+
+static ssize_t
+px4fmu_led_pseudoread(struct file *filp, FAR char *buffer, size_t buflen)
+{
+	return 0;
+}
+
+static int
+px4fmu_led_ioctl(struct file *filep, int cmd, unsigned long arg)
+{
+	int	result = 0;
+
+	switch (cmd) {
+
+	case LED_ON:
+		switch (arg) {
+		case 0:
+		case 1:
+			up_ledon(arg);
+			break;
+		default:
+			result = -1;
+			break;
+		}
+		break;
+
+	case LED_OFF:
+		switch (arg) {
+		case 0:
+		case 1:
+			up_ledoff(arg);
+			break;
+		default:
+			result = -1;
+			break;
+		}
+		break;
+		default:
+			result = -1;
+			break;
+	}
+	return result;
+}
+

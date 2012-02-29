@@ -54,18 +54,28 @@
  */
 #define L3GD20_SETRATE		L3GD20C(1)
 
-#define L3GD20_RATE_50Hz		(0<<3)
-#define L3GD20_RATE_100Hz		(1<<3)
-#define L3GD20_RATE_400Hz		(2<<3)
-#define L3GD20_RATE_800Hz		(3<<3)
+#define L3GD20_RATE_95HZ_LP_12_5HZ		((0<<7) | (0<<6) | (0<<5) | (0<<4))
+#define L3GD20_RATE_95HZ_LP_25HZ		((0<<7) | (0<<6) | (0<<5) | (1<<4))
+#define L3GD20_RATE_190HZ_LP_12_5HZ		((0<<7) | (1<<6) | (0<<5) | (0<<4))
+#define L3GD20_RATE_190HZ_LP_25HZ		((0<<7) | (1<<6) | (0<<5) | (1<<4))
+#define L3GD20_RATE_190HZ_LP_50HZ		((0<<7) | (1<<6) | (1<<5) | (0<<4))
+#define L3GD20_RATE_190HZ_LP_70HZ		((0<<7) | (1<<6) | (1<<5) | (1<<4))
+#define L3GD20_RATE_380HZ_LP_20HZ		((1<<7) | (0<<6) | (0<<5) | (0<<4))
+#define L3GD20_RATE_380HZ_LP_25HZ		((1<<7) | (0<<6) | (0<<5) | (1<<4))
+#define L3GD20_RATE_380HZ_LP_50HZ		((1<<7) | (0<<6) | (1<<5) | (0<<4))
+#define L3GD20_RATE_380HZ_LP_100HZ		((1<<7) | (0<<6) | (1<<5) | (1<<4))
+#define L3GD20_RATE_760HZ_LP_30HZ		((1<<7) | (1<<6) | (0<<5) | (0<<4))
+#define L3GD20_RATE_760HZ_LP_35HZ		((1<<7) | (1<<6) | (0<<5) | (1<<4))
+#define L3GD20_RATE_760HZ_LP_50HZ		((1<<7) | (1<<6) | (1<<5) | (0<<4))
+#define L3GD20_RATE_760HZ_LP_100HZ		((1<<7) | (1<<6) | (1<<5) | (1<<4))
 
 /*
  * Sets the sensor internal range.
  */
 #define L3GD20_SETRANGE		L3GD20C(2)
 
-#define L3GD20_RANGE_200DPS			(0<<4)
-#define L3GD20_RANGE_500DPS			(1<<4)
+#define L3GD20_RANGE_250DPS				(0)
+#define L3GD20_RANGE_500DPS				(1<<4)
 #define L3GD20_RANGE_2000DPS			(3<<4)
 
 /*

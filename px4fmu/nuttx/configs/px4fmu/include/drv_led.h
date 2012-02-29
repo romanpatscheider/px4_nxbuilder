@@ -29,63 +29,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Driver for the BOSCH BMA180 MEMS accelerometer
- */
-
-/* IMPORTANT NOTES:
- *
- * SPI max. clock frequency: 25 Mhz
- * CS has to be high before transfer,
- * go low right before transfer and
- * go high again right after transfer
- *
- */
-
 #include <sys/ioctl.h>
 
-#define _BMA180BASE	0x6300
-#define BMA180C(_x)	_IOC(_BMA180BASE, _x)
+#define _LEDCBASE	0x6800
+#define LEDC(_x)	_IOC(_LEDCBASE, _x)
 
-/* 
- * Sets the sensor internal sampling rate, and if a buffer
- * has been configured, the rate at which entries will be
- * added to the buffer.
- */
-#define BMA180_SETRATE		BMA180C(1)
+/* set the LED identified by the argument */
+#define LED_ON	LEDC(1)
 
-#define BMA180_RATE_50Hz		(0<<3)
-#define BMA180_RATE_100Hz		(1<<3)
-#define BMA180_RATE_400Hz		(2<<3)
-#define BMA180_RATE_1000Hz		(3<<3)
+/* clear the LED identified by the argument */
+#define LED_OFF	LEDC(2)
 
-/*
- * Sets the sensor internal range.
- */
-#define BMA180_SETRANGE		BMA180C(2)
+///* toggle the LED identified by the argument */
+//#define LED_TOGGLE	LEDC(3)
 
-#define BMA180_RANGE_2G			(0<<4)
-#define BMA180_RANGE_4G			(1<<4)
-#define BMA180_RANGE_8G			(3<<4)
-
-/*
- * Sets the address of a shared BMA180_buffer
- * structure that is maintained by the driver.
- *
- * If zero is passed as the address, disables
- * the buffer updating.
- */
-#define BMA180_SETBUFFER	BMA180C(3)
-
-struct bma180_buffer {
-	uint32_t	size;		/* number of entries in the samples[] array */
-	uint32_t	next;		/* the next entry that will be populated */
-	struct {
-		uint16_t	x;
-		uint16_t	y;
-		uint16_t	z;
-		uint8_t		temp;
-	} samples[];
-};
-
-extern int	bma180_attach(struct spi_dev_s *spi, int spi_id);
+extern int	px4fmu_led_init();

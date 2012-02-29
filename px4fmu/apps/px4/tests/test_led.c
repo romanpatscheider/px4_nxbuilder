@@ -1,10 +1,8 @@
 /****************************************************************************
- * px4/sensors/sensors_main.c
+ * px4/sensors/test_gpio.c
  *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Copyright (C) 2011-2012 Michael Smith. All rights reserved.
+ *   Copyright (C) 2012 Michael Smith. All rights reserved.
  *   Authors: Michael Smith <DrZiplok@me.com>
- *    Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,10 +50,9 @@
 
 #include <arch/board/board.h>
 
-#include <nuttx/spi.h>
-#include <nuttx/i2c.h>
+#include <arch/board/drv_led.h>
 
-#include "sensors.h"
+#include "tests.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -81,163 +78,56 @@
  * Private Functions
  ****************************************************************************/
 
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: user_start/adc_main
+ * Name: test_led
  ****************************************************************************/
 
-int sensors_main(int argc, char *argv[])
+int test_led(int argc, char *argv[])
 {
-	struct spi_dev_s *spi;
-	int result = -1;
+	int		fd;
+	int		ret = 0;
 
-	spi = up_spiinitialize(1);
-	if (!spi) {
-		message("Failed to initialize SPI port 1\n");
-		goto out;
+	fd = open("/dev/led", O_RDONLY | O_NONBLOCK);
+	if (fd < 0) {
+		printf("LED: open fail\n");
+		return ERROR;
 	}
+
+	if (ioctl(fd, LED_ON, LED_BLUE) ||
+	    ioctl(fd, LED_ON, LED_AMBER)) {
+
+		printf("LED: ioctl fail\n");
+		return ERROR;
+	}
+
+	/* let them blink for fun */
 
 	int i;
-	for (i = 0; i < 10; i++)
+	uint8_t ledon = 1;
+
+	for (i = 0; i < 50; i++)
 	{
-		l3gd20_test(spi);
-		bma180_test(spi);
-		printf("# %d of 10\n", i+1);
-		usleep(50000);
-	}
-
-	struct i2c_dev_s *i2c;
-	i2c = up_i2cinitialize(2);
-	up_i2cuninitialize(i2c);
-	i2c = up_i2cinitialize(2);
-	if (!i2c) {
-		message("Failed to initialize I2C bus 2\n");
-		goto out;
-	}
-
-#define EEPROM_ADDRESS		0x50
-#define HMC5883L_ADDRESS	0x1E
-
-#define STATUS_REGISTER		0x09 // Of HMC5883L
-
-	uint8_t devaddr = EEPROM_ADDRESS;
-
-	I2C_SETFREQUENCY(i2c, 400000);
-
-	// ATTEMPT EEPROM READ
-	I2C_SETADDRESS(i2c, devaddr, 7);
-	uint8_t subaddr = 0x00; // 10
-	int ret = I2C_WRITE(i2c, &subaddr, 1);
-	if (ret < 0)
-	{
-		message("I2C_WRITE failed: %d\n", ret);
-	}
-	else
-	{
-		message("I2C_WRITE SUCCEEDED: %d\n", ret);
-	}
-
-	fflush(stdout);
-
-
-
-	// ATTEMPT HMC5883L WRITE
-	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-	uint8_t hmc5883l_continuous[2] = {0x02, 0x00};
-	ret = I2C_WRITE(i2c, hmc5883l_continuous, 2);
-	if (ret < 0)
-	{
-		message("HMC5883L WRITE failed: %d\n", ret);
-	}
-	else
-	{
-		message("HMC5883L WRITE SUCCEEDED: %d\n", ret);
-	}
-
-	fflush(stdout);
-
-
-	// ATTEMPT HMC5883L READ
-	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-	subaddr = STATUS_REGISTER; // 10
-	uint8_t hmc5883l_status[2] = {0x09, 0x09};
-	ret = I2C_READ(i2c, hmc5883l_status, 1);
-	if (ret < 0)
-	{
-		message("HMC5883L READ failed: %d, val: %d\n", ret, hmc5883l_status[1]);
-	}
-	else
-	{
-		message("HMC5883L READ SUCCEEDED: %d, val:%d\n", ret, hmc5883l_status[1]);
-	}
-
-	fflush(stdout);
-
-	// ATTEMPT MS5611-01ba WRITE
-
-	// Possible addresses: 0x77 or 0x76
-#define MS5611_ADDRESS_1	0x76
-#define MS5611_ADDRESS_2	0x77
-	I2C_SETADDRESS(i2c, MS5611_ADDRESS_1, 7);
-		uint8_t ms5611_cmd[2] = {0x00, 0x00};
-		ret = I2C_WRITE(i2c, ms5611_cmd, 2);
-		if (ret < 0)
-		{
-			message("MS5611 #1 WRITE failed: %d\n", ret);
+		if (ledon) {
+			ioctl(fd, LED_ON, LED_BLUE);
+			ioctl(fd, LED_OFF, LED_AMBER);
+		} else {
+			ioctl(fd, LED_OFF, LED_BLUE);
+			ioctl(fd, LED_ON, LED_AMBER);
 		}
-		else
-		{
-			message("MS5611 #2 WRITE SUCCEEDED: %d\n", ret);
-		}
+		ledon = !ledon;
+		usleep(60000);
+	}
 
-		fflush(stdout);
+	/* Go back to default */
+	ioctl(fd, LED_ON, LED_BLUE);
+	ioctl(fd, LED_OFF, LED_AMBER);
 
-		I2C_SETADDRESS(i2c, MS5611_ADDRESS_2, 7);
-		ret = I2C_WRITE(i2c, ms5611_cmd, 2);
-		if (ret < 0)
-		{
-			message("MS5611 #1 WRITE failed: %d\n", ret);
-		}
-		else
-		{
-			message("MS5611 #2 WRITE SUCCEEDED: %d\n", ret);
-		}
+	printf("\t LED test successful.\n");
 
-		fflush(stdout);
-
-
-
-	// TESTING CODE, I2C TRANSACTION
-	uint8_t val[1];
-
-	struct i2c_msg_s msgv[2] = {
-	        {
-	            .addr   = HMC5883L_ADDRESS,
-	            .flags  = 0,
-	            .buffer = &subaddr,
-	            .length = 1
-	        },
-	        {
-	            .addr   = devaddr,
-	            .flags  = I2C_M_READ,
-	            .buffer = val,
-	            .length = 1
-	        }
-	    };
-
-	int retval;
-
-	    if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
-	    {
-	    	printf("SUCCESS ACESSING EEPROM: %d", retval);
-	    }
-
-
-	out:
-	//SPI_LOCK(spi, false);
-   	msgflush();
-	return result;
+	return ret;
 }

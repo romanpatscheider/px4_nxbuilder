@@ -56,6 +56,7 @@
 
 #include <arch/board/drv_lis331.h>
 #include <arch/board/drv_bma180.h>
+#include <arch/board/drv_l3gd20.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -70,6 +71,7 @@
  ****************************************************************************/
 
 static int	lis331(int argc, char *argv[]);
+static int  l3gd20(int argc, char *argv[]);
 static int	bma180(int argc, char *argv[]);
 
 /****************************************************************************
@@ -81,8 +83,9 @@ struct {
 	const char	*path;
 	int		(* test)(int argc, char *argv[]);
 } sensors[] = {
-	{"lis331",	"/dev/lis331",	lis331},
+	{"l3gd20",	"/dev/l3gd20",	l3gd20},
     {"bma180",	"/dev/bma180",	bma180},
+    {"lis331",	"/dev/lis331",	lis331},
 	{NULL, NULL, NULL}
 };
 
@@ -103,7 +106,7 @@ lis331(int argc, char *argv[])
 
 	fd = open("/dev/lis331", O_RDONLY);
 	if (fd < 0) {
-		printf("LIS331: open fail\n");
+		printf("\tlis331: not present on PX4FMU v1.5 and later\n");
 		return ERROR;
 	}
 
@@ -137,15 +140,77 @@ lis331(int argc, char *argv[])
 }
 
 static int
+l3gd20(int argc, char *argv[])
+{
+	int		fd;
+	uint16_t	buf[3] = {0, 0, 0};
+	int		ret;
+
+	fd = open("/dev/l3gd20", O_RDONLY);
+	if (fd < 0) {
+		printf("L3GD20: open fail\n");
+		return ERROR;
+	}
+
+	if (ioctl(fd, L3GD20_SETRATE, L3GD20_RATE_760HZ_LP_50HZ) ||
+	    ioctl(fd, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
+
+		printf("L3GD20: ioctl fail\n");
+		return ERROR;
+	} else {
+		printf("\tconfigured..\n");
+	}
+
+	/* wait at least 100ms, sensor should have data after no more than 2ms */
+	usleep(100000);
+
+
+
+	/* read data - expect samples */
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != sizeof(buf)) {
+		printf("\tl3gd20: read1 fail (%d should have been %d)\n", ret, sizeof(buf));
+		return ERROR;
+	} else {
+		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	/* wait at least 10ms, sensor should have data after no more than 2ms */
+	usleep(100000);
+
+	/* read data - expect no samples (should not be ready again yet) */
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != sizeof(buf)) {
+		printf("\tl3gd20: read2 fail (%d)\n", ret);
+		return ERROR;
+	} else {
+		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	/* read data - expect no samples (should not be ready again yet) */
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != 0) {
+		printf("\tl3gd20: ERROR: read3 fail - there should not have been data ready\n", ret);
+		return ERROR;
+	}
+
+	/* XXX more tests here */
+
+	/* Let user know everything is ok */
+	printf("\tOK: L3GD20 passed all tests successfully\n");
+	return ret;
+}
+
+static int
 bma180(int argc, char *argv[])
 {
 	int		fd;
-	uint16_t	buf[3];
+	uint16_t	buf[3] = {0, 0, 0};
 	int		ret;
     
 	fd = open("/dev/bma180", O_RDONLY);
 	if (fd < 0) {
-		printf("BMA180: open fail\n");
+		printf("\tbma180: open fail\n");
 		return ERROR;
 	}
     
@@ -156,25 +221,40 @@ bma180(int argc, char *argv[])
 //		return ERROR;
 //	}
 //    
-//	/* wait at least 100ms, sensor should have data after no more than 20ms */
-//	usleep(100000);
-//    
-//	/* read data - expect samples */
-//	ret = read(fd, buf, sizeof(buf));
-//	if (ret != sizeof(buf)) {
-//		printf("LIS331: read1 fail (%d)\n", ret);
-//		return ERROR;
-//	}
-//    
-//	/* read data - expect no samples (should not be ready again yet) */
-//	ret = read(fd, buf, sizeof(buf));
-//	if (ret != 0) {
-//		printf("LIS331: read2 fail (%d)\n", ret);
-//		return ERROR;
-//	}
+	/* wait at least 100ms, sensor should have data after no more than 20ms */
+	usleep(100000);
+
+	/* read data - expect samples */
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != sizeof(buf)) {
+		printf("\tbma180: read1 fail (%d)\n", ret);
+		return ERROR;
+	} else {
+		printf("\tbma180 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	/* wait at least 10ms, sensor should have data after no more than 2ms */
+	usleep(100000);
+
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != sizeof(buf)) {
+		printf("\tbma180: read2 fail (%d)\n", ret);
+		return ERROR;
+	} else {
+		printf("\tbma180 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != 0) {
+		printf("\tbma180: ERROR: read3 fail - there should not have been data ready\n", ret);
+		return ERROR;
+	}
     
 	/* XXX more tests here */
     
+	/* Let user know everything is ok */
+	printf("\tOK: BMA180 passed all tests successfully\n");
+
 	return 0;
 }
 

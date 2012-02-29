@@ -109,33 +109,6 @@ read_reg(struct spi_dev_s *spi, uint8_t address)
 	return data[1];
 }
 
-static bool
-read_fifo(struct spi_dev_s *spi)
-{
-	struct {					/* status register and data as read back from the device */
-		uint8_t		cmd;
-		uint8_t		status;
-		int16_t		x;
-		int16_t		y;
-		int16_t		z;
-	} __attribute__((packed))	report;
-
-	report.cmd = ADDR_STATUS_REG | DIR_READ | ADDR_INCREMENT;
-
-	/* exchange the report structure with the device */
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
-	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-
-#if 0
-	data->x = report.x;
-	data->y = report.y;
-	data->z = report.z;
-#endif
-
-	return report.status & STATUS_ZYXDA;
-}
-
 int
 l3gd20_test(struct spi_dev_s *spi)
 {

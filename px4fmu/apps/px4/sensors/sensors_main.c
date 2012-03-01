@@ -100,15 +100,6 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
-	int i;
-	for (i = 0; i < 10; i++)
-	{
-		l3gd20_test(spi);
-		bma180_test(spi);
-		printf("# %d of 10\n", i+1);
-		usleep(50000);
-	}
-
 	struct i2c_dev_s *i2c;
 	i2c = up_i2cinitialize(2);
 	up_i2cuninitialize(i2c);
@@ -125,6 +116,8 @@ int sensors_main(int argc, char *argv[])
 
 	uint8_t devaddr = EEPROM_ADDRESS;
 
+	I2C_SETFREQUENCY(i2c, 400000);
+
 	// ATTEMPT EEPROM READ
 	I2C_SETADDRESS(i2c, devaddr, 7);
 	uint8_t subaddr = 0x00; // 10
@@ -140,20 +133,72 @@ int sensors_main(int argc, char *argv[])
 
 	fflush(stdout);
 
-	// ATTEMPT HMC5883L READ
+
+
+	// ATTEMPT HMC5883L WRITE
 	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-	subaddr = STATUS_REGISTER; // 10
-	ret = I2C_READ(i2c, &subaddr, 1);
+	uint8_t hmc5883l_continuous[2] = {0x02, 0x00};
+	ret = I2C_WRITE(i2c, hmc5883l_continuous, 2);
 	if (ret < 0)
 	{
-		message("I2C_WRITE failed: %d\n", ret);
+		message("HMC5883L WRITE failed: %d\n", ret);
 	}
 	else
 	{
-		message("I2C_WRITE SUCCEEDED: %d\n", ret);
+		message("HMC5883L WRITE SUCCEEDED: %d\n", ret);
 	}
 
 	fflush(stdout);
+
+
+	// ATTEMPT HMC5883L READ
+	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
+	subaddr = STATUS_REGISTER; // 0x09
+	uint8_t hmc5883l_status[2] = {0x09, 0x09};
+	ret = I2C_READ(i2c, hmc5883l_status, 1);
+	if (ret < 0)
+	{
+		message("HMC5883L READ failed: %d, val: %d\n", ret, hmc5883l_status[1]);
+	}
+	else
+	{
+		message("HMC5883L READ SUCCEEDED: %d, val:%d\n", ret, hmc5883l_status[1]);
+	}
+
+	fflush(stdout);
+
+	// ATTEMPT MS5611-01ba WRITE
+
+	// Possible addresses: 0x77 or 0x76
+#define MS5611_ADDRESS_1	0x76
+#define MS5611_ADDRESS_2	0x77
+	I2C_SETADDRESS(i2c, MS5611_ADDRESS_1, 7);
+		uint8_t ms5611_cmd[2] = {0x00, 0x00};
+		ret = I2C_WRITE(i2c, ms5611_cmd, 2);
+		if (ret < 0)
+		{
+			message("MS5611 #1 WRITE failed: %d\n", ret);
+		}
+		else
+		{
+			message("MS5611 #2 WRITE SUCCEEDED: %d\n", ret);
+		}
+
+		fflush(stdout);
+
+		I2C_SETADDRESS(i2c, MS5611_ADDRESS_2, 7);
+		ret = I2C_WRITE(i2c, ms5611_cmd, 2);
+		if (ret < 0)
+		{
+			message("MS5611 #1 WRITE failed: %d\n", ret);
+		}
+		else
+		{
+			message("MS5611 #2 WRITE SUCCEEDED: %d\n", ret);
+		}
+
+		fflush(stdout);
+
 
 
 	// TESTING CODE, I2C TRANSACTION
@@ -161,7 +206,7 @@ int sensors_main(int argc, char *argv[])
 
 	struct i2c_msg_s msgv[2] = {
 	        {
-	            .addr   = devaddr,
+	            .addr   = HMC5883L_ADDRESS,
 	            .flags  = 0,
 	            .buffer = &subaddr,
 	            .length = 1
@@ -176,10 +221,22 @@ int sensors_main(int argc, char *argv[])
 
 	int retval;
 
-	    if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
-	    {
-	    	printf("SUCCESS ACESSING EEPROM: %d", retval);
-	    }
+	if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
+	{
+		printf("SUCCESS ACESSING EEPROM: %d", retval);
+	}
+
+	// Configure sensors
+	l3gd20_test_configure(spi);
+
+	int i;
+	for (i = 0; i < 10; i++)
+	{
+		l3gd20_test_read(spi);
+		//bma180_test(spi);
+		printf("# %d of 10\n", i+1);
+		usleep(50000);
+	}
 
 
 	out:

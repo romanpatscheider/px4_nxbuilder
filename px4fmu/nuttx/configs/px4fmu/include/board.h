@@ -196,9 +196,6 @@
 #define LED_ASSERTION     6  /* LED? + LED? + LED? */
 #define LED_PANIC         7  /* N/C  + N/C  + N/C + LED? */
 
-#define LED_BLUE		  0  /* Led on first port */
-#define LED_AMBER		  1  /* Led on second port */
-
 /* Alternate function pin selections ************************************************/
 
 /*

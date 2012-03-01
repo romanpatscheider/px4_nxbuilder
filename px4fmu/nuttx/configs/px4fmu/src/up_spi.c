@@ -97,6 +97,14 @@ void weak_function stm32_spiinitialize(void)
 	stm32_configgpio(GPIO_SPI_CS_GYRO);
 	stm32_configgpio(GPIO_SPI_CS_ACCEL);
 	stm32_configgpio(GPIO_SPI_CS_SDCARD);
+
+	/* De-activate all peripherals,
+	 * required for some peripheral
+	 * state machines
+	 */
+	stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
+	stm32_gpiowrite(GPIO_SPI_CS_ACCEL, 1);
+	stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
 }
 
 /****************************************************************************
@@ -129,12 +137,18 @@ void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool sele
 {
 	spidbg("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
+	/* SPI select is active low, so write !selected to select */
+
 	switch (devid) {
 	case PX4_SPIDEV_GYRO:
+		/* Making sure the other peripheral is not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_GYRO, !selected);
+		//stm32_gpiowrite(GPIO_SPI_CS_ACCEL, selected);
 		break;
 	case PX4_SPIDEV_ACCEL:
+		/* Making sure the other peripheral is not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_ACCEL, !selected);
+		//stm32_gpiowrite(GPIO_SPI_CS_GYRO, selected);
 		break;
 	default:
 		spidbg("devid: %d - unexpected\n", devid);

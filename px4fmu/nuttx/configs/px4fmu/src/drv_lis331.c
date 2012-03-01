@@ -84,13 +84,13 @@
 #define ADDR_REFERENCE		0x26
 #define ADDR_STATUS_REG		0x27
 #define STATUS_ZYXOR			(1<<7)
-#define SATAUS_ZOR			(1<<6)
-#define STATUS_YOR			(1<<5)
-#define STATUS_XOR			(1<<4)
+#define STATUS_ZOR				(1<<6)
+#define STATUS_YOR				(1<<5)
+#define STATUS_XOR				(1<<4)
 #define STATUS_ZYXDA			(1<<3)
-#define STATUS_ZDA			(1<<2)
-#define STATUS_YDA			(1<<1)
-#define STATUS_XDA			(1<<0)
+#define STATUS_ZDA				(1<<2)
+#define STATUS_YDA				(1<<1)
+#define STATUS_XDA				(1<<0)
 
 #define ADDR_OUT_X		0x28	/* 16 bits */
 #define ADDR_OUT_Y		0x2A	/* 16 bits */

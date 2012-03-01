@@ -109,41 +109,14 @@ read_reg(struct spi_dev_s *spi, uint8_t address)
 	return data[1];
 }
 
-static bool
-read_fifo(struct spi_dev_s *spi)
-{
-	struct {					/* status register and data as read back from the device */
-		uint8_t		cmd;
-		uint8_t		status;
-		int16_t		x;
-		int16_t		y;
-		int16_t		z;
-	} __attribute__((packed))	report;
-
-	report.cmd = ADDR_STATUS_REG | DIR_READ | ADDR_INCREMENT;
-
-	/* exchange the report structure with the device */
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
-	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
-	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-
-#if 0
-	data->x = report.x;
-	data->y = report.y;
-	data->z = report.z;
-#endif
-
-	return report.status & STATUS_ZYXDA;
-}
-
 int
-l3gd20_test(struct spi_dev_s *spi)
+l3gd20_test_configure(struct spi_dev_s *spi)
 {
 	uint8_t	id;
 
 	id = read_reg(spi, ADDR_WHO_AM_I);
 
-	if (id == 0xD4)
+	if (id == WHO_I_AM)
 	{
 		message("L3GD20 SUCCESS: 0x%02x\n", id);
 	}
@@ -151,7 +124,61 @@ l3gd20_test(struct spi_dev_s *spi)
 	{
 		message("L3GD20 FAIL: 0x%02x\n", id);
 	}
+
+	struct {					/* status register and data as read back from the device */
+		uint8_t		cmd;
+		uint8_t		temp;
+		uint8_t		status;
+		int16_t		x;
+		int16_t		y;
+		int16_t		z;
+	} __attribute__((packed))	report;
+
+	report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
+
+	write_reg(spi, ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+	write_reg(spi, ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+	write_reg(spi, ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+
+	write_reg(spi, ADDR_CTRL_REG4, ((3<<4) & 0x30) | REG4_BDU);
+
+
+	write_reg(spi, ADDR_CTRL_REG1,
+			(((2<<6) | (1<<4)) & 0xf0) | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
+
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
+	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+
+	message("Init-read: gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
+	usleep(1000);
+
 	//message("got id 0x%02x, expected ID 0xd4\n", id);
 
+	return 0;
+}
+
+int
+l3gd20_test_read(struct spi_dev_s *spi)
+{
+	struct {					/* status register and data as read back from the device */
+		uint8_t		cmd;
+		uint8_t		temp;
+		uint8_t		status;
+		int16_t		x;
+		int16_t		y;
+		int16_t		z;
+	} __attribute__((packed))	report;
+
+	report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
+
+	SPI_LOCK(spi, true);
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
+	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+	SPI_LOCK(spi, false);
+
+	message("gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
+	usleep(1000);
 	return 0;
 }

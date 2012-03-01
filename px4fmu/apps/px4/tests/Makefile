@@ -40,7 +40,7 @@
 include $(APPDIR)/Make.defs
 
 ASRCS		=
-CSRCS		= tests_main.c test_sensors.c test_gpio.c test_hrt.c
+CSRCS		= tests_main.c test_sensors.c test_gpio.c test_hrt.c test_led.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))

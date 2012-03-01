@@ -91,9 +91,11 @@
  *
  ****************************************************************************/
 
+static FAR struct spi_dev_s *spi1;
+static FAR struct spi_dev_s *spi3;
+
 int nsh_archinitialize(void)
 {
-  FAR struct spi_dev_s *spi;
   int result;
 
   /* configure the high-resolution time/callout interface */
@@ -116,8 +118,8 @@ int nsh_archinitialize(void)
 
   /* Configure SPI-based devices */
 
-  spi = up_spiinitialize(1);
-  if (!spi)
+  spi1 = up_spiinitialize(1);
+  if (!spi1)
   {
 	  message("nsh_archinitialize: Failed to initialize SPI port 0\n");
 	  up_ledon(LED_AMBER);
@@ -126,11 +128,11 @@ int nsh_archinitialize(void)
 
   // Setup 10 MHz clock (maximum rate the BMA180 can sustain)
   //10000000
-  SPI_SETFREQUENCY(spi, 10000000);
-  SPI_SETBITS(spi, 8);
-  SPI_SETMODE(spi, SPIDEV_MODE3);
-  SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
-  SPI_SELECT(spi, PX4_SPIDEV_ACCEL, false);
+  SPI_SETFREQUENCY(spi1, 10000000);
+  SPI_SETBITS(spi1, 8);
+  SPI_SETMODE(spi1, SPIDEV_MODE3);
+  SPI_SELECT(spi1, PX4_SPIDEV_GYRO, false);
+  SPI_SELECT(spi1, PX4_SPIDEV_ACCEL, false);
   usleep(20);
 
   message("nsh_archinitialize: Successfully initialized SPI port 0\n");
@@ -139,19 +141,19 @@ int nsh_archinitialize(void)
   int gyro_ok = 0;
 
   while (gyro_attempts < 10)
-	  {
-	  gyro_ok = l3gd20_attach(spi, PX4_SPIDEV_GYRO);
+  {
+	  gyro_ok = l3gd20_attach(spi1, PX4_SPIDEV_GYRO);
 	  gyro_attempts++;
 	  if (gyro_ok == 0) break;
 	  usleep(50);
-	  }
+  }
 
   int acc_attempts = 1;
   int acc_ok = 0;
 
   while (acc_attempts < 10)
   {
-	  acc_ok = bma180_attach(spi, PX4_SPIDEV_ACCEL);
+	  acc_ok = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
 	  acc_attempts++;
 	  if (acc_ok == 0) break;
 	  usleep(50);
@@ -171,8 +173,8 @@ int nsh_archinitialize(void)
   /* Get the SPI port */
 
   message("nsh_archinitialize: Initializing SPI port 3\n");
-  spi = up_spiinitialize(3);
-  if (!spi)
+  spi3 = up_spiinitialize(3);
+  if (!spi3)
     {
       message("nsh_archinitialize: Failed to initialize SPI port 3\n");
       up_ledon(LED_AMBER);
@@ -184,7 +186,7 @@ int nsh_archinitialize(void)
 
   message("nsh_archinitialize: Bind SPI to the MMCSD driver\n");
 
-  result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi);
+  result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi3);
   if (result != OK)
     {
       message("nsh_archinitialize: Failed to bind SPI port 3 to the MMCSD driver\n");

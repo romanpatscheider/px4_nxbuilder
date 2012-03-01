@@ -172,9 +172,11 @@ l3gd20_test_read(struct spi_dev_s *spi)
 
 	report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
 
+	SPI_LOCK(spi, true);
 	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
 	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
 	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+	SPI_LOCK(spi, false);
 
 	message("gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
 	usleep(1000);

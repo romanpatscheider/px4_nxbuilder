@@ -84,8 +84,8 @@ struct {
 	int		(* test)(int argc, char *argv[]);
 } sensors[] = {
 	{"l3gd20",	"/dev/l3gd20",	l3gd20},
-    {"bma180",	"/dev/bma180",	bma180},
-    {"lis331",	"/dev/lis331",	lis331},
+//    {"bma180",	"/dev/bma180",	bma180},
+//    {"lis331",	"/dev/lis331",	lis331},
 	{NULL, NULL, NULL}
 };
 
@@ -152,17 +152,17 @@ l3gd20(int argc, char *argv[])
 		return ERROR;
 	}
 
-	if (ioctl(fd, L3GD20_SETRATE, L3GD20_RATE_760HZ_LP_50HZ) ||
-	    ioctl(fd, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
-
-		printf("L3GD20: ioctl fail\n");
-		return ERROR;
-	} else {
-		printf("\tconfigured..\n");
-	}
-
-	/* wait at least 100ms, sensor should have data after no more than 2ms */
-	usleep(100000);
+//	if (ioctl(fd, L3GD20_SETRATE, L3GD20_RATE_760HZ_LP_50HZ) ||
+//	    ioctl(fd, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
+//
+//		printf("L3GD20: ioctl fail\n");
+//		return ERROR;
+//	} else {
+//		printf("\tconfigured..\n");
+//	}
+//
+//	/* wait at least 100ms, sensor should have data after no more than 2ms */
+//	usleep(100000);
 
 
 
@@ -193,6 +193,8 @@ l3gd20(int argc, char *argv[])
 		printf("\tl3gd20: ERROR: read3 fail - there should not have been data ready\n", ret);
 		return ERROR;
 	}
+
+	close(fd);
 
 	/* XXX more tests here */
 

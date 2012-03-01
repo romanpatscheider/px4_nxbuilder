@@ -1,5 +1,5 @@
 /****************************************************************************
- * px4/sensors/tests_main.c
+ * px4/sensors/test_gpio.c
  *
  *   Copyright (C) 2012 Michael Smith. All rights reserved.
  *   Authors: Michael Smith <DrZiplok@me.com>
@@ -43,7 +43,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -51,7 +50,7 @@
 
 #include <arch/board/board.h>
 
-#include <nuttx/spi.h>
+#include <arch/board/drv_led.h>
 
 #include "tests.h"
 
@@ -67,28 +66,9 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static int test_help(int argc, char *argv[]);
-static int test_all(int argc, char *argv[]);
-
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
-struct {
-	const char 	*name;
-	int		(* fn)(int argc, char *argv[]);
-	unsigned	options;
-#define OPT_NOHELP	(1<<0)
-#define OPT_NOALLTEST	(1<<1)
-} tests[] = {
-	{"sensors",	test_sensors,	0},
-	{"gpio",	test_gpio,	0},
-	{"hrt",		test_hrt,	0},
-	{"led",		test_led,	0},
-	{"all",		test_all,	OPT_NOALLTEST},
-	{"help",	test_help,	OPT_NOALLTEST | OPT_NOHELP},
-	{NULL,		NULL}
-};
 
 /****************************************************************************
  * Public Data
@@ -98,57 +78,56 @@ struct {
  * Private Functions
  ****************************************************************************/
 
-static int
-test_help(int argc, char *argv[])
-{
-	unsigned	i;
-	
-	printf("Available tests:\n");
-	for (i = 0; tests[i].name; i++)
-		printf("  %s\n", tests[i].name);
-	return 0;
-}
-
-static int
-test_all(int argc, char *argv[])
-{
-	unsigned	i;
-	char		*args[2] = {"all", NULL};
-	
-	printf("Running all tests...\n\n");
-	for (i = 0; tests[i].name; i++) {
-		printf("  %s:\n", tests[i].name);
-		if (tests[i].fn(1, args)) {
-			printf("  FAIL\n");
-		} else {
-			printf("  PASS\n");			
-		}
-	}
-	return 0;
-}
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: tests_main
+ * Name: test_led
  ****************************************************************************/
 
-int tests_main(int argc, char *argv[])
+int test_led(int argc, char *argv[])
 {
-	unsigned	i;
+	int		fd;
+	int		ret = 0;
 
-	if (argc < 2) {
-		printf("tests: missing test name - 'tests help' for a list of tests\n");
-		return 1;
+	fd = open("/dev/led", O_RDONLY | O_NONBLOCK);
+	if (fd < 0) {
+		printf("LED: open fail\n");
+		return ERROR;
 	}
 
-	for (i = 0; tests[i].name; i++) {
-		if (!strcmp(tests[i].name, argv[1]))
-			return tests[i].fn(argc - 1, argv + 1);
+	if (ioctl(fd, LED_ON, LED_BLUE) ||
+	    ioctl(fd, LED_ON, LED_AMBER)) {
+
+		printf("LED: ioctl fail\n");
+		return ERROR;
 	}
 
-	printf("tests: no test called '%s' - 'tests help' for a list of tests\n", argv[1]);
-	return 1;
+	/* let them blink for fun */
+
+	int i;
+	uint8_t ledon = 1;
+
+	for (i = 0; i < 50; i++)
+	{
+		if (ledon) {
+			ioctl(fd, LED_ON, LED_BLUE);
+			ioctl(fd, LED_OFF, LED_AMBER);
+		} else {
+			ioctl(fd, LED_OFF, LED_BLUE);
+			ioctl(fd, LED_ON, LED_AMBER);
+		}
+		ledon = !ledon;
+		usleep(60000);
+	}
+
+	/* Go back to default */
+	ioctl(fd, LED_ON, LED_BLUE);
+	ioctl(fd, LED_OFF, LED_AMBER);
+
+	printf("\t LED test successful.\n");
+
+	return ret;
 }

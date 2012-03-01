@@ -1,8 +1,8 @@
 /****************************************************************************
- * px4/sensors/tests_main.c
+ * examples/hello/main.c
  *
- *   Copyright (C) 2012 Michael Smith. All rights reserved.
- *   Authors: Michael Smith <DrZiplok@me.com>
+ *   Copyright (C) 2012 Lorenz Meier. All rights reserved.
+ *   Author: Lorenz Meier <spudmonkey@racsa.co.cr>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,118 +37,78 @@
  * Included Files
  ****************************************************************************/
 
+
 #include <nuttx/config.h>
-
-#include <sys/types.h>
-
+#include <pthread.h>
+#include <poll.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <debug.h>
 
-#include <arch/board/board.h>
-
-#include <nuttx/spi.h>
-
-#include "tests.h"
+#include <drv_led.h>
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Definitions
  ****************************************************************************/
 
-/****************************************************************************
- * Private Types
- ****************************************************************************/
-
-/****************************************************************************
- * Private Function Prototypes
- ****************************************************************************/
-
-static int test_help(int argc, char *argv[]);
-static int test_all(int argc, char *argv[]);
-
+void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
-struct {
-	const char 	*name;
-	int		(* fn)(int argc, char *argv[]);
-	unsigned	options;
-#define OPT_NOHELP	(1<<0)
-#define OPT_NOALLTEST	(1<<1)
-} tests[] = {
-	{"sensors",	test_sensors,	0},
-	{"gpio",	test_gpio,	0},
-	{"hrt",		test_hrt,	0},
-	{"led",		test_led,	0},
-	{"all",		test_all,	OPT_NOALLTEST},
-	{"help",	test_help,	OPT_NOALLTEST | OPT_NOHELP},
-	{NULL,		NULL}
-};
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-static int
-test_help(int argc, char *argv[])
+static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
-	unsigned	i;
-	
-	printf("Available tests:\n");
-	for (i = 0; tests[i].name; i++)
-		printf("  %s\n", tests[i].name);
-	return 0;
-}
+	while(1) {
 
-static int
-test_all(int argc, char *argv[])
-{
-	unsigned	i;
-	char		*args[2] = {"all", NULL};
-	
-	printf("Running all tests...\n\n");
-	for (i = 0; tests[i].name; i++) {
-		printf("  %s:\n", tests[i].name);
-		if (tests[i].fn(1, args)) {
-			printf("  FAIL\n");
-		} else {
-			printf("  PASS\n");			
-		}
+		usleep(10000); //pthread_yield seems not to work
+
 	}
-	return 0;
+
 }
 
+
+static void *heartbeatloop(void * arg)
+{
+	while(1) {
+		// sleep
+		usleep(100000);
+
+		mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+	}
+
+}
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+void handleMessage(mavlink_message_t * msg) {
+	printf("DEBUG: got a message \n");
+    mavlink_msg_statustext_send(chan,0,"received msg");
+}
 
 /****************************************************************************
- * Name: tests_main
+ * user_start
  ****************************************************************************/
 
-int tests_main(int argc, char *argv[])
+int mavlink_main(int argc, char *argv[])
 {
-	unsigned	i;
+    // print text
+    printf("#INFO: SYSCTL ENABLED\n");
+    usleep(100000);
 
-	if (argc < 2) {
-		printf("tests: missing test name - 'tests help' for a list of tests\n");
-		return 1;
-	}
+    //create pthreads
+    pthread_t heartbeat_thread;
+    pthread_t receive_thread;
 
-	for (i = 0; tests[i].name; i++) {
-		if (!strcmp(tests[i].name, argv[1]))
-			return tests[i].fn(argc - 1, argv + 1);
-	}
+    pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
+    pthread_create (&receive_thread, NULL, receiveloop, NULL);
 
-	printf("tests: no test called '%s' - 'tests help' for a list of tests\n", argv[1]);
-	return 1;
+    //wait for threads to complete:
+    pthread_join(heartbeat_thread, NULL);
+    pthread_join(receive_thread, NULL);
+
+    //close uart
+	fclose(uart_read);
+	fclose(uart_write);
+
+    return 0;
 }
+
+

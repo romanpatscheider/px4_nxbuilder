@@ -1,8 +1,8 @@
 /****************************************************************************
- * px4/sensors/tests_main.c
+ * apps/reboot.c
  *
- *   Copyright (C) 2012 Michael Smith. All rights reserved.
- *   Authors: Michael Smith <DrZiplok@me.com>
+ *   Copyright (C) 2012 Lorenz Meier. All rights reserved.
+ *   Author: Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,118 +37,131 @@
  * Included Files
  ****************************************************************************/
 
+
 #include <nuttx/config.h>
-
-#include <sys/types.h>
-
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <debug.h>
-
-#include <arch/board/board.h>
-
-#include <nuttx/spi.h>
-
-#include "tests.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Definitions
  ****************************************************************************/
-
-/****************************************************************************
- * Private Types
- ****************************************************************************/
-
-/****************************************************************************
- * Private Function Prototypes
- ****************************************************************************/
-
-static int test_help(int argc, char *argv[]);
-static int test_all(int argc, char *argv[]);
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
-struct {
-	const char 	*name;
-	int		(* fn)(int argc, char *argv[]);
-	unsigned	options;
-#define OPT_NOHELP	(1<<0)
-#define OPT_NOALLTEST	(1<<1)
-} tests[] = {
-	{"sensors",	test_sensors,	0},
-	{"gpio",	test_gpio,	0},
-	{"hrt",		test_hrt,	0},
-	{"led",		test_led,	0},
-	{"all",		test_all,	OPT_NOALLTEST},
-	{"help",	test_help,	OPT_NOALLTEST | OPT_NOHELP},
-	{NULL,		NULL}
-};
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-static int
-test_help(int argc, char *argv[])
-{
-	unsigned	i;
-	
-	printf("Available tests:\n");
-	for (i = 0; tests[i].name; i++)
-		printf("  %s\n", tests[i].name);
-	return 0;
-}
-
-static int
-test_all(int argc, char *argv[])
-{
-	unsigned	i;
-	char		*args[2] = {"all", NULL};
-	
-	printf("Running all tests...\n\n");
-	for (i = 0; tests[i].name; i++) {
-		printf("  %s:\n", tests[i].name);
-		if (tests[i].fn(1, args)) {
-			printf("  FAIL\n");
-		} else {
-			printf("  PASS\n");			
-		}
-	}
-	return 0;
-}
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: tests_main
+ * user_start
  ****************************************************************************/
 
-int tests_main(int argc, char *argv[])
+#include <arch/board/drv_led.h>
+#include <arch/board/drv_l3gd20.h>
+
+/****************************************************************************
+ * Definitions
+ ****************************************************************************/
+
+int leds;
+int gyro;
+
+/* gyro x, y, z raw values */
+int16_t	gyro_raw[3] = {0, 0, 0};
+/* gyro x, y, z metric values in rad/s */
+float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
+
+static int led_init()
 {
-	unsigned	i;
-
-	if (argc < 2) {
-		printf("tests: missing test name - 'tests help' for a list of tests\n");
-		return 1;
+	leds = open("/dev/led", O_RDONLY | O_NONBLOCK);
+	if (leds < 0) {
+		printf("LED: open fail\n");
+		return ERROR;
 	}
 
-	for (i = 0; tests[i].name; i++) {
-		if (!strcmp(tests[i].name, argv[1]))
-			return tests[i].fn(argc - 1, argv + 1);
-	}
+	if (ioctl(leds, LED_ON, LED_BLUE) ||
+			ioctl(leds, LED_ON, LED_AMBER)) {
 
-	printf("tests: no test called '%s' - 'tests help' for a list of tests\n", argv[1]);
-	return 1;
+		printf("LED: ioctl fail\n");
+		return ERROR;
+	}
+	return 0;
 }
+
+static int led_toggle(int led)
+{
+	static int last_blue = LED_ON;
+	static int last_amber = LED_ON;
+
+	if (led == LED_BLUE) last_blue = (last_blue == LED_ON) ? LED_OFF : LED_ON;
+	if (led == LED_AMBER) last_amber = (last_amber == LED_ON) ? LED_OFF : LED_ON;
+
+	return ioctl(leds, ((led == LED_BLUE) ? last_blue : last_amber), led);
+}
+
+static int gyro_init()
+{
+	gyro = open("/dev/l3gd20", O_RDONLY);
+	if (gyro < 0) {
+		printf("L3GD20: open fail\n");
+		return ERROR;
+	}
+
+	if (ioctl(gyro, L3GD20_SETRATE, L3GD20_RATE_760HZ_LP_50HZ) ||
+	    ioctl(gyro, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
+
+		printf("L3GD20: ioctl fail\n");
+		return ERROR;
+	} else {
+		printf("\tgyro configured..\n");
+	}
+	return 0;
+}
+
+static int gyro_read()
+{
+	int ret = read(gyro, gyro_raw, sizeof(gyro_raw));
+	if (ret != sizeof(gyro_raw)) {
+		printf("Gyro read failed!\n");
+	}
+	return ret;
+}
+
+int offboard_control_main(int argc, char *argv[])
+{
+    // print text
+    printf("Offboard Vicon Space Control Ready\n\n");
+
+    // Leds and sensors
+    int	ret = 0;
+
+    if ((led_init() != 0) || (gyro_init() != 0)) ret = ERROR;
+
+    fflush(stdout);
+
+    int testcounter = 0;
+    // Remove after testing
+
+    while(true)
+    {
+
+    	/* ROUGHLY 20hz, needs the high res-timer */
+    	gyro_read();
+    	printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", gyro_raw[0], gyro_raw[1], gyro_raw[2]);
+    	led_toggle(LED_BLUE);
+    	led_toggle(LED_AMBER);
+    	usleep(49000);
+    	testcounter++;
+
+    	if (testcounter > 100) break;
+    }
+
+    
+    
+    /* Should never reach here, only on error */
+    return ret;
+}
+
+

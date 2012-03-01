@@ -67,14 +67,16 @@ void handleMessage(mavlink_message_t * msg);
  ****************************************************************************/
 static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
-	uint8_t ch = EOF;
+	uint8_t  * ch;
 	mavlink_message_t msg;
 	mavlink_status_t status;
 
 
 	while(1) {
+		ch = (uint8_t *)malloc(1);
+		 if (ch==NULL) exit (1);
 
-		ch = comm_receive_ch(chan); //get one char
+		comm_receive_ch(chan, ch); //get one char
 //		printf("Mavlink: read one char\n");
 //		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
 //		{
@@ -83,8 +85,9 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 
 //		usleep(1); //pthread_yield seems not to work
 //		printf("Mavlink yieldres = %d", yieldres);
-		int schedres = sched_yield();
+		pthread_yield();
 //		printf("Mavlink: schedres=%d\n",schedres);
+		free(ch);
 	}
 
 }
@@ -98,7 +101,7 @@ static void *heartbeatloop(void * arg)
 
 		mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 
-		int schedres = sched_yield();
+		pthread_yield();
 //		printf("Mavlink: schedres=%d\n",schedres);
 	}
 
@@ -131,7 +134,7 @@ void handleMessage(mavlink_message_t * msg) {
 int mavlink_main(int argc, char *argv[])
 {
     // print text
-    printf("Hello, mavlink!!\n");
+    printf("Hello, mavlink!!1\n");
     usleep(100000);
 
     //default values for arguments

@@ -43,4 +43,7 @@
 ///* toggle the LED identified by the argument */
 //#define LED_TOGGLE	LEDC(3)
 
+#define LED_BLUE		  0  /* Led on first port */
+#define LED_AMBER		  1  /* Led on second port */
+
 extern int	px4fmu_led_init();

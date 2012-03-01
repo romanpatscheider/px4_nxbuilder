@@ -134,9 +134,9 @@ bma180_test(struct spi_dev_s *spi)
 	olsb1 |= (RANGE_4G & RANGEMASK);
 	write_reg(spi, ADDR_OLSB1, olsb1);
 
-	/* disable interrupts */
-	write_reg(spi, ADDR_CTRL_REG3, 0x10);
-	write_reg(spi, ADDR_CTRL_REG0, 0x50);
+//	/* disable interrupts */
+//	write_reg(spi, ADDR_CTRL_REG3, 0x10);
+//	write_reg(spi, ADDR_CTRL_REG0, 0x50);
 
 
 //	//-------------------------------------------------------------------------------------
@@ -176,6 +176,10 @@ bma180_test(struct spi_dev_s *spi)
 		int16_t		y;
 		int16_t		z;
 	} __attribute__((packed))	report;
+
+	report.x = 0;
+	report.y = 0;
+	report.z = 0;
 
 //	uint8_t		temp;
 //	uint8_t		status1;

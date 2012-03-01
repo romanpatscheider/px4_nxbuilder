@@ -195,6 +195,26 @@ l3gd20(int argc, char *argv[])
 		ret = read(fd, buf, sizeof(buf));
 	}
 
+	/* test if FIFO is operational */
+	usleep(14800); // Expecting 10 measurements
+
+	ret = 0;
+	int count = 0;
+	bool dataready = true;
+	while(dataready)
+	{
+		// Keep reading until successful
+		ret = read(fd, buf, sizeof(buf));
+		if (ret != sizeof(buf))
+		{
+			dataready = false;
+		} else {
+			count++;
+		}
+	}
+
+	printf("\tl3gd20: Drained FIFO with %d values (expected 8-12)\n", count);
+
 	/* read data - expect no samples (should not be ready again yet) */
 	ret = read(fd, buf, sizeof(buf));
 	if (ret != 0) {

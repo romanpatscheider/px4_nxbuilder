@@ -279,74 +279,26 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 	/* verify that the device is attached and functioning */
 	if (read_reg(ADDR_WHO_AM_I) == WHO_I_AM) {
 
-//		/* reset device memory */
-////		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
-//
-//		/* set default configuration */
-//		/* XXX Enable FIFO later */
-//		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
-//		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+		/* reset device memory */
+		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
 
-
-		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
-				write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-				write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
-
-		set_range(L3GD20_RANGE_2000DPS);
-		set_rate(L3GD20_RATE_380HZ);
-
-		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
-				write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-				write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
-
-		set_range(L3GD20_RANGE_2000DPS);
-		set_rate(L3GD20_RATE_380HZ);
-
-		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
-				write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-				write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
-
-		set_range(L3GD20_RANGE_2000DPS);
-		set_rate(L3GD20_RATE_380HZ);
-
-
+		/* set default configuration */
 		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
+		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
 
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
 		(set_rate(L3GD20_RATE_760HZ_LP_50HZ) != 0))	/* takes device out of low-power mode */
 		{
 			errno = EIO;
-			up_ledon(LED_AMBER);
 		} else {
-
-
-
-
-//		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
-//		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
-//
-//		write_reg(ADDR_CTRL_REG4, ((3<<4) & 0x30) | REG4_BDU);
-//
-//
-//		write_reg(ADDR_CTRL_REG1,
-//				(((2<<6) | (1<<4)) & 0xf0) | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
-//
-
-
 
 		/* make ourselves available */
 		register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
 
 		result = 0;
-
-
-
 		}
-
-
 
 	} else {
 		errno = EIO;

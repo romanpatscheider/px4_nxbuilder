@@ -84,7 +84,7 @@ struct {
 	int		(* test)(int argc, char *argv[]);
 } sensors[] = {
 	{"l3gd20",	"/dev/l3gd20",	l3gd20},
-//    {"bma180",	"/dev/bma180",	bma180},
+    {"bma180",	"/dev/bma180",	bma180},
 //    {"lis331",	"/dev/lis331",	lis331},
 	{NULL, NULL, NULL}
 };
@@ -175,8 +175,8 @@ l3gd20(int argc, char *argv[])
 		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
 	}
 
-	/* wait at least 10ms, sensor should have data after no more than 2ms */
-	usleep(100000);
+	/* wait at least 2 ms, sensor should have data after no more than 1.5ms */
+	usleep(2000);
 
 	/* read data - expect no samples (should not be ready again yet) */
 	ret = read(fd, buf, sizeof(buf));
@@ -185,6 +185,14 @@ l3gd20(int argc, char *argv[])
 		return ERROR;
 	} else {
 		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	/* empty sensor buffer */
+	ret = 0;
+	while(ret != sizeof(buf))
+	{
+		// Keep reading until successful
+		ret = read(fd, buf, sizeof(buf));
 	}
 
 	/* read data - expect no samples (should not be ready again yet) */
@@ -244,6 +252,14 @@ bma180(int argc, char *argv[])
 		return ERROR;
 	} else {
 		printf("\tbma180 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	/* empty sensor buffer */
+	ret = 0;
+	while(ret != sizeof(buf))
+	{
+		// Keep reading until successful
+		ret = read(fd, buf, sizeof(buf));
 	}
 
 	ret = read(fd, buf, sizeof(buf));

@@ -91,7 +91,7 @@
 #define REG1_Y_ENABLE				(1<<0)
 #define REG1_Z_ENABLE				(1<<2)
 
-#define REG4_BDU					(0<<7)
+#define REG4_BDU					(1<<7)
 //#define REG4_BDU					(1<<7) //testing
 #define REG4_BLE					(1<<6)
 #define REG4_SPI_3WIRE				(1<<0)
@@ -287,23 +287,6 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 //		/* XXX Enable FIFO later */
 //		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
 //		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
-//
-//
-//
-//		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
-//		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
-//
-//		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
-//		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
-//
-//		if ((set_range(L3GD20_RANGE_500DPS) +
-//		set_rate(L3GD20_RATE_760HZ)) > 0)	/* takes device out of low-power mode */
-//		{
-//			errno = EIO;
-//		} else {
-
 
 
 
@@ -311,12 +294,25 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
 		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
 
-		write_reg(ADDR_CTRL_REG4, ((3<<4) & 0x30) | REG4_BDU);
+		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
+		(set_rate(L3GD20_RATE_760HZ) != 0))	/* takes device out of low-power mode */
+		{
+			errno = EIO;
+		} else {
 
 
-		write_reg(ADDR_CTRL_REG1,
-				(((2<<6) | (1<<4)) & 0xf0) | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
 
+
+//		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+//		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+//
+//		write_reg(ADDR_CTRL_REG4, ((3<<4) & 0x30) | REG4_BDU);
+//
+//
+//		write_reg(ADDR_CTRL_REG1,
+//				(((2<<6) | (1<<4)) & 0xf0) | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
+//
 
 
 
@@ -327,7 +323,7 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 
 
 
-//		}
+		}
 
 
 

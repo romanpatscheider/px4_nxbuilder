@@ -221,19 +221,22 @@ int sensors_main(int argc, char *argv[])
 
 	int retval;
 
-	    if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
-	    {
-	    	printf("SUCCESS ACESSING EEPROM: %d", retval);
-	    }
+	if ( (retval = I2C_TRANSFER(i2c, msgv, 2)) == OK )
+	{
+		printf("SUCCESS ACESSING EEPROM: %d", retval);
+	}
 
-		int i;
-		for (i = 0; i < 10; i++)
-		{
-			l3gd20_test(spi);
-			bma180_test(spi);
-			printf("# %d of 10\n", i+1);
-			usleep(50000);
-		}
+	// Configure sensors
+	l3gd20_test_configure(spi);
+
+	int i;
+	for (i = 0; i < 10; i++)
+	{
+		l3gd20_test_read(spi);
+		bma180_test(spi);
+		printf("# %d of 10\n", i+1);
+		usleep(50000);
+	}
 
 
 	out:

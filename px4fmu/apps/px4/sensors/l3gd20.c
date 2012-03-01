@@ -110,7 +110,7 @@ read_reg(struct spi_dev_s *spi, uint8_t address)
 }
 
 int
-l3gd20_test(struct spi_dev_s *spi)
+l3gd20_test_configure(struct spi_dev_s *spi)
 {
 	uint8_t	id;
 
@@ -150,10 +150,33 @@ l3gd20_test(struct spi_dev_s *spi)
 	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
 	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
 
-	message("Gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
+	message("Init-read: gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
 	usleep(1000);
 
 	//message("got id 0x%02x, expected ID 0xd4\n", id);
 
+	return 0;
+}
+
+int
+l3gd20_test_read(struct spi_dev_s *spi)
+{
+	struct {					/* status register and data as read back from the device */
+		uint8_t		cmd;
+		uint8_t		temp;
+		uint8_t		status;
+		int16_t		x;
+		int16_t		y;
+		int16_t		z;
+	} __attribute__((packed))	report;
+
+	report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
+
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
+	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
+	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+
+	message("gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
+	usleep(1000);
 	return 0;
 }

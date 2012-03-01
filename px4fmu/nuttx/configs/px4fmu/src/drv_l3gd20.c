@@ -114,10 +114,10 @@
 #define FIFO_CTRL_STREAM_TO_FIFO_MODE		(3<<5)
 #define FIFO_CTRL_BYPASS_TO_STREAM_MODE		(1<<7)
 
-static struct l3gd20_dev_s	dev;
+FAR struct l3gd20_dev_s	dev;
 
-static ssize_t	l3gd20_read(struct file *filp, FAR char *buffer, size_t buflen);
-static int	l3gd20_ioctl(struct file *filp, int cmd, unsigned long arg);
+static ssize_t l3gd20_read(struct file *filp, FAR char *buffer, size_t buflen);
+static int l3gd20_ioctl(struct file *filp, int cmd, unsigned long arg);
 
 static const struct file_operations l3gd20_fops = {
 	.read  = l3gd20_read,
@@ -128,7 +128,6 @@ struct l3gd20_dev_s
 {
 	struct spi_dev_s	*spi;
 	int			spi_id;
-
 	uint8_t			rate;
 	struct l3gd20_buffer	*buffer;
 };
@@ -159,18 +158,34 @@ read_reg(uint8_t address)
 	return data[1];
 }
 
-static void
+static int
 set_range(uint8_t range)
 {
-	range &= REG4_RANGE_MASK;
-	write_reg(ADDR_CTRL_REG4, range | REG4_BDU);
+	/* mask out illegal bit positions */
+	uint8_t write_range = range & REG4_RANGE_MASK;
+	/* immediately return if user supplied invalid value */
+	if (write_range != range) return EINVAL;
+	/* set remaining bits to a sane value */
+	write_range |= REG4_BDU;
+	/* write to device */
+	write_reg(ADDR_CTRL_REG4, write_range);
+	/* return 0 if register value is now written value, 1 if unchanged */
+	return !(read_reg(ADDR_CTRL_REG4) == write_range);
 }
 
-static void
+static int
 set_rate(uint8_t rate)
 {
-	rate &= REG1_RATE_LP_MASK;
-	write_reg(ADDR_CTRL_REG1, rate | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
+	/* mask out illegal bit positions */
+	uint8_t write_rate = rate & REG1_RATE_LP_MASK;
+	/* immediately return if user supplied invalid value */
+	if (write_rate != rate) return EINVAL;
+	/* set remaining bits to a sane value */
+	write_rate |= REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE;
+	/* write to device */
+	write_reg(ADDR_CTRL_REG1, write_rate);
+	/* return 0 if register value is now written value, 1 if unchanged */
+	return !(read_reg(ADDR_CTRL_REG1) == write_rate);
 }
 
 static bool
@@ -185,35 +200,22 @@ read_fifo(uint16_t *data)
 		int16_t		z;
 	} __attribute__((packed))	report;
 
-	// FIXME TESTING CODE
-	report.x = 0;
-	report.y = 0;
-	report.z = 0;
-
 	report.cmd = ADDR_OUT_TEMP | DIR_READ | ADDR_INCREMENT;
 
 	/* exchange the report structure with the device */
 	SPI_LOCK(dev.spi, true);
-	SPI_SELECT(dev.spi, dev.spi_id, false);
-	usleep(10);
+
 	SPI_SELECT(dev.spi, dev.spi_id, true);
-//	usleep(10);
-//	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
-	report.status = read_reg(ADDR_STATUS_REG);
-	report.x = read_reg(ADDR_STATUS_REG+2);
-	report.x |= (read_reg(ADDR_STATUS_REG+1)<<8);
-	report.y = read_reg(ADDR_STATUS_REG+3);
-	report.y |= (read_reg(ADDR_STATUS_REG+4)<<8);
-	report.z = read_reg(ADDR_STATUS_REG+6);
-	report.z |= (read_reg(ADDR_STATUS_REG+5)<<8);
+	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
 	SPI_SELECT(dev.spi, dev.spi_id, false);
+
 	SPI_LOCK(dev.spi, false);
 
 	data[0] = report.x;
 	data[1] = report.y;
 	data[2] = report.z;
 
-	return true;//report.status & STATUS_ZYXDA;
+	return (report.status & STATUS_ZYXDA);
 }
 
 static ssize_t
@@ -278,26 +280,57 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 	/* verify that the device is attached and functioning */
 	if (read_reg(ADDR_WHO_AM_I) == WHO_I_AM) {
 
-		/* reset device memory */
-//		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
+//		/* reset device memory */
+////		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
+//
+//		/* set default configuration */
+//		/* XXX Enable FIFO later */
+//		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
+//		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+//
+//
+//
+//		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+//		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+//
+//		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+//		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+//
+//		if ((set_range(L3GD20_RANGE_500DPS) +
+//		set_rate(L3GD20_RATE_760HZ)) > 0)	/* takes device out of low-power mode */
+//		{
+//			errno = EIO;
+//		} else {
 
-		/* set default configuration */
-		/* XXX Enable FIFO later */
-		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
-		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+
+
 
 		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-//		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
 
-		set_range(L3GD20_RATE_760HZ_LP_50HZ);
-		set_rate(L3GD20_RANGE_500DPS);	/* takes device out of low-power mode */
+		write_reg(ADDR_CTRL_REG4, ((3<<4) & 0x30) | REG4_BDU);
+
+
+		write_reg(ADDR_CTRL_REG1,
+				(((2<<6) | (1<<4)) & 0xf0) | REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE);
+
+
+
 
 		/* make ourselves available */
 		register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
 
-
 		result = 0;
+
+
+
+//		}
+
+
+
 	} else {
 		errno = EIO;
 	}

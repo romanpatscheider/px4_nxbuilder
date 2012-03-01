@@ -74,9 +74,16 @@
  */
 #define L3GD20_SETRANGE		L3GD20C(2)
 
-#define L3GD20_RANGE_250DPS				(0)
-#define L3GD20_RANGE_500DPS				(1<<4)
-#define L3GD20_RANGE_2000DPS			(3<<4)
+#define L3GD20_RANGE_250DPS			(0<<4)
+#define L3GD20_RANGE_500DPS			(1<<4)
+#define L3GD20_RANGE_2000DPS		(3<<4)
+
+#define L3GD20_RATE_95HZ			((0<<6) | (0<<4))
+#define L3GD20_RATE_190HZ			((1<<6) | (0<<4))
+#define L3GD20_RATE_380HZ			((2<<6) | (1<<4))
+#define L3GD20_RATE_760HZ			((3<<6) | (2<<4))
+
+
 
 /*
  * Sets the address of a shared l3gd20_buffer

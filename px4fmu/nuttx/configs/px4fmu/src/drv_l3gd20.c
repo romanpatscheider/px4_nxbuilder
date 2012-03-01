@@ -188,7 +188,7 @@ set_rate(uint8_t rate)
 }
 
 static bool
-read_fifo(uint16_t *data)
+read_fifo(int16_t *data)
 {
 	struct {					/* status register and data as read back from the device */
 		uint8_t		cmd;
@@ -222,7 +222,7 @@ l3gd20_read(struct file *filp, char *buffer, size_t buflen)
 {
 	/* if the buffer is large enough, and data are available, return success */
 	if (buflen >= 6) {
-		if (read_fifo((uint16_t *)buffer))
+		if (read_fifo((int16_t *)buffer))
 			return 6;
 
 		/* no data */
@@ -289,22 +289,30 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
 
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
-		(set_rate(L3GD20_RATE_760HZ_LP_50HZ) != 0))	/* takes device out of low-power mode */
+				(set_rate(L3GD20_RATE_760HZ_LP_50HZ) != 0))	/* takes device out of low-power mode */
 		{
+			SPI_LOCK(dev.spi, false);
 			errno = EIO;
 		} else {
+			SPI_LOCK(dev.spi, false);
+			/* Read out the first few funky values */
+			int16_t dummy[3];
+			read_fifo(dummy);
+			read_fifo(dummy);
+			read_fifo(dummy);
 
-		/* make ourselves available */
-		register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
+			/* make ourselves available */
+			register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
 
-		result = 0;
+			result = 0;
 		}
 
 	} else {
+		SPI_LOCK(dev.spi, false);
 		errno = EIO;
 	}
 
-	SPI_LOCK(dev.spi, false);
+
 
 	return result;
 }

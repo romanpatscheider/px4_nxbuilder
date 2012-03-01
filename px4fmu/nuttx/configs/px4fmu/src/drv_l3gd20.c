@@ -93,7 +93,7 @@
 
 #define REG4_BDU					(1<<7)
 #define REG4_BLE					(1<<6)
-#define REG4_SPI_3WIRE				(1<<0)
+//#define REG4_SPI_3WIRE				(1<<0)
 
 #define REG5_FIFO_ENABLE			(1<<6)
 #define REG5_REBOOT_MEMORY			(1<<7)
@@ -205,6 +205,10 @@ read_fifo(int16_t *data)
 	SPI_LOCK(dev.spi, true);
 
 	SPI_SELECT(dev.spi, dev.spi_id, true);
+
+	read_reg(ADDR_WHO_AM_I);
+
+
 	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
 	SPI_SELECT(dev.spi, dev.spi_id, false);
 
@@ -285,11 +289,13 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		/* set default configuration */
 		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
-		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+		write_reg(ADDR_CTRL_REG5, 0);
+
+		//		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
+//		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
 
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
-				(set_rate(L3GD20_RATE_760HZ_LP_50HZ) != 0))	/* takes device out of low-power mode */
+				(set_rate(L3GD20_RATE_760HZ) != 0))	/* takes device out of low-power mode */
 		{
 			SPI_LOCK(dev.spi, false);
 			errno = EIO;

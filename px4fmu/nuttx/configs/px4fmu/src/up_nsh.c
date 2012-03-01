@@ -151,13 +151,13 @@ int nsh_archinitialize(void)
   int acc_attempts = 1;
   int acc_ok = 0;
 
-//  while (acc_attempts < 10)
-//  {
-//	  acc_ok = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
-//	  acc_attempts++;
-//	  if (acc_ok == 0) break;
-//	  usleep(50);
-//  }
+  while (acc_attempts < 10)
+  {
+	  acc_ok = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
+	  acc_attempts++;
+	  if (acc_ok == 0) break;
+	  usleep(50);
+  }
 
   // FIXME Report back sensor status
   if (acc_ok || gyro_ok)

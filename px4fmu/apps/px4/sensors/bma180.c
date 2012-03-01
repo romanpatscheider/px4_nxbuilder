@@ -45,6 +45,9 @@
 #define ADDR_STATUS_REG4		0x0C
 
 #define ADDR_RESET				0x10
+#define SOFT_RESET				0xB6
+
+#define ADDR_DIS_I2C         	0x27
 
 #define REG0_WRITE_ENABLE		0x10
 
@@ -57,13 +60,6 @@
 #define BWTCS_LP_600HZ			(6<<4)
 #define BWTCS_LP_1200HZ			(7<<4)
 
-#define SOFT_RESET				0xB6
-
-//#define I2C_DISABLE				(1<<)
-#define ADDR_DIS_I2C         		0x27
-
-//#define MODE_LOW_NOISE			(0<<)
-
 #define RANGE_1G				(0<<1)
 #define RANGE_1_5G				(1<<1)
 #define RANGE_2G				(2<<1)
@@ -71,6 +67,9 @@
 #define RANGE_4G				(4<<1)
 #define RANGE_8G				(5<<1)
 #define RANGE_16G				(6<<1)
+
+#define RANGEMASK 0x0E
+#define BWMASK 0xF0
 
 
 static void
@@ -114,7 +113,7 @@ bma180_test_configure(struct spi_dev_s *spi)
 	}
 	//message("got id 0x%02x, expected ID 0x03\n", id);
 
-	write_reg(spi, ADDR_RESET, 0xB6);             // page 48
+	write_reg(spi, ADDR_RESET, SOFT_RESET);             // page 48
 	usleep(12000);                        // wait 10 ms, see page 49
 
 	// Configuring the BMA180
@@ -127,9 +126,6 @@ bma180_test_configure(struct spi_dev_s *spi)
 	uint8_t disi2c = read_reg(spi, ADDR_DIS_I2C);                // read
 	disi2c |= 0x01;                           // set bit0 to 1, SPI only
 	write_reg(spi, ADDR_DIS_I2C, disi2c);               // Set spi, disable i2c, page 31
-
-#define RANGEMASK 0x0E
-#define BWMASK 0xF0
 
 	/* set bandwidth */
 	uint8_t bwtcs = read_reg(spi, ADDR_BWTCS);
@@ -145,38 +141,10 @@ bma180_test_configure(struct spi_dev_s *spi)
 	olsb1 |= (RANGE_4G);// & RANGEMASK);
 	write_reg(spi, ADDR_OLSB1, olsb1);
 
-	uint8_t reg3 = read_reg(spi, ADDR_CTRL_REG3);
-	//reg3 &= 0xFD;                           // REset bit 1 enable interrupt
-	//reg3 |= 0x02; // enable
-	write_reg(spi, ADDR_CTRL_REG3, reg3);              //
-
-//	/* disable interrupts */
-//	write_reg(spi, ADDR_CTRL_REG3, 0x10);
-//	write_reg(spi, ADDR_CTRL_REG0, 0x50);
-
-
-//	//-------------------------------------------------------------------------------------
-//	// Set ee_w bit
-//	temp = read(CTRLREG0);
-//	temp |= 0x10;
-//	write(CTRLREG0, temp);	// Have to set ee_w to write any other registers
-//	//-------------------------------------------------------------------------------------
-//	// Set BW
-//	temp = read(BWTCS);
-//	temp1 = bw;
-//	temp1 = temp1<<4;
-//	temp &= (~BWMASK);
-//	temp |= temp1;
-//	write(BWTCS, temp);		// Keep tcs<3:0> in BWTCS, but write new BW
-//	//-------------------------------------------------------------------------------------
-//	// Set Range
-//	temp = read(OLSB1);
-//	temp1 = range;
-//	temp1 = (temp1<<RANGESHIFT);
-//	temp &= (~RANGEMASK);
-//	temp |= temp1;
-//	write(OLSB1, temp); //Write new range data, keep other bits the same
-//	//-------------------------------------------------------------------------------------
+//	uint8_t reg3 = read_reg(spi, ADDR_CTRL_REG3);
+//	//reg3 &= 0xFD;                           // REset bit 1 enable interrupt
+//	//reg3 |= 0x02; // enable
+//	write_reg(spi, ADDR_CTRL_REG3, reg3);              //
 
 	/* block writing to chip config */
 	ctrl0 = read_reg(spi, ADDR_CTRL_REG0);

@@ -76,14 +76,15 @@
 #define ADDR_CTRL_REG3			0x21
 #define ADDR_CTRL_REG4			0x22
 
+#define ADDR_ACC_X_LSB			0x02
+#define ADDR_TEMPERATURE		0x08
+
 #define ADDR_STATUS_REG1		0x09
 #define ADDR_STATUS_REG2		0x0A
 #define ADDR_STATUS_REG3		0x0B
 #define ADDR_STATUS_REG4		0x0C
 
 #define ADDR_RESET				0x10
-
-#define ADDR_ACC_X_LSB			0x02
 
 //#define ADDR_CTRL_REG1		0x20		/* sample rate constants are in the public header */
 //#define REG1_POWER_NORMAL		(1<<5)
@@ -137,7 +138,7 @@ struct bma180_dev_s
 	struct bma180_buffer	*buffer;
 };
 
-static struct bma180_dev_s	dev;
+FAR struct bma180_dev_s	dev;
 
 static void	write_reg(uint8_t address, uint8_t data);
 static uint8_t	read_reg(uint8_t address);

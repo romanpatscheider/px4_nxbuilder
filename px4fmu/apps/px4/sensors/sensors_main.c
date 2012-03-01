@@ -153,7 +153,7 @@ int sensors_main(int argc, char *argv[])
 
 	// ATTEMPT HMC5883L READ
 	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-	subaddr = STATUS_REGISTER; // 10
+	subaddr = STATUS_REGISTER; // 0x09
 	uint8_t hmc5883l_status[2] = {0x09, 0x09};
 	ret = I2C_READ(i2c, hmc5883l_status, 1);
 	if (ret < 0)
@@ -233,7 +233,7 @@ int sensors_main(int argc, char *argv[])
 	for (i = 0; i < 10; i++)
 	{
 		l3gd20_test_read(spi);
-		bma180_test(spi);
+		//bma180_test(spi);
 		printf("# %d of 10\n", i+1);
 		usleep(50000);
 	}

@@ -86,13 +86,12 @@
 #define REG4_RANGE_MASK				0x30 /* Mask to guard partial register update */
 
 /* Internal configuration values */
-#define REG1_POWER_NORMAL			(0<<3)
-#define REG1_X_ENABLE				(1<<1)
-#define REG1_Y_ENABLE				(1<<0)
+#define REG1_POWER_NORMAL			(1<<3)
 #define REG1_Z_ENABLE				(1<<2)
+#define REG1_Y_ENABLE				(1<<1)
+#define REG1_X_ENABLE				(1<<0)
 
 #define REG4_BDU					(1<<7)
-//#define REG4_BDU					(1<<7) //testing
 #define REG4_BLE					(1<<6)
 #define REG4_SPI_3WIRE				(1<<0)
 
@@ -289,15 +288,37 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 //		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
 
 
+		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+				write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+				write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+
+		set_range(L3GD20_RANGE_2000DPS);
+		set_rate(L3GD20_RATE_380HZ);
+
+		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+				write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+				write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+
+		set_range(L3GD20_RANGE_2000DPS);
+		set_rate(L3GD20_RATE_380HZ);
+
+		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
+				write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
+				write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
+
+		set_range(L3GD20_RANGE_2000DPS);
+		set_rate(L3GD20_RATE_380HZ);
+
 
 		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
 		write_reg(ADDR_CTRL_REG5, 0);			/* turn off FIFO mode */
 
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
-		(set_rate(L3GD20_RATE_760HZ) != 0))	/* takes device out of low-power mode */
+		(set_rate(L3GD20_RATE_760HZ_LP_50HZ) != 0))	/* takes device out of low-power mode */
 		{
 			errno = EIO;
+			up_ledon(LED_AMBER);
 		} else {
 
 

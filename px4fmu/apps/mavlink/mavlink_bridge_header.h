@@ -52,16 +52,18 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
  * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
  * @param ch Character to read
  */
-static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
+static inline void comm_receive_ch(mavlink_channel_t chan, 	uint8_t  * ch)
 {
 
-	uint8_t ch = EOF;
+//	uint8_t ch = EOF;
 
     if (chan == MAVLINK_COMM_0)
     {
-    	fread ( &ch, 1, 1, uart_read );
+//    	ch = fgetc (uart_read);
+    	fread ( ch, 1, 1, uart_read );
+    	//printf("Mavlink: read character: %c\n",ch);
     }
-    return ch;
+//    return ch;
 }
 
 

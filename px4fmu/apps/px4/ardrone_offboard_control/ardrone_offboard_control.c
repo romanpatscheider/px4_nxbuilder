@@ -1,0 +1,509 @@
+/****************************************************************************
+ * examples/hello/main.c
+ *
+ *   Copyright (C) 2008, 2011 Gregory Nutt. All rights reserved.
+ *   Author: Gregory Nutt <spudmonkey@racsa.co.cr>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
+
+#include <nuttx/config.h>
+#include <pthread.h>
+#include <poll.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include "mavlink_bridge_header.h"
+#include "mavlink-1.0/common/mavlink.h"
+#include "mavlink-1.0/pixhawk/pixhawk.h"
+
+#include "ardrone_motor_control.h"
+
+#include <arch/board/drv_led.h>
+#include <arch/board/drv_l3gd20.h>
+
+/****************************************************************************
+ * Definitions
+ ****************************************************************************/
+int system_type = MAV_TYPE_FIXED_WING;
+mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
+uint8_t chan = MAVLINK_COMM_0;
+// TODO get correct custom_mode
+uint32_t custom_mode = 0;
+
+//threads:
+pthread_t heartbeat_thread;
+pthread_t receive_thread;
+
+int leds;
+int gyro;
+
+/* gyro x, y, z raw values */
+int16_t	gyro_raw[3] = {0, 0, 0};
+/* gyro x, y, z metric values in rad/s */
+float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
+
+
+struct QuadMotorsDesired {
+	uint16_t motorRight_NE;
+	uint16_t motorFront_NW;
+	uint16_t motorBack_SE;
+	uint16_t motorLeft_SW;
+};
+
+static struct QuadMotorsDesired actuatorDesired;
+
+
+static int led_init();
+static int led_toggle(int led);
+static int gyro_init();
+static int gyro_read();
+static void *receiveloop(void * arg);
+
+
+static int led_init()
+{
+	leds = open("/dev/led", O_RDONLY | O_NONBLOCK);
+	if (leds < 0) {
+		printf("LED: open fail\n");
+		return ERROR;
+	}
+
+	if (ioctl(leds, LED_ON, LED_BLUE) ||
+			ioctl(leds, LED_ON, LED_AMBER)) {
+
+		printf("LED: ioctl fail\n");
+		return ERROR;
+	}
+	return 0;
+}
+
+static int led_toggle(int led)
+{
+	static int last_blue = LED_ON;
+	static int last_amber = LED_ON;
+
+	if (led == LED_BLUE) last_blue = (last_blue == LED_ON) ? LED_OFF : LED_ON;
+	if (led == LED_AMBER) last_amber = (last_amber == LED_ON) ? LED_OFF : LED_ON;
+
+	return ioctl(leds, ((led == LED_BLUE) ? last_blue : last_amber), led);
+}
+
+static int gyro_init()
+{
+	gyro = open("/dev/l3gd20", O_RDONLY);
+	if (gyro < 0) {
+		printf("L3GD20: open fail\n");
+		return ERROR;
+	}
+
+	if (ioctl(gyro, L3GD20_SETRATE, L3GD20_RATE_760HZ_LP_50HZ) ||
+			ioctl(gyro, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
+
+		printf("L3GD20: ioctl fail\n");
+		return ERROR;
+	} else {
+		printf("\tgyro configured..\n");
+	}
+	return 0;
+}
+
+static int gyro_read()
+{
+	int ret = read(gyro, gyro_raw, sizeof(gyro_raw));
+	if (ret != sizeof(gyro_raw)) {
+		printf("Gyro read failed!\n");
+	}
+	return ret;
+}
+
+void handleMessage(mavlink_message_t * msg);
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
+{
+
+	uint8_t ch = EOF;
+	mavlink_message_t msg;
+	mavlink_status_t status;
+
+	while(1) {
+
+		/* blocking read on next byte */
+		ch = read (ardrone_write, &ch, 1);
+
+
+		if (mavlink_parse_char(MAVLINK_COMM_0,ch,&msg,&status)) //parse the char
+			handleMessage(&msg);
+
+		usleep(1); //pthread_yield seems not to work
+
+	}
+
+}
+
+static void ar_init_motors()
+{
+	// Write ARDrone commands on UART2
+	uint8_t initbuf[] = {0xE0, 0x91, 0xA1, 0x00, 0x40};
+	uint8_t multicastbuf[] = {0xA0, 0xA0, 0xA0, 0xA0, 0xA0, 0xA0};
+
+	/* initialize all motors
+	 * - select one motor at a time
+	 * - configure motor
+	 */
+	int i;
+	for (i = 1; i < 5; ++i)
+	{
+		// Initialize motors 1-4
+		initbuf[3]=i;
+		ar_select_motor(i);
+
+		write(ardrone_write, initbuf+0, 1);
+
+		/* sleep one second */
+		usleep(200000);
+		usleep(200000);
+		usleep(200000);
+		usleep(200000);
+		usleep(200000);
+
+		write(ardrone_write, initbuf+1, 1);
+		/* wait 5 ms */
+		usleep(5000);
+
+		write(ardrone_write, initbuf+2, 1);
+		/* wait 5 ms */
+		usleep(5000);
+
+		write(ardrone_write, initbuf+3, 1);
+		/* wait 5 ms */
+		usleep(5000);
+
+		write(ardrone_write, initbuf+4, 1);
+		/* wait 5 ms */
+		usleep(5000);
+
+		/* enable multicast */
+		write(ardrone_write, multicastbuf+0, 1);
+		/* wait 1 ms XXX change to 100 us */
+		usleep(1000);
+
+		write(ardrone_write, multicastbuf+1, 1);
+		/* wait 1 ms XXX change to 100 us */
+		usleep(1000);
+
+		write(ardrone_write, multicastbuf+2, 1);
+		/* wait 1 ms XXX change to 100 us */
+		usleep(1000);
+
+		write(ardrone_write, multicastbuf+3, 1);
+		/* wait 1 ms XXX change to 100 us */
+		usleep(1000);
+
+		write(ardrone_write, multicastbuf+4, 1);
+		/* wait 1 ms XXX change to 100 us */
+		usleep(1000);
+
+		write(ardrone_write, multicastbuf+5, 1);
+		/* wait 50 ms XXX change to 100 us */
+		usleep(50000);
+	}
+
+	//start the multicast part
+	ar_select_motor(0);
+}
+
+
+static void *control_loop(void * arg)
+{
+
+	int16_t outputBand=0;
+
+	float setpointXrate;
+	float setpointYrate;
+	float setpointZrate;
+
+	float setpointRateCast[3]={0,0,0};
+	float Kp=0;
+	float Ki=0;
+	float setpointThrustCast=0;
+	float startpointFullControll=0;
+	float maxThrustSetpoints=0;
+
+	float gyro_filtered[3] = {0,0,0};
+	float gyro_filtered_offset[3] = {0,0,0};
+	float gyro_alpha = 0;
+	float gyro_alpha_offset = 0;
+	float errXrate=0;
+	float attRatesScaled[3]={0,0,0};
+
+	uint16_t offsetCnt=0;
+	float antiwindup=0;
+
+	ar_init_motors();
+
+	while(1) {
+
+		gyro_filtered_offset[0] = 0.00026631611f*gyro_raw[0];
+		gyro_filtered_offset[1] = 0.00026631611f*gyro_raw[1];
+		gyro_filtered_offset[2] = 0.00026631611f*gyro_raw[2];
+
+		gyro_filtered[0] = 0.00026631611f*gyro_raw[1];
+		gyro_filtered[1] = 0.00026631611f*gyro_raw[0];
+		gyro_filtered[2] = 0.00026631611f*gyro_raw[2];
+
+		outputBand=0;
+		startpointFullControll = 150.0f;
+		maxThrustSetpoints = 511.0f;
+		//Kp=60;
+		Kp=40.0f;
+		//Kp=45;
+		Ki=0.0f;
+		antiwindup=50.0f;
+
+		//Rate Controller
+
+		setpointRateCast[0]=((float)actuatorDesired.motorRight_NE-9999.0f)*0.01f/180.0f*3.141f;
+		setpointRateCast[1]=((float)actuatorDesired.motorFront_NW-9999.0f)*0.01f/180.0f*3.141f;
+		setpointRateCast[2]=-((float)actuatorDesired.motorBack_SE-127.0f)/180.0f*3.141f;
+		//Ki=actuatorDesired.motorRight_NE*0.001f;
+		setpointThrustCast=actuatorDesired.motorLeft_SW;
+
+		attRatesScaled[0]=0.00026631611f*gyro_raw[1];
+		attRatesScaled[1]=0.00026631611f*gyro_raw[0];
+		attRatesScaled[2]=0.00026631611f*gyro_raw[2];
+
+
+		//filtering of the gyroscope values
+
+		//compute filter coefficient alpha
+
+		//gyro_alpha=0.005/(2.0f*3.1415f*200.0f+0.005f);
+		//gyro_alpha=0.009;
+		gyro_alpha=0.09f;
+		gyro_alpha_offset=0.001f;
+		//gyro_alpha=0.001;
+		//offset estimation and filtering
+		offsetCnt++;
+		uint8_t i;
+		for(i=0; i< 3; i++)
+		{	if(offsetCnt<5000){
+			gyro_filtered_offset[i] = attRatesScaled[i] * gyro_alpha_offset +  gyro_filtered_offset[i]* (1 - gyro_alpha_offset);
+		}
+		gyro_filtered[i] = 1.0f*((attRatesScaled[i]-gyro_filtered_offset[i]) * gyro_alpha + gyro_filtered[i] * (1 - gyro_alpha))-0*setpointRateCast[i];
+		}
+
+		//rate controller
+
+		//X-axis
+		if((Ki*errXrate<antiwindup)&&(Ki*errXrate>-antiwindup)){
+			errXrate=errXrate+(setpointRateCast[0]-gyro_filtered[1]);
+		}
+
+
+		setpointXrate=Kp*(setpointRateCast[0]-gyro_filtered[0])+Ki*errXrate;
+
+		//Y-axis
+		setpointYrate=Kp*(setpointRateCast[1]-gyro_filtered[1])+Ki*errXrate;
+		//Z-axis
+		setpointZrate=Kp*(setpointRateCast[2]-gyro_filtered[2])+Ki*errXrate;
+
+		//Mixing
+		if (setpointThrustCast<=0){
+			setpointThrustCast=0;
+			outputBand=0;
+		}
+
+		if ((setpointThrustCast<startpointFullControll)&&(setpointThrustCast>0)){
+			outputBand=0.75f*setpointThrustCast;
+		}
+
+		if((setpointThrustCast>=startpointFullControll)&&(setpointThrustCast<maxThrustSetpoints-0.75f*startpointFullControll)){
+			outputBand=0.75f*startpointFullControll;
+		}
+
+		if(setpointThrustCast>=maxThrustSetpoints-0.75f*startpointFullControll){
+			setpointThrustCast=0.75f*startpointFullControll;
+			outputBand=0.75f*startpointFullControll;
+		}
+
+		actuatorDesired.motorFront_NW=setpointThrustCast+(setpointXrate+setpointYrate+setpointZrate);
+		actuatorDesired.motorRight_NE=setpointThrustCast+(-setpointXrate+setpointYrate-setpointZrate);
+		actuatorDesired.motorBack_SE=setpointThrustCast+(-setpointXrate-setpointYrate+setpointZrate);
+		actuatorDesired.motorLeft_SW=setpointThrustCast+(setpointXrate-setpointYrate-setpointZrate);
+
+
+		if((setpointThrustCast+setpointXrate+setpointYrate+setpointZrate)>(setpointThrustCast+outputBand)){
+			actuatorDesired.motorFront_NW=setpointThrustCast+outputBand;
+		}
+		if((setpointThrustCast+setpointXrate+setpointYrate+setpointZrate)<(setpointThrustCast-outputBand)){
+			actuatorDesired.motorFront_NW=setpointThrustCast-outputBand;
+		}
+
+		if((setpointThrustCast+(-setpointXrate)+setpointYrate-setpointZrate)>(setpointThrustCast+outputBand)){
+			actuatorDesired.motorRight_NE=setpointThrustCast+outputBand;
+		}
+		if((setpointThrustCast+(-setpointXrate)+setpointYrate-setpointZrate)<(setpointThrustCast-outputBand)){
+			actuatorDesired.motorRight_NE=setpointThrustCast-outputBand;
+		}
+
+		if((setpointThrustCast+(-setpointXrate)+(-setpointYrate)+setpointZrate)>(setpointThrustCast+outputBand)){
+			actuatorDesired.motorBack_SE=setpointThrustCast+outputBand;
+		}
+		if((setpointThrustCast+(-setpointXrate)+(-setpointYrate)+setpointZrate)<(setpointThrustCast-outputBand)){
+			actuatorDesired.motorBack_SE=setpointThrustCast-outputBand;
+		}
+
+		if((setpointThrustCast+setpointXrate+(-setpointYrate)-setpointZrate)>(setpointThrustCast+outputBand)){
+			actuatorDesired.motorLeft_SW=setpointThrustCast+outputBand;
+		}
+		if((setpointThrustCast+setpointXrate+(-setpointYrate)-setpointZrate)<(setpointThrustCast-outputBand)){
+			actuatorDesired.motorLeft_SW=setpointThrustCast-outputBand;
+		}
+
+		// Turn on the error LED if a packet reached here
+		static int ledcounter = 0;
+		if (ledcounter == 5)
+		{
+			uint8_t* motorSpeedBuf = ar_get_motor_packet(actuatorDesired.motorFront_NW, actuatorDesired.motorRight_NE, actuatorDesired.motorBack_SE, actuatorDesired.motorLeft_SW);
+			write(ardrone_write, motorSpeedBuf, 5);
+			led_toggle(LED_AMBER);
+			ledcounter = 0;
+		}
+		ledcounter++;
+
+		// Send heartbeat every 500th iteration
+		static int beatcount = 0;
+		if (beatcount == 500)
+		{
+			mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+			beatcount = 0;
+		}
+		beatcount++;
+
+		usleep(2000);
+
+	}
+
+}
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+void handleMessage(mavlink_message_t * msg) {
+
+	//check for terminate command
+	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
+	{
+		printf("ARDRONE OFFBOARD CONTROL TERMINATING... \n");
+
+		//terminate other threads:
+		pthread_cancel(heartbeat_thread);
+
+		//terminate this thread (receive_thread)
+		pthread_exit(NULL);
+
+	}
+	mavlink_msg_statustext_send(chan,0,"received msg");
+}
+
+/****************************************************************************
+ * user_start
+ ****************************************************************************/
+
+int ardrone_offboard_control_main(int argc, char *argv[])
+{
+	int	ret = 0;
+
+	// print text
+	printf("ARDRONE OFFBOARD CONTROL ACTIVATED\n");
+	fflush(stdout);
+	usleep(100000);
+
+	//default values for arguments
+	char * mavlink_uart_name = "/dev/ttyS0";
+	char * ardrone_uart_name = "/dev/ttyS1";
+
+	//read arguments
+	int i;
+	for (i = 1; i < argc; i++) //argv[0] is "mavlink"
+	{
+		if (strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--uart") == 0)  //uart set
+		{
+			if(argc > i+1)
+			{
+				mavlink_uart_name = argv[i+1];
+			}
+			else
+			{
+				printf("usage: ardrone_offboard_control -u devicename\n");
+				return 0;
+			}
+		}
+	}
+
+	//open uart
+	printf("MAVLink UART is %s\n", mavlink_uart_name);
+	printf("ARDrone UART is %s\n", ardrone_uart_name);
+	uart_read = open(mavlink_uart_name, O_RDWR | O_NOCTTY);
+	uart_write = open(mavlink_uart_name, O_RDWR | O_NOCTTY | O_NDELAY);
+//	uart_write = open (mavlink_uart_name,"wb");
+	ardrone_write = open(ardrone_uart_name, O_RDWR | O_NOCTTY | O_NDELAY);
+
+	/* initialize leds and sensor */
+
+
+	if ((led_init() != 0) || (gyro_init() != 0)) ret = ERROR;
+
+	fflush(stdout);
+
+
+	if (ret == ERROR) return ret;
+
+	//create pthreads
+	pthread_create (&heartbeat_thread, NULL, control_loop, NULL);
+	pthread_create (&receive_thread, NULL, receiveloop, NULL);
+
+	//wait for threads to complete:
+	pthread_join(heartbeat_thread, NULL);
+	pthread_join(receive_thread, NULL);
+
+	//close uart
+	close(uart_read);
+	close(uart_write);
+
+	return ret;
+}
+
+

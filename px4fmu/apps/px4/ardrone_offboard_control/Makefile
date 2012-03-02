@@ -1,8 +1,9 @@
 ############################################################################
-# configs/stm3240g-eval/nsh/appconfig
+# Makefile
 #
-#   Copyright (C) 2011 Gregory Nutt. All rights reserved.
-#   Author: Gregory Nutt <gnutt@nuttx.org>
+#   Copyright (C) 2011 Uros Platise. All rights reserved.
+#   Author: Uros Platise <uros.platise@isotel.eu>
+#           Gregory Nutt <spudmonkey@racsa.co.cr>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,47 +34,85 @@
 #
 ############################################################################
 
-# Path to example in apps/examples containing the user_start entry point
+# TODO, this makefile should run make under the app dirs, instead of
+# sourcing the Make.defs!
 
-CONFIGURED_APPS += examples/nsh
+-include $(TOPDIR)/.config
+-include $(TOPDIR)/Make.defs
+include $(APPDIR)/Make.defs
 
-# The NSH application library
-
-CONFIGURED_APPS += nshlib
-CONFIGURED_APPS += system/readline
-
-# The CMSIS library
-
-CONFIGURED_APPS += CMSISlib
-
-# Applications configured as an NX built-in commands
-
-ifeq ($(CONFIG_MAVLINK),y)
-#CONFIGURED_APPS += mavlink
+ifeq ($(WINTOOL),y)
+INCDIROPT	= -w
 endif
 
-CONFIGURED_APPS += reboot
-#CONFIGURED_APPS += sysctl
+# Mavlink Application
+# TODO: appname can be automatically extracted from the directory name
 
-CONFIGURED_APPS += system/i2c
-CONFIGURED_APPS += tools/i2c_dev
+APPNAME		= ardrone_offboard_control
+PRIORITY	= (SCHED_PRIORITY_MAX-1)
+STACKSIZE	= 10000
 
-# Testing stuff
-#CONFIGURED_APPS	+= px4/px4io
-CONFIGURED_APPS += px4/sensors
-CONFIGURED_APPS += examples/ostest
-CONFIGURED_APPS += px4/tests
-CONFIGURED_APPS += px4/ardrone_offboard_control
 
-ifeq ($(CONFIG_ADC),y)
-CONFIGURED_APPS += examples/adc
+CFLAGS		+= -I $(PWD)/px4/ardrone_offboard_control/include
+
+ASRCS		=
+CSRCS		= ardrone_offboard_control.c ardrone_motor_control.c
+
+AOBJS		= $(ASRCS:.S=$(OBJEXT))
+COBJS		= $(CSRCS:.c=$(OBJEXT))
+
+SRCS		= $(ASRCS) $(CSRCS)
+OBJS		= $(AOBJS) $(COBJS)
+
+ifeq ($(WINTOOL),y)
+  BIN		= "${shell cygpath -w  $(APPDIR)/libapps$(LIBEXT)}"
+else
+  BIN		= "$(APPDIR)/libapps$(LIBEXT)"
 endif
 
-ifeq ($(CONFIG_PWM),y)
-#CONFIGURED_APPS += examples/pwm
-endif
+ROOTDEPPATH	= --dep-path .
 
-ifeq ($(CONFIG_CAN),y)
-#CONFIGURED_APPS += examples/can
-endif
+# Common build
 
+VPATH		= 
+
+all:	.built
+.PHONY: context depend clean distclean
+
+$(AOBJS): %$(OBJEXT): %.S
+	$(call ASSEMBLE, $<, $@)
+
+$(COBJS): %$(OBJEXT): %.c
+	$(call COMPILE, $<, $@)
+
+.built: $(OBJS)
+	@( for obj in $(OBJS) ; do \
+		$(call ARCHIVE, $(BIN), $${obj}); \
+	done ; )
+	@touch .built
+
+# Register application
+
+.context:
+	$(call REGISTER,$(APPNAME),$(PRIORITY),$(STACKSIZE),$(APPNAME)_main)
+	@touch $@
+
+context: .context
+
+# Mavlink includes
+include:
+	@./generate.sh
+
+# Create dependencies
+
+.depend: Makefile $(SRCS) include
+	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
+	@touch $@
+
+depend: .depend
+
+clean:
+	@rm -f *.o *~ .*.swp .built
+	$(call CLEAN)
+
+distclean: clean

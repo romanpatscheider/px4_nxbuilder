@@ -1,0 +1,166 @@
+/****************************************************************************
+ * px4/ardrone_offboard_control.c
+ *
+ *   Copyright (C) 2012 PX4 Autopilot Project. All rights reserved.
+ *   Author: Lorenz Meier <lm@inf.ethz.ch>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
+
+#include <nuttx/config.h>
+#include <pthread.h>
+#include <poll.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include "ardrone_motor_control.h"
+
+typedef union {
+	uint16_t motor_value;
+	uint8_t bytes[2];
+} motor_union_t;
+
+/**
+ * @brief Generate the 8-byte motor set packet
+ *
+ * @return the number of bytes (8)
+ */
+uint8_t* ar_get_motor_packet(uint16_t motor1, uint16_t motor2, uint16_t motor3, uint16_t motor4)
+{
+	static uint8_t motor_buf[5];
+	motor_buf[0] = 0x20;
+	motor_buf[1] = 0x00;
+	motor_buf[2] = 0x00;
+	motor_buf[3] = 0x00;
+	motor_buf[4] = 0x00;
+	//{0x20, 0x00, 0x00, 0x00, 0x00};
+	// 0x20 is start sign / motor command
+	motor_union_t curr_motor;
+	uint16_t nineBitMask = 0x1FF;
+
+	// Set motor 1
+	curr_motor.motor_value = (motor1 & nineBitMask) << 4;
+	motor_buf[0] |= curr_motor.bytes[1];
+	motor_buf[1] |= curr_motor.bytes[0];
+
+	// Set motor 2
+	curr_motor.motor_value = (motor2 & nineBitMask) << 3;
+	motor_buf[1] |= curr_motor.bytes[1];
+	motor_buf[2] |= curr_motor.bytes[0];
+
+	// Set motor 3
+	curr_motor.motor_value = (motor3 & nineBitMask) << 2;
+	motor_buf[2] |= curr_motor.bytes[1];
+	motor_buf[3] |= curr_motor.bytes[0];
+
+	// Set motor 4
+	curr_motor.motor_value = (motor4 & nineBitMask) << 1;
+	motor_buf[3] |= curr_motor.bytes[1];
+	motor_buf[4] |= curr_motor.bytes[0];
+
+	return motor_buf;
+}
+
+void ar_enable_broadcast()
+{
+	ar_select_motor(0);
+}
+
+void ar_initialize_motors()
+{
+
+}
+
+void ar_select_motor(uint8_t motor)
+{
+//
+//	// Four GPIOS
+//	//		PIOS_GPIO_On(GPIO_EXT1);
+//	//		PIOS_GPIO_On(GPIO_EXT2);
+//	//		PIOS_GPIO_On(GPIO_UART2_CTS);
+//	//		PIOS_GPIO_On(GPIO_UART2_RTS);
+//
+//	if (motor == 0)
+//	{
+//
+//		PIOS_GPIO_On(GPIO_EXT1);//select 1
+//		PIOS_GPIO_On(GPIO_EXT2);//select 2
+//		PIOS_GPIO_On(GPIO_UART2_CTS);//select 3
+//		PIOS_GPIO_On(GPIO_UART2_RTS);//select 4
+//	}
+//	else if (motor == 3)
+//	{
+//		PIOS_GPIO_On(GPIO_EXT1);//select 1
+//
+//		PIOS_GPIO_Off(GPIO_EXT2);//deselect 2
+//		PIOS_GPIO_Off(GPIO_UART2_CTS);//deselect 3
+//		PIOS_GPIO_Off(GPIO_UART2_RTS);//deselect 4
+//
+//		//PIOS_GPIO_Off(GPIO_EXT1);
+//		//PIOS_GPIO_Off(GPIO_EXT2);
+//	}
+//	else if (motor == 4)
+//	{
+//		PIOS_GPIO_On(GPIO_EXT2);//select 2
+//
+//		PIOS_GPIO_Off(GPIO_EXT1);//deselect 1
+//		PIOS_GPIO_Off(GPIO_UART2_CTS);//deselect 3
+//		PIOS_GPIO_Off(GPIO_UART2_RTS);//deselect 4
+//
+//		//PIOS_GPIO_Off(GPIO_EXT1);
+//		//PIOS_GPIO_On(GPIO_EXT2);
+//	}
+//	else if (motor == 1)
+//	{
+//		PIOS_GPIO_On(GPIO_UART2_RTS);//select 3
+//
+//		PIOS_GPIO_Off(GPIO_EXT1);//deselect 1
+//		PIOS_GPIO_Off(GPIO_EXT2);//deselect 2
+//		PIOS_GPIO_Off(GPIO_UART2_CTS);//deselect 4
+//
+//		//PIOS_GPIO_On(GPIO_EXT1);
+//		//PIOS_GPIO_Off(GPIO_EXT2);
+//	}
+//	else if (motor == 2)
+//	{
+//		PIOS_GPIO_On(GPIO_UART2_CTS);//select 3
+//
+//		PIOS_GPIO_Off(GPIO_EXT1);//deselect 1
+//		PIOS_GPIO_Off(GPIO_EXT2);//deselect 2
+//		PIOS_GPIO_Off(GPIO_UART2_RTS);//deselect 3
+//
+//		//PIOS_GPIO_On(GPIO_EXT1);
+//		//PIOS_GPIO_On(GPIO_EXT2);
+//	}
+}
+

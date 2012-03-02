@@ -290,6 +290,12 @@ CONFIG_USART6_2STOP=0
 CONFIG_HRT_TIMER=3
 
 #
+# CONFIG_UART2_RTS_CTS_AS_GPIO
+#   If set, enables RTS and CTS pins as additional GPIOs 2 and 3
+# 
+CONFIG_UART2_RTS_CTS_AS_GPIO=1
+
+#
 # STM32F40xxx specific SPI device driver settings
 #
 CONFIG_SPI_EXCHANGE=y

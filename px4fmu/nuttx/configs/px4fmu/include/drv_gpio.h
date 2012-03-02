@@ -45,3 +45,6 @@
 
 /* set the direction of all GPIOs to input (arg==0) or output (arg!=0) */
 #define GPIO_DIRECTION	GPIOC(4)
+
+#define GPIO_ALL_OUTPUTS 1
+#define GPIO_ALL_INPUTS 0

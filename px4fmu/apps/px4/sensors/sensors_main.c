@@ -102,8 +102,6 @@ int sensors_main(int argc, char *argv[])
 
 	struct i2c_dev_s *i2c;
 	i2c = up_i2cinitialize(2);
-	up_i2cuninitialize(i2c);
-	i2c = up_i2cinitialize(2);
 	if (!i2c) {
 		message("Failed to initialize I2C bus 2\n");
 		goto out;

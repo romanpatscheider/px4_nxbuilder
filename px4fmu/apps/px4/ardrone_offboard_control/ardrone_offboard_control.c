@@ -431,12 +431,17 @@ static void *control_loop(void * arg)
 		}
 		ledcounter++;
 
-		// Send heartbeat every 500th iteration
+		// Send heartbeat every 400th iteration
 		static int beatcount = 0;
-		if (beatcount == 500)
+		if (beatcount == 400)
 		{
 			mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 			beatcount = 0;
+
+			if (beatcount % 4 == 0)
+			{
+				mavlink_msg_raw_imu_send(chan, 0, 0, 0, 0, gyro_raw[0], gyro_raw[1], gyro_raw[2], 0, 0, 0);
+			}
 		}
 		beatcount++;
 

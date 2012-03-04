@@ -115,6 +115,20 @@ int ar_multiplexing_init()
 		close(fd);
 		return -1;
 	}
+
+	/* deactivate all outputs */
+	int ret = 0;
+	ret += ioctl(fd, GPIO_CLEAR, 0);
+	ret += ioctl(fd, GPIO_CLEAR, 1);
+	ret += ioctl(fd, GPIO_CLEAR, 2);
+	ret += ioctl(fd, GPIO_CLEAR, 3);
+	if (ret < 0)
+	{
+		printf("GPIO: clearing pins fail\n");
+		close(fd);
+		return -1;
+	}
+
 	return fd;
 }
 

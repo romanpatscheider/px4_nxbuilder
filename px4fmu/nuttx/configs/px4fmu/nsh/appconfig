@@ -55,8 +55,8 @@ endif
 CONFIGURED_APPS += reboot
 #CONFIGURED_APPS += sysctl
 
-CONFIGURED_APPS += system/i2c
-CONFIGURED_APPS += tools/i2c_dev
+#CONFIGURED_APPS += system/i2c
+#CONFIGURED_APPS += tools/i2c_dev
 
 # Testing stuff
 #CONFIGURED_APPS	+= px4/px4io

@@ -43,6 +43,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include "ardrone_motor_control.h"
 
 #include <arch/board/drv_gpio.h>
@@ -93,29 +94,61 @@ uint8_t* ar_get_motor_packet(uint16_t motor1, uint16_t motor2, uint16_t motor3, 
 	return motor_buf;
 }
 
-void ar_enable_broadcast()
+void ar_enable_broadcast(int fd)
 {
-	ar_select_motor(0);
+	ar_select_motor(fd, 0);
 }
 
-void ar_initialize_motors()
-{
-
-}
-
-void ar_select_motor(uint8_t motor)
+int ar_multiplexing_init()
 {
 	int		fd;
-	int		ret = 0;
 
 	fd = open("/dev/gpio", O_RDONLY | O_NONBLOCK);
 	if (fd < 0) {
 		printf("GPIO: open fail\n");
-		return ERROR;
+		return fd;
 	}
 
-	ret += ioctl(fd, GPIO_DIRECTION, GPIO_ALL_OUTPUTS);
+	if (ioctl(fd, GPIO_DIRECTION, GPIO_ALL_OUTPUTS) != 0)
+	{
+		printf("GPIO: output set fail\n");
+		close(fd);
+		return -1;
+	}
+	return fd;
+}
 
+int ar_multiplexing_deinit(int fd)
+{
+	if (fd < 0) {
+		printf("GPIO: no valid descriptor\n");
+		return fd;
+	}
+
+	int ret = 0;
+	ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//deselect 1
+	ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
+	ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 3
+	ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+
+	if (ret != 0)
+	{
+		printf("GPIO: clear failed %d times\n", ret);
+	}
+
+	if (ioctl(fd, GPIO_DIRECTION, GPIO_ALL_INPUTS) != 0)
+	{
+		printf("GPIO: input set fail\n");
+		return -1;
+	}
+	close(fd);
+
+	return ret;
+}
+
+int ar_select_motor(int fd, uint8_t motor)
+{
+	int ret = 0;
 	// Four GPIOS
 	//		GPIO_EXT1
 	//		GPIO_EXT2
@@ -136,43 +169,36 @@ void ar_select_motor(uint8_t motor)
 		ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//select 1
 		// XXX FIXME CHECK!!!!!
 		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
-		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 2
-		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 2
+		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 3
+		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
 	}
-	//	else if (motor == 4)
-	//	{
-//		PIOS_GPIO_On(GPIO_EXT2);//select 2
-//
-//		PIOS_GPIO_Off(GPIO_EXT1);//deselect 1
-//		PIOS_GPIO_Off(GPIO_UART2_CTS);//deselect 3
-//		PIOS_GPIO_Off(GPIO_UART2_RTS);//deselect 4
-//
-//		//PIOS_GPIO_Off(GPIO_EXT1);
-//		//PIOS_GPIO_On(GPIO_EXT2);
-//	}
-//	else if (motor == 1)
-//	{
-//		PIOS_GPIO_On(GPIO_UART2_RTS);//select 3
-//
-//		PIOS_GPIO_Off(GPIO_EXT1);//deselect 1
-//		PIOS_GPIO_Off(GPIO_EXT2);//deselect 2
-//		PIOS_GPIO_Off(GPIO_UART2_CTS);//deselect 4
-//
-//		//PIOS_GPIO_On(GPIO_EXT1);
-//		//PIOS_GPIO_Off(GPIO_EXT2);
-//	}
-//	else if (motor == 2)
-//	{
-//		PIOS_GPIO_On(GPIO_UART2_CTS);//select 3
-//
-//		PIOS_GPIO_Off(GPIO_EXT1);//deselect 1
-//		PIOS_GPIO_Off(GPIO_EXT2);//deselect 2
-//		PIOS_GPIO_Off(GPIO_UART2_RTS);//deselect 3
-//
-//		//PIOS_GPIO_On(GPIO_EXT1);
-//		//PIOS_GPIO_On(GPIO_EXT2);
-//	}
-	close(fd);
+	else if (motor == 4)
+	{
+		// XXX FIXME CHECK!!!!!
+		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		// XXX FIXME CHECK!!!!!
+		ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//select 2
+		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 3
+		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+	}
+	else if (motor == 1)
+	{
+		// XXX FIXME CHECK!!!!!
+		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		// XXX FIXME CHECK!!!!!
+		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
+		ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//select 3
+		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+	}
+	else if (motor == 2)
+	{
+		// XXX FIXME CHECK!!!!!
+		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		// XXX FIXME CHECK!!!!!
+		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
+		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//select 3
+		ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//deselect 4
+	}
 	return ret;
 }
 

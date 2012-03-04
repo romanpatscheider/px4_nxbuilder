@@ -1,10 +1,8 @@
 /****************************************************************************
- * examples/px4/sensors/sensors.h
+ * apps/reboot.c
  *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Copyright (C) 2011-2012 Michael Smith. All rights reserved.
- *   Authors: Michael Smith <DrZiplok@me.com>
- *		Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2012 Lorenz Meier. All rights reserved.
+ *   Author: Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,58 +33,113 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_PX4_SENSORS_H
-#define __APPS_PX4_SENSORS_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+
 #include <nuttx/config.h>
-#include <nuttx/spi.h>
-#include <nuttx/i2c.h>
+#include <stdio.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
+
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string.h>
+#include <errno.h>
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
 
-/* Debug ********************************************************************/
-
-#ifdef CONFIG_CPP_HAVE_VARARGS
-#  ifdef CONFIG_DEBUG
-#    define message(...) lib_rawprintf(__VA_ARGS__)
-#    define msgflush()
-#  else
-#    define message(...) printf(__VA_ARGS__)
-#    define msgflush() fflush(stdout)
-#  endif
-#else
-#  ifdef CONFIG_DEBUG
-#    define message lib_rawprintf
-#    define msgflush()
-#  else
-#    define message printf
-#    define msgflush() fflush(stdout)
-#  endif
-#endif
-
 /****************************************************************************
- * Public Types
+ * Private Data
  ****************************************************************************/
 
 /****************************************************************************
- * Public Variables
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Function Prototypes
+ * user_start
  ****************************************************************************/
 
-int	l3gd20_test_configure(struct spi_dev_s *spi);
-int	l3gd20_test_read(struct spi_dev_s *spi);
-int	bma180_test_configure(struct spi_dev_s *spi);
-int	bma180_test_read(struct spi_dev_s *spi);
-int	bma180_test(struct spi_dev_s *spi);
-int hmc5883l_test(struct i2c_dev_s *i2c);
 
-#endif /* __APPS_PX4_SENSORS_H */
+
+/****************************************************************************
+ * Definitions
+ ****************************************************************************/
+
+int fd;
+
+static int gps_init()
+{
+	struct termios options;
+
+	fd = open("/dev/ttyS3", O_RDONLY | O_NOCTTY);
+	if (fd < 0) {
+		printf("GPS UART6: open fail\n");
+		return ERROR;
+	} else {
+		tcgetattr(fd, &options);
+		/* Set baud rate to 38400 */
+		//cfsetispeed(&options, B38400);
+		//cfsetospeed(&options, B38400);
+		/* Enable receiver and set local mode */
+		options.c_cflag |= (CLOCAL | CREAD);
+		/* Set the new options */
+		tcsetattr(fd, TCSANOW, &options);
+		printf("\tGPS configured..\n");
+	}
+	return 0;
+}
+
+/****************************************************************************
+ * Name: interrupt
+ ****************************************************************************/
+
+static void interrupt(int signo)
+{
+	printf("Exiting...\n");
+	fflush(stdout);
+	close(fd);
+	exit(0);
+}
+
+int gpsd_main(int argc, char *argv[])
+{
+    // print text
+    printf("GPS deamon ready\n\n");
+
+
+    int	ret = gps_init();
+
+    fflush(stdout);
+
+//	sigset_t sigset;
+//	sigemptyset(&sigset);
+//	sigaddset(SI_USER, &sigset);
+	struct sigaction act;
+
+	act.sa_u._sa_handler = interrupt;
+//	act.sa_mask = sigset;
+
+    sigaction(SI_USER, &act, NULL);
+
+    while(true)
+    {
+    	char ch;
+    	/* blocking read on next byte */
+    	read (fd, &ch, 1);
+    	printf("%c", ch);
+    }
+
+    /* Should never reach here, only on error */
+    return ret;
+}
+
+

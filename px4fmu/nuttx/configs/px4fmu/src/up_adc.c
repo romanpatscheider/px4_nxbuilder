@@ -42,6 +42,7 @@
 
 #include <errno.h>
 #include <debug.h>
+#include <stdio.h>
 
 #include <nuttx/analog/adc.h>
 #include <arch/board/board.h>
@@ -50,6 +51,7 @@
 #include "up_arch.h"
 
 //#include "stm32_pwm.h"
+#include "stm32_adc.h"
 #include "px4fmu-internal.h"
 
 #ifdef CONFIG_ADC
@@ -92,7 +94,6 @@
 static const uint8_t  g_chanlist[ADC3_NCHANNELS] = {10, 11, 12, 13};
 
 /* Configurations of pins used byte each ADC channels */
-
 static const uint32_t g_pinlist[ADC3_NCHANNELS]  = {GPIO_ADC3_IN10, GPIO_ADC3_IN11, GPIO_ADC3_IN12, GPIO_ADC3_IN13};
 #endif
 
@@ -116,48 +117,50 @@ static const uint32_t g_pinlist[ADC3_NCHANNELS]  = {GPIO_ADC3_IN10, GPIO_ADC3_IN
 int adc_devinit(void)
 {
 #ifdef CONFIG_STM32_ADC3
-  static bool initialized = false;
-  struct adc_dev_s *adc;
-  int ret;
-  int i;
+	static bool initialized = false;
+	struct adc_dev_s *adc[ADC3_NCHANNELS];
+	int ret;
+	int i;
 
-  /* Check if we have already initialized */
+	/* Check if we have already initialized */
 
-  if (!initialized)
-    {
-      /* Configure the pins as analog inputs for the selected channels */
+	if (!initialized)
+	{
+		char name[11];
 
-      for (i = 0; i < ADC3_NCHANNELS; i++)
-        {
-          stm32_configgpio(g_pinlist[i]);
-        }
 
-      /* Call stm32_adcinitialize() to get an instance of the ADC interface */
+		for (i = 0; i < ADC3_NCHANNELS; i++)
+		{
+			/* Configure the pins as analog inputs for the selected channels */
+			stm32_configgpio(g_pinlist[i]);
 
-      adc = stm32_adcinitialize(3, g_chanlist, ADC3_NCHANNELS);
-      if (adc == NULL)
-        {
-          adbg("ERROR: Failed to get ADC interface\n");
-          return -ENODEV;
-        }
+			/* Call stm32_adcinitialize() to get an instance of the ADC interface */
+			adc[i] = stm32_adcinitialize(3, &(g_chanlist[i]), 1);
+			if (adc == NULL)
+			{
+				adbg("ERROR: Failed to get ADC interface\n");
+				return -ENODEV;
+			}
 
-      /* Register the ADC driver at "/dev/adc0" */
 
-      ret = adc_register("/dev/adc0", adc);
-      if (ret < 0)
-        {
-          adbg("adc_register failed: %d\n", ret);
-          return ret;
-        }
+			/* Register the ADC driver at "/dev/adc0" */
+			sprintf(name, "/dev/adc%d", i);
+			ret = adc_register(name, adc[i]);
+			if (ret < 0)
+			{
+				adbg("adc_register failed for adc %s: %d\n", name, ret);
+				return ret;
+			}
+		}
 
-      /* Now we are initialized */
+		/* Now we are initialized */
 
-      initialized = true;
-    }
+		initialized = true;
+	}
 
-  return OK;
+	return OK;
 #else
-  return -ENOSYS;
+	return -ENOSYS;
 #endif
 }
 

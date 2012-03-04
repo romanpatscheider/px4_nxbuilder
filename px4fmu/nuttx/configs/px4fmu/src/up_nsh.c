@@ -47,6 +47,7 @@
 
 #include <nuttx/spi.h>
 #include <nuttx/mmcsd.h>
+#include <nuttx/analog/adc.h>
 
 #include "stm32_internal.h"
 #include "px4fmu-internal.h"
@@ -108,6 +109,14 @@ int nsh_archinitialize(void)
 
   /* Initialize the user leds */
   up_ledinit(); // FIXME this might init the leds twice, but no harm
+
+  int adc_state = adc_devinit();
+  if (adc_state != OK)
+  {
+	  message("adc_devinit failed: %d\n", adc_state);
+	  return -ENODEV;
+  }
+
   up_ledoff(LED_BLUE);
   up_ledoff(LED_AMBER);
 

@@ -48,11 +48,11 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <nuttx/analog/adc.h>
+#include <nuttx/spi.h>
 
 #include "tests.h"
 
-#include <arch/board/drv_gpio.h>
+#include <nuttx/analog/adc.h>
 
 
 /****************************************************************************
@@ -88,108 +88,80 @@
  * Name: test_gpio
  ****************************************************************************/
 
-int test_gpio(int argc, char *argv[])
+int test_adc(int argc, char *argv[])
 {
-	int		fd;
-	int		adc;
+	int		fd0;
 	int		ret = 0;
+	struct adc_msg_s sample[4];
+	size_t readsize;
+	ssize_t nbytes;
+	int i;
+	int j;
+	int errval;
 
-	fd = open("/dev/gpio", O_RDONLY | O_NONBLOCK);
-	if (fd < 0) {
-		printf("GPIO: open fail\n");
-		return ERROR;
-	}
-
-	//	adc = open("/dev/adc0", O_RDONLY);
-	//	if (adc < 0) {
-	//		printf("GPIO: adc open fail\n");
-	//		return ERROR;
-	//	}
-
-	if (ioctl(fd, GPIO_DIRECTION, GPIO_ALL_OUTPUTS)) {
-
-		printf("GPIO: output direction set fail\n");
-		return ERROR;
-	}
-
-	/* change all gpios */
-	if (ioctl(fd, GPIO_SET, 0)) {
-
-		printf("GPIO: set fail for index 0\n");
+	for (j = 0; j < 4; j++)
+	{
+		char name[11];
+		sprintf(name, "/dev/adc%d", j);
+	fd0 = open(name, O_RDONLY | O_NONBLOCK);
+	if (fd0 < 0)
+	{
+		printf("ADC: %s open fail\n", name);
 		return ERROR;
 	} else {
-		printf("GPIO: set success for index 0\n");
+		printf("Opened %s successfully\n", name);
 	}
 
-	/* Wait for 20 ms */
-	usleep(20000);
+	/* first adc read round */
+	readsize = 1 * sizeof(struct adc_msg_s);
+	nbytes = read(fd0, sample, readsize);
 
-	if (ioctl(fd, GPIO_CLEAR, 0)) {
+    /* Handle unexpected return values */
 
-		printf("GPIO: clear fail for index 0\n");
-		return ERROR;
-	} else {
-		printf("GPIO: clear success for index 0\n");
+    if (nbytes < 0)
+      {
+        errval = errno;
+        if (errval != EINTR)
+          {
+            message("read %s failed: %d\n",
+                    name, errval);
+            errval = 3;
+            goto errout_with_dev;
+          }
+
+        message("\tInterrupted read...\n");
+      }
+    else if (nbytes == 0)
+      {
+        message("\tNo data read, Ignoring\n");
+      }
+
+    /* Print the sample data on successful return */
+
+    else
+    {
+    	int nsamples = nbytes / sizeof(struct adc_msg_s);
+    	if (nsamples * sizeof(struct adc_msg_s) != nbytes)
+    	{
+    		message("\tread size=%d is not a multiple of sample size=%d, Ignoring\n",
+    				nbytes, sizeof(struct adc_msg_s));
+    	}
+    	else
+    	{
+    		message("Sample:\n");
+    		for (i = 0; i < nsamples ; i++)
+    		{
+    			message("%d: channel: %d value: %d\n",
+    					i, sample[i].am_channel, sample[i].am_data);
+    		}
+    	}
+    }
 	}
 
-	/* Wait for 20 ms */
-	usleep(20000);
+	printf("\t ADC test successful.\n");
 
-	if (ioctl(fd, GPIO_SET, 1)) {
-
-		printf("GPIO: set fail for index 1\n");
-		return ERROR;
-	} else {
-		printf("GPIO: set success for index 1\n");
-	}
-
-	/* Wait for 20 ms */
-	usleep(20000);
-
-	if (ioctl(fd, GPIO_CLEAR, 1)) {
-
-		printf("GPIO: clear fail for index 1\n");
-		return ERROR;
-	} else {
-		printf("GPIO: clear success for index 1\n");
-	}
-#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
-	if (ioctl(fd, GPIO_SET, 2)) {
-
-		printf("GPIO: set fail for index 2\n");
-		return ERROR;
-	}
-
-	/* Wait for 20 ms */
-	usleep(20000);
-
-	if (ioctl(fd, GPIO_CLEAR, 2)) {
-
-		printf("GPIO: clear fail for index 2\n");
-		return ERROR;
-	}
-	if (ioctl(fd, GPIO_SET, 3)) {
-
-		printf("GPIO: set fail for index 3\n");
-		return ERROR;
-	}
-
-	/* Wait for 20 ms */
-	usleep(20000);
-
-	if (ioctl(fd, GPIO_CLEAR, 3)) {
-
-		printf("GPIO: clear fail for index 3\n");
-		return ERROR;
-	}
-#endif
-
-	/* Go back to default */
-	ioctl(fd, GPIO_DIRECTION, GPIO_ALL_INPUTS);
-	close(fd);
-	close(adc);
-
-	printf("\t GPIO test successful.\n");
+	errout_with_dev:
+	  if (fd0 != 0) close(fd0);
 
 	return ret;
 }

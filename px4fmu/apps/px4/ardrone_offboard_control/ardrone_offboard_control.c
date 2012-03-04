@@ -67,6 +67,7 @@ pthread_t receive_thread;
 
 int leds;
 int gyro;
+int gpios;
 
 /* gyro x, y, z raw values */
 int16_t	gyro_raw[3] = {0, 0, 0};
@@ -161,13 +162,22 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 	while(1) {
 
 		/* blocking read on next byte */
-		ch = read (ardrone_write, &ch, 1);
+		read (uart_read, &ch, 1);
+
+		// XXX Terminate on first byte
+		printf("\nARDRONE OFFBOARD CONTROL TERMINATING... \n");
+
+				//terminate other threads:
+				pthread_cancel(heartbeat_thread);
+
+				//terminate this thread (receive_thread)
+				pthread_exit(NULL);
 
 
 		if (mavlink_parse_char(MAVLINK_COMM_0,ch,&msg,&status)) //parse the char
 			handleMessage(&msg);
 
-		usleep(1); //pthread_yield seems not to work
+		//usleep(1); //pthread_yield seems not to work
 
 	}
 
@@ -175,29 +185,39 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 
 static void ar_init_motors()
 {
+	// Initialize multiplexing
+	gpios = ar_multiplexing_init();
+
 	// Write ARDrone commands on UART2
 	uint8_t initbuf[] = {0xE0, 0x91, 0xA1, 0x00, 0x40};
 	uint8_t multicastbuf[] = {0xA0, 0xA0, 0xA0, 0xA0, 0xA0, 0xA0};
+
+	// XXX remove
+	if (ar_select_motor(gpios, 0) != 0)
+	{
+		printf("AR: Motor select failed!\n");
+	}
 
 	/* initialize all motors
 	 * - select one motor at a time
 	 * - configure motor
 	 */
 	int i;
+	int errcounter = 0;
 	for (i = 1; i < 5; ++i)
 	{
 		// Initialize motors 1-4
 		initbuf[3]=i;
-		ar_select_motor(i);
+		errcounter += ar_select_motor(gpios, i);
 
 		write(ardrone_write, initbuf+0, 1);
 
 		/* sleep one second */
 		usleep(200000);
 		usleep(200000);
-		usleep(200000);
-		usleep(200000);
-		usleep(200000);
+//		usleep(200000);
+//		usleep(200000);
+//		usleep(200000);
 
 		write(ardrone_write, initbuf+1, 1);
 		/* wait 5 ms */
@@ -237,12 +257,17 @@ static void ar_init_motors()
 		usleep(1000);
 
 		write(ardrone_write, multicastbuf+5, 1);
-		/* wait 50 ms XXX change to 100 us */
-		usleep(50000);
+		/* wait 5 ms XXX change to 100 us */
+		usleep(5000);
 	}
 
 	//start the multicast part
-	ar_select_motor(0);
+	errcounter += ar_select_motor(gpios, 0);
+
+	if (errcounter != 0)
+	{
+		printf("AR: init sequence incomplete, failed %d times", -errcounter);
+	}
 }
 
 
@@ -271,10 +296,12 @@ static void *control_loop(void * arg)
 
 	uint16_t offsetCnt=0;
 	float antiwindup=0;
-
 	ar_init_motors();
 
 	while(1) {
+
+		// Update gyro
+		gyro_read();
 
 		gyro_filtered_offset[0] = 0.00026631611f*gyro_raw[0];
 		gyro_filtered_offset[1] = 0.00026631611f*gyro_raw[1];
@@ -416,7 +443,7 @@ static void *control_loop(void * arg)
 		usleep(2000);
 
 	}
-
+	return 0;
 }
 /****************************************************************************
  * Public Functions
@@ -502,6 +529,10 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	//close uart
 	close(uart_read);
 	close(uart_write);
+	close(ardrone_write);
+	close(leds);
+	ar_multiplexing_deinit(gpios);
+	close(gyro);
 
 	return ret;
 }

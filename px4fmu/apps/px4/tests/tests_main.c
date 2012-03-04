@@ -85,6 +85,7 @@ struct {
 	{"gpio",	test_gpio,	0},
 	{"hrt",		test_hrt,	0},
 	{"led",		test_led,	0},
+	{"adc",		test_adc,	0},
 	{"all",		test_all,	OPT_NOALLTEST},
 	{"help",	test_help,	OPT_NOALLTEST | OPT_NOHELP},
 	{NULL,		NULL}

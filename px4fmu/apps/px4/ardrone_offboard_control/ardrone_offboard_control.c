@@ -484,7 +484,7 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	usleep(100000);
 
 	//default values for arguments
-	char * mavlink_uart_name = "/dev/ttyS0";
+	char * mavlink_uart_name = "/dev/ttyS2";
 	char * ardrone_uart_name = "/dev/ttyS1";
 
 	//read arguments

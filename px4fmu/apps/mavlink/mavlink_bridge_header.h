@@ -36,32 +36,8 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
 
     if (chan == MAVLINK_COMM_0)
     {
-//
-//		FILE *uart;
-//		uart = fopen("/dev/ttyS0","wb");
-		fwrite (ch, 1, length, uart_write);
-//		fclose(uart);
-
-
+		write (uart_write, ch, 1);
     }
-}
-
-/**
- * @brief Read one char (uint8_t) over a comm channel
- *
- * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
- * @param ch Character to read
- */
-static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
-{
-
-	uint8_t ch = EOF;
-
-    if (chan == MAVLINK_COMM_0)
-    {
-    	fread ( &ch, 1, 1, uart_read );
-    }
-    return ch;
 }
 
 

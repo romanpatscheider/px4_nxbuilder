@@ -7,7 +7,7 @@
 //use efficient approach, see mavlink_helpers.h
 #define MAVLINK_SEND_UART_BYTES mavlink_send_uart_bytes
  
-#include "mavlink-1.0/mavlink_types.h"
+#include "v1.0/mavlink_types.h"
 
  
 /* Struct that stores the communication settings of this system.
@@ -22,8 +22,8 @@
  */
 extern mavlink_system_t mavlink_system;
 
-FILE * uart_read;
-FILE * uart_write;
+int uart_read;
+int uart_write;
  
 /**
  * @brief Send one char (uint8_t) over a comm channel

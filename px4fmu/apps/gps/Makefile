@@ -45,18 +45,18 @@ ifeq ($(WINTOOL),y)
 INCDIROPT	= -w
 endif
 
-# GPS Application
+# gps Application
 # TODO: appname can be automatically extracted from the directory name
 
 APPNAME		= gps
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 1400
+STACKSIZE	= 10000
 
 
 #CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
-CSRCS		= gps.c
+CSRCS		= gps.c nmealib/context.c nmealib/generate.c nmealib/generator.c nmealib/gmath.c nmealib/info.c nmealib/parse.c nmealib/parser.c nmealib/sentence.c nmealib/time.c nmealib/tok.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))

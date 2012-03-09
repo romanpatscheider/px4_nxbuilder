@@ -65,7 +65,21 @@
 #elif defined(CONFIG_STM32_STM32F40XX)
 #  include "chip/stm32f40xxx_pinmap.h"
 #else
-#  error "Unsupported STM32 chip"
+#  error "No pinmap file for this STM32 chip"
+#endif
+
+/* If the common ARMv7-M vector handling logic is used, then include the
+ * required vector definitions as well.
+ */
+
+#ifdef CONFIG_ARMV7M_CMNVECTOR
+#  if defined(CONFIG_STM32_STM32F10XX)
+#    include "chip/stm32f10xxx_vectors.h"
+#  elif defined(CONFIG_STM32_STM32F40XX)
+#    include "chip/stm32f40xxx_vectors.h"
+#  else
+#    error "No vector file for this STM32 family"
+#  endif
 #endif
 
 /* Include only the mchip emory map. */

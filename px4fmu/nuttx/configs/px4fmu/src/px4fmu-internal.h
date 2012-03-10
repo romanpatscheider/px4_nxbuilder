@@ -83,6 +83,26 @@
 
 // XXX additional GPIOs should be defined here
 
+/* PWM
+ *
+ * The PX4FMU has five PWM outputs, of which only the output on
+ * pin PC8 is fixed assigned to this function. The other four possible
+ * pwm sources are the TX, RX, RTS and CTS pins of USART2
+ *
+ * Alternate function mapping:
+ * PC8 - BUZZER - TIM8_CH3/SDIO_D0 /TIM3_CH3/ USART6_CK / DCMI_D2
+ */
+
+#ifdef CONFIG_PWM
+#  if defined(CONFIG_STM32_TIM3_PWM)
+#    define BUZZER_PWMCHANNEL 3
+#	 define BUZZER_PWMTIMER 3
+#  elif defined(CONFIG_STM32_TIM8_PWM)
+#    define BUZZER_PWMCHANNEL 3
+#    define BUZZER_PWMTIMER 8
+#  endif
+#endif
+
 /****************************************************************************************************
  * Public Types
  ****************************************************************************************************/

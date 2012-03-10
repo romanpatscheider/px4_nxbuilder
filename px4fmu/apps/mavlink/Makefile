@@ -50,13 +50,13 @@ endif
 
 APPNAME		= mavlink
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 1400
+STACKSIZE	= 2400
 
 
 CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
-CSRCS		= mavlink.c
+CSRCS		= mavlink.c mavlink_parameters.c waypoints.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))

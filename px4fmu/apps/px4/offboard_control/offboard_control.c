@@ -152,8 +152,6 @@ int offboard_control_main(int argc, char *argv[])
     	printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", gyro_raw[0], gyro_raw[1], gyro_raw[2]);
     	led_toggle(LED_BLUE);
     	led_toggle(LED_AMBER);
-    	usleep(49000);
-    	testcounter++;
 
     	if (testcounter > 100) break;
     }

@@ -231,7 +231,7 @@ int sensors_main(int argc, char *argv[])
 	bma180_test_configure(spi);
 
 	int i;
-	for (i = 0; i < 10; i++)
+	for (i = 0; i < 3; i++)
 	{
 		l3gd20_test_read(spi);
 		bma180_test_read(spi);

@@ -151,6 +151,8 @@ bma180_test_configure(struct spi_dev_s *spi)
 	ctrl0 &= (~REG0_WRITE_ENABLE);
 	printf("ctrl0: %d\n", ctrl0);
 	write_reg(spi, ADDR_CTRL_REG0, ctrl0);
+
+	return 0;
 }
 
 int

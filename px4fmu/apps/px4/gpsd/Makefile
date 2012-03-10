@@ -1,10 +1,9 @@
 ############################################################################
-# apps/px4/tests/Makefile
+# Makefile
 #
-#   Copyright (C) 2011 Gregory Nutt. All rights reserved.
-#   Copyright (C) 2011-2012 Michael Smith. All rights reserved.
-#   Authors: Michael Smith <DrZiplok@me.com>
-#            Gregory Nutt <gnutt@nuttx.org>
+#   Copyright (C) 2011 Uros Platise. All rights reserved.
+#   Author: Uros Platise <uros.platise@isotel.eu>
+#           Gregory Nutt <spudmonkey@racsa.co.cr>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -35,12 +34,26 @@
 #
 ############################################################################
 
+# TODO, this makefile should run make under the app dirs, instead of
+# sourcing the Make.defs!
+
 -include $(TOPDIR)/.config
 -include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
+ifeq ($(WINTOOL),y)
+INCDIROPT	= -w
+endif
+
+# Reboot Application
+# TODO: appname can be automatically extracted from the directory name
+
+APPNAME		= gpsd
+PRIORITY	= SCHED_PRIORITY_DEFAULT
+STACKSIZE	= 300
+
 ASRCS		=
-CSRCS		= tests_main.c test_sensors.c test_gpio.c test_hrt.c test_led.c test_adc.c
+CSRCS		= gpsd.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))
@@ -56,16 +69,12 @@ endif
 
 ROOTDEPPATH	= --dep-path .
 
-APPNAME		= tests
-PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 2048
-
 # Common build
 
 VPATH		= 
 
-all: .built
-.PHONY: context clean depend distclean
+all:	.built
+.PHONY: context depend clean distclean
 
 $(AOBJS): %$(OBJEXT): %.S
 	$(call ASSEMBLE, $<, $@)
@@ -79,15 +88,17 @@ $(COBJS): %$(OBJEXT): %.c
 	done ; )
 	@touch .built
 
+# Register application
+
 .context:
-ifeq ($(CONFIG_NSH_BUILTIN_APPS),y)
 	$(call REGISTER,$(APPNAME),$(PRIORITY),$(STACKSIZE),$(APPNAME)_main)
 	@touch $@
-endif
 
 context: .context
 
-.depend: Makefile $(SRCS)
+# Create dependencies
+
+.depend: Makefile $(SRCS) include
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 
@@ -98,6 +109,3 @@ clean:
 	$(call CLEAN)
 
 distclean: clean
-	@rm -f Make.dep .depend
-
--include Make.dep

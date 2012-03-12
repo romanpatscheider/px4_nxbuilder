@@ -104,6 +104,16 @@ int read_gps_nmea(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info
 	return 0;
 }
 
+/**
+ * \brief Convert NDEG (NMEA degree) to fractional degree
+ */
+float ndeg2degree(float val)
+{
+    float deg = ((int)(val / 100));
+    val = deg + (val - deg * 100) / 60;
+    return val;
+}
+
 
 
 

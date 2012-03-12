@@ -22,7 +22,7 @@
 
 float nmea_random(float min, float max)
 {
-    static float rand_max = 10;//RAND_MAX; //TODO: look up this value
+    static float rand_max = MAX_RAND;//RAND_MAX; //nuttx defines MAX_RAND instead of RAND_MAX
     float rand_val = rand();
     float bounds = max - min;
     return min + (rand_val * bounds) / rand_max;

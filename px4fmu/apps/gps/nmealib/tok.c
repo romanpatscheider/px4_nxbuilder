@@ -70,10 +70,8 @@ int nmea_atoi(const char *str, int str_sz, int radix)
     {
         memcpy(&buff[0], str, str_sz);
         buff[str_sz] = '\0';
-        printf("nmea_atof1: buff = %s, str_sz=%d\n", buff, str_sz); //TODO: removeme
         res = strtol(&buff[0], &tmp_ptr, radix);
     }
-    printf("nmea_atof2 res=%d, \n", res, (int)res); //TODO: removeme
     return res;
 }
 
@@ -90,10 +88,8 @@ float nmea_atof(const char *str, int str_sz)
     {
         memcpy(&buff[0], str, str_sz);
         buff[str_sz] = '\0';
-     //   printf("nmea_atof1: buff = %s, str_sz=%d\n", buff, str_sz); //TODO: removeme
         res = (float)strtod(&buff[0], &tmp_ptr);
     }
-   // printf("nmea_atof2 res=: int cast: %d, float: %f\n", res, (int)res); //TODO: removeme
     return res;
 }
 

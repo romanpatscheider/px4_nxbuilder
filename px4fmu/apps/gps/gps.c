@@ -93,84 +93,84 @@ int gps_main(int argc, char *argv[])
 //    return 0;
     usleep(100000);
 
-//    //read arguments
-////    char * device = argv[1];
-//    char * device = "/dev/ttyS1";
-//
-//    int buffer_size = 1000;
-//    nmeaINFO * info = malloc(sizeof(nmeaINFO));
-//
-//    //open port (baud rate is set in defconfig file)
-//	int fd = open_port(device);
-//	if(fd != -1)
-//	{
-//		printf("port opened: %s\n", device);
-//	}
-//	else
-//	{
-//		printf("Could not open port\n");
-//		sleep(1);
-//		return 0;
-//	}
-//
-//	//gps parser (nmea)
-//	nmeaPARSER parser;
-//	nmea_parser_init(&parser);
-//	nmea_zero_INFO(info);
-//	double lat_dec = 0;
-//	double lon_dec = 0;
+    //read arguments
+//    char * device = argv[1];
+    char * device = "/dev/ttyS1";
 
-//
-//
-//	while(1)
-//	{
+    int buffer_size = 1000;
+    nmeaINFO * info = malloc(sizeof(nmeaINFO));
 
-//		char * gps_rx_buffer = malloc(buffer_size*sizeof(char)); //TODO: move out of loop
-//
-//		//get gps data into info
-//		read_gps_nmea(fd, gps_rx_buffer, buffer_size, info, &parser);
-//
-//		//convert latitude longitude
-////		lat_dec = nmea_ndeg2degree(info->lat);
-////		lon_dec = nmea_ndeg2degree(info->lon);
+    //open port (baud rate is set in defconfig file)
+	int fd = open_port(device);
+	if(fd != -1)
+	{
+		printf("port opened: %s\n", device);
+	}
+	else
+	{
+		printf("Could not open port\n");
+		sleep(1);
+		return 0;
+	}
+
+	//gps parser (nmea)
+	nmeaPARSER parser;
+	nmea_parser_init(&parser);
+	nmea_zero_INFO(info);
+	float lat_dec = 0;
+	float lon_dec = 0;
+
+
+
+	while(1)
+	{
+
+		char * gps_rx_buffer = malloc(buffer_size*sizeof(char)); //TODO: move out of loop
+
+		//get gps data into info
+		read_gps_nmea(fd, gps_rx_buffer, buffer_size, info, &parser);
+
+		//convert latitude longitude
+		lat_dec = ndeg2degree(info->lat);
+		lon_dec = ndeg2degree(info->lon);
 //		lat_dec = info->lat;
 //		lat_dec = info->lat;
+
+		//Test output
+		printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inview);
+
+		free( gps_rx_buffer );
+
+
+//		const char *buff[] = {
+//		        "$GPRMC,173843,A,3349.896,N,11808.521,W,000.0,360.0,230108,013.4,E*69\r\n",
+//		        "$GPGGA,111609.14,5001.27,N,3613.06,E,3,08,0.0,10.2,M,0.0,M,0.0,0000*70\r\n",
+//		        "$GPGSV,2,1,08,01,05,005,80,02,05,050,80,03,05,095,80,04,05,140,80*7f\r\n",
+//		        "$GPGSV,2,2,08,05,05,185,80,06,05,230,80,07,05,275,80,08,05,320,80*71\r\n",
+//		        "$GPGSA,A,3,01,02,03,04,05,06,07,08,00,00,00,00,0.0,0.0,0.0*3a\r\n",
+//		        "$GPRMC,111609.14,A,5001.27,N,3613.06,E,11.2,0.0,261206,0.0,E*50\r\n",
+//		        "$GPVTG,217.5,T,208.8,M,000.00,N,000.01,K*4C\r\n"
+//		    };
 //
-//		//Test output
-//		printf("Lat:%f, Lon:%f,Elev:%f, Sig:%d, Fix:%d, Inview:%d\n", lat_dec, lon_dec, info->elv, info->sig, info->fix, info->satinfo.inview);
+//		    int it;
+//		    nmeaINFO info;
+//		    nmeaPARSER parser;
 //
-//		free( gps_rx_buffer );
+//		    nmea_zero_INFO(&info);
+//		    nmea_parser_init(&parser);
+//
+//		    for(it = 0; it < 6; ++it)
+//		    {
+//		        nmea_parse(&parser, buff[it], (int)strlen(buff[it]), &info);
+//		         printf("gpstest: info sig: %d\n", info.sig); //TODO: removeme
+//		         printf("gpstest: info sig: %d\n", info.sig); //TODO: removeme
+//		         printf("Lat:%d, Lon:%d, Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)info.lat, (int)info.lon, (int)info.elv, info.sig, info.fix, info.satinfo.inview);
+//		    }
+//
+//		    nmea_parser_destroy(&parser);
 
 
-		const char *buff[] = {
-		        "$GPRMC,173843,A,3349.896,N,11808.521,W,000.0,360.0,230108,013.4,E*69\r\n",
-		        "$GPGGA,111609.14,5001.27,N,3613.06,E,3,08,0.0,10.2,M,0.0,M,0.0,0000*70\r\n",
-		        "$GPGSV,2,1,08,01,05,005,80,02,05,050,80,03,05,095,80,04,05,140,80*7f\r\n",
-		        "$GPGSV,2,2,08,05,05,185,80,06,05,230,80,07,05,275,80,08,05,320,80*71\r\n",
-		        "$GPGSA,A,3,01,02,03,04,05,06,07,08,00,00,00,00,0.0,0.0,0.0*3a\r\n",
-		        "$GPRMC,111609.14,A,5001.27,N,3613.06,E,11.2,0.0,261206,0.0,E*50\r\n",
-		        "$GPVTG,217.5,T,208.8,M,000.00,N,000.01,K*4C\r\n"
-		    };
-
-		    int it;
-		    nmeaINFO info;
-		    nmeaPARSER parser;
-
-		    nmea_zero_INFO(&info);
-		    nmea_parser_init(&parser);
-
-		    for(it = 0; it < 6; ++it)
-		    {
-		        nmea_parse(&parser, buff[it], (int)strlen(buff[it]), &info);
-		         printf("gpstest: info sig: %d\n", info.sig); //TODO: removeme
-		         printf("gpstest: info sig: %d\n", info.sig); //TODO: removeme
-		         printf("Lat:%d, Lon:%d, Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)info.lat, (int)info.lon, (int)info.elv, info.sig, info.fix, info.satinfo.inview);
-		    }
-
-		    nmea_parser_destroy(&parser);
-
-
-//	}
+	}
 
 
 

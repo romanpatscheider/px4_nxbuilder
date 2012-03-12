@@ -309,8 +309,6 @@ int nmea_parse_GPRMC(const char *buff, int buff_sz, nmeaGPRMC *pack)
         &(pack->utc.day), &(pack->utc.mon), &(pack->utc.year),
         &(pack->declination), &(pack->declin_ew), &(pack->mode));
 
-    printf("nmea_parse_GPRMC: utc.year=%d, pack->lat=%d\n", pack->utc.year, (int)pack->lat); //TODO: removeme
-
     if(nsen != 13 && nsen != 14)
     {
         nmea_error("GPRMC parse error!");
@@ -478,7 +476,6 @@ void nmea_GPRMC2info(nmeaGPRMC *pack, nmeaINFO *info)
         info->fix = NMEA_FIX_BAD;
     }
 
-    printf("parse.c : pack->ns=%c, info->sig=%d\n", pack->ns, info->sig); //TODO: removeme
 
     info->utc = pack->utc;
     info->lat = ((pack->ns == 'N')?pack->lat:-(pack->lat));

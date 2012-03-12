@@ -58,7 +58,7 @@ int read_gps_nmea(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info
 	// This blocks the task until there is something on the buffer
 	while (read(fd, &c, 1) > 0)
 	{
-//		printf("Read %c, res: %d\n",c, res);
+//		printf("Read %c\n",c);
 //		sleep(1);
 		// detect start while acquiring stream
 		if (!start_flag && (c == '$'))

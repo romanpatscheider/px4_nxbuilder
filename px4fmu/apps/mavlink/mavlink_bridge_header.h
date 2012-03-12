@@ -36,9 +36,8 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
 
     if (chan == MAVLINK_COMM_0)
     {
-		write (uart_write, ch, 1);
+		write (uart_write, ch, length);
     }
 }
-
 
 #endif /* MAVLINK_BRIDGE_HEADER_H */

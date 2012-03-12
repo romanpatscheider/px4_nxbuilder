@@ -73,7 +73,7 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 
 	while(1) {
 		/* blocking read on next byte */
-		read(uart_read, &ch, 1);
+		read(uart_read, &ch, sizeof(uint8_t));
 
 		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
 			handleMessage(&msg);

@@ -44,12 +44,20 @@
 #include <fcntl.h>
 #include "gps.h"
 #include "nmealib/nmea/nmea.h"
+#include "custom.h"
 
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
-
+//Definition for custom mode
+#define MEDIATEK_REFRESH_RATE_4HZ "$PMTK220,250*29\r\n" //refresh rate - 4Hz - 250 milliseconds
+#define MEDIATEK_REFRESH_RATE_5HZ "$PMTK220,200*2C\r\n"
+#define MEDIATEK_REFRESH_RATE_10HZ "$PMTK220,100*2F\r\n" //refresh rate - 10Hz - 100 milliseconds
+#define MEDIATEK_FACTORY_RESET "$PMTK104*37\r\n" //clear current settings
+#define MEDIATEK_CUSTOM_BINARY_MODE "$PGCMD,16,0,0,0,0,0*6A\r\n"
+#define MEDIATEK_FULL_COLD_RESTART "$PMTK104*37\r\n"
+//#define NMEA_GGA_ENABLE "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0*27\r\n" //Set GGA messages
 
 
 /****************************************************************************
@@ -62,7 +70,14 @@ int gps_main(int argc, char *argv[])
     printf("Hello, gps!!\n");
     usleep(100000);
 
-    char * device = "/dev/ttyS3";
+    //read arguments
+    char * device = argv[1];
+    char * mode = "nmea"; //TODO: write enum once all modes are defined
+    if(3 <= argc)
+	{
+		mode = argv[2];
+	}
+
 
 
     int buffer_size = 1000;
@@ -90,18 +105,64 @@ int gps_main(int argc, char *argv[])
 
 	char * gps_rx_buffer = malloc(buffer_size*sizeof(char));
 
+	//mtk state
+	gps_bin_custom_state_t * mtk_state = malloc(sizeof(gps_bin_custom_state_t));
+	mtk_decode_init(mtk_state);
+	mtk_state->print_errors = false;
+	size_t result_write;
+
+
+	if	( !strcmp("custom",mode) )
+	{
+		printf("custom mode\n");
+		//set 10Hz
+		result_write =  write(fd, MEDIATEK_REFRESH_RATE_10HZ, strlen(MEDIATEK_REFRESH_RATE_10HZ));
+		if(result_write != strlen(MEDIATEK_REFRESH_RATE_10HZ))
+		{
+			printf("Set update speed to 10 Hz failed\n");
+		}
+		else
+		{
+			printf("Set update speed to 10 Hz successful\n");
+		}
+		//set custom mode
+		result_write =  write(fd, MEDIATEK_CUSTOM_BINARY_MODE, strlen(MEDIATEK_CUSTOM_BINARY_MODE));
+		if(result_write != strlen(MEDIATEK_CUSTOM_BINARY_MODE))
+		{
+			printf("Set custom mode failed");
+		}
+		else
+		{
+			printf("Set custom mode successful");
+		}
+	}
+
 
 	while(1)
 	{
-		//get gps data into info
-		read_gps_nmea(fd, gps_rx_buffer, buffer_size, info, &parser);
+		if( !strcmp("nmea",mode) )
+		{
+			//get gps data into info
+			read_gps_nmea(fd, gps_rx_buffer, buffer_size, info, &parser);
+			//convert latitude longitude
+			lat_dec = ndeg2degree(info->lat);
+			lon_dec = ndeg2degree(info->lon);
 
-		//convert latitude longitude
-		lat_dec = ndeg2degree(info->lat);
-		lon_dec = ndeg2degree(info->lon);
+			//Test output
+			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inview);
+		}
+		else if	( !strcmp("custom",mode) )
+		{
+			//info is used as storage of the gps information. lat lon are already in fractional degree format * 10e6
+			//see custom.h/mtk_parse for more information on which variables are stored in info
+			nmea_zero_INFO(info);
 
-		//Test output
-		printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inview);
+			//get gps data into info
+			read_gps_custom(fd, gps_rx_buffer, buffer_size, info, mtk_state);
+
+			//Test output
+			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(info->lat), (int)info->lon, (int)info->elv, info->sig, info->fix, info->satinfo.inview);
+		}
 
 	}
 
@@ -113,6 +174,9 @@ int gps_main(int argc, char *argv[])
 
 	//close port
 	close_port(fd);
+
+	//destroy gps parser
+	nmea_parser_destroy(&parser);
 
 
     return 0;

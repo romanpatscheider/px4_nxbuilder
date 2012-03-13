@@ -102,17 +102,17 @@ void handleMessage(mavlink_message_t * msg) {
 //	printf("Mavlink: got a message \n");
 
 	//check for terminate command
-	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
-	{
-		printf("Mavlink: Terminating... \n");
-
-		//terminate other threads:
-		pthread_cancel(heartbeat_thread);
-
-		//terminate this thread (receive_thread)
-		pthread_exit(NULL);
-
-	}
+//	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
+//	{
+//		printf("Mavlink: Terminating... \n");
+//
+//		//terminate other threads:
+//		pthread_cancel(heartbeat_thread);
+//
+//		//terminate this thread (receive_thread)
+//		pthread_exit(NULL);
+//
+//	}
     mavlink_msg_statustext_send(chan,0,"received msg");
 }
 

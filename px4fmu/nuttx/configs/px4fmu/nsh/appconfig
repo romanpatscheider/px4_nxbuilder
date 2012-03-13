@@ -49,7 +49,7 @@ CONFIGURED_APPS += CMSISlib
 # Applications configured as an NX built-in commands
 
 ifeq ($(CONFIG_MAVLINK),y)
-#CONFIGURED_APPS += mavlink
+CONFIGURED_APPS += mavlink
 endif
 
 CONFIGURED_APPS += reboot

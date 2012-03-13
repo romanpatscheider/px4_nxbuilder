@@ -268,9 +268,6 @@ static void *heartbeatloop(void * arg)
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
 
-	// Feed message to parameter storage
-
-
 	//check for terminate command
 	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
 	{

@@ -30,45 +30,60 @@
  */
 
 /*
- * Driver for the ST LIS331 MEMS accelerometer
+ * Driver for the ST HMC5883L gyroscope
+ */
+
+/* IMPORTANT NOTES:
+ *
+ * SPI max. clock frequency: 10 Mhz
+ * CS has to be high before transfer,
+ * go low right before transfer and
+ * go high again right after transfer
+ *
  */
 
 #include <sys/ioctl.h>
 
-#define _LIS331BASE	0x6900
-#define LIS331C(_x)	_IOC(_LIS331BASE, _x)
+#define _HMC5883LBASE	0x6100
+#define HMC5883LC(_x)	_IOC(_HMC5883LBASE, _x)
 
 /* 
  * Sets the sensor internal sampling rate, and if a buffer
  * has been configured, the rate at which entries will be
  * added to the buffer.
  */
-#define LIS331_SETRATE		LIS331C(1)
+#define HMC5883L_SETRATE		HMC5883LC(1)
 
-#define LIS331_RATE_50Hz		(0<<3)
-#define LIS331_RATE_100Hz		(1<<3)
-#define LIS331_RATE_400Hz		(2<<3)
-#define LIS331_RATE_1000Hz		(3<<3)
+/* set rate (configuration A register */
+#define HMC5883L_RATE_0_75HZ		(0 << 2) /* 0.75 Hz */
+#define HMC5883L_RATE_1_50HZ		(1 << 2) /* 1.5 Hz */
+#define HMC5883L_RATE_3_00HZ		(2 << 2) /* 3 Hz */
+#define HMC5883L_RATE_7_50HZ		(3 << 2) /* 7.5 Hz */
+#define HMC5883L_RATE_15HZ			(4 << 2) /* 15 Hz (default) */
+#define HMC5883L_RATE_30HZ			(5 << 2) /* 30 Hz */
+#define HMC5883L_RATE_75HZ			(6 << 2) /* 75 Hz */
 
 /*
  * Sets the sensor internal range.
  */
-#define LIS331_SETRANGE		LIS331C(2)
+#define HMC5883L_SETRANGE		HMC5883LC(2)
 
-#define LIS331_RANGE_2G			(0<<4)
-#define LIS331_RANGE_4G			(1<<4)
-#define LIS331_RANGE_8G			(3<<4)
+#define HMC5883L_RANGE_0_88GA			(0 << 5)
+#define HMC5883L_RANGE_1_33GA			(1 << 5)
+#define HMC5883L_RANGE_1_90GA			(2 << 5)
+#define HMC5883L_RANGE_2_50GA			(3 << 5)
+#define HMC5883L_RANGE_4_00GA			(4 << 5)
 
 /*
- * Sets the address of a shared lis331_buffer
+ * Sets the address of a shared HMC5883L_buffer
  * structure that is maintained by the driver.
  *
  * If zero is passed as the address, disables
  * the buffer updating.
  */
-#define LIS331_SETBUFFER	LIS331C(3)
+#define HMC5883L_SETBUFFER	HMC5883LC(3)
 
-struct lis331_buffer {
+struct hmc5883l_buffer {
 	uint32_t	size;		/* number of entries in the samples[] array */
 	uint32_t	next;		/* the next entry that will be populated */
 	struct {
@@ -78,4 +93,4 @@ struct lis331_buffer {
 	} samples[];
 };
 
-extern int	lis331_attach(struct spi_dev_s *spi, int spi_id);
+extern int	hmc5883l_attach(struct i2c_dev_s *i2c);

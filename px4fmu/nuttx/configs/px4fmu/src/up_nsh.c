@@ -46,6 +46,7 @@
 #include <errno.h>
 
 #include <nuttx/spi.h>
+#include <nuttx/i2c.h>
 #include <nuttx/mmcsd.h>
 #include <nuttx/analog/adc.h>
 
@@ -56,6 +57,8 @@
 #include "up_hrt.h"
 #include <arch/board/drv_bma180.h>
 #include <arch/board/drv_l3gd20.h>
+#include <arch/board/drv_hmc5883l.h>
+#include <arch/board/drv_ms5611.h>
 #include <arch/board/drv_led.h>
 
 /****************************************************************************
@@ -92,8 +95,9 @@
  *
  ****************************************************************************/
 
-static FAR struct spi_dev_s *spi1;
-static FAR struct spi_dev_s *spi3;
+static struct spi_dev_s *spi1;
+static struct spi_dev_s *spi3;
+static struct i2c_dev_s *i2c2;
 
 int nsh_archinitialize(void)
 {
@@ -137,7 +141,7 @@ int nsh_archinitialize(void)
 
   // Setup 10 MHz clock (maximum rate the BMA180 can sustain)
   //10000000
-  SPI_SETFREQUENCY(spi1, 10000000); // was 10 Mhz
+  SPI_SETFREQUENCY(spi1, 10000000);
   SPI_SETBITS(spi1, 8);
   SPI_SETMODE(spi1, SPIDEV_MODE3);
   SPI_SELECT(spi1, PX4_SPIDEV_GYRO, false);
@@ -146,30 +150,70 @@ int nsh_archinitialize(void)
 
   message("nsh_archinitialize: Successfully initialized SPI port 1\n");
 
-  int gyro_attempts = 1;
-  int gyro_ok = 0;
+  /* initialize SPI peripherals redundantly */
+  int gyro_attempts = 0;
+  int gyro_fail = 0;
 
   while (gyro_attempts < 10)
   {
-	  gyro_ok = l3gd20_attach(spi1, PX4_SPIDEV_GYRO);
+	  gyro_fail = l3gd20_attach(spi1, PX4_SPIDEV_GYRO);
 	  gyro_attempts++;
-	  if (gyro_ok == 0) break;
+	  if (gyro_fail == 0) break;
 	  usleep(50);
   }
 
-  int acc_attempts = 1;
-  int acc_ok = 0;
+  int acc_attempts = 0;
+  int acc_fail = 0;
 
   while (acc_attempts < 10)
   {
-	  acc_ok = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
+	  acc_fail = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
 	  acc_attempts++;
-	  if (acc_ok == 0) break;
+	  if (acc_fail == 0) break;
 	  usleep(50);
   }
 
+
+  /* initialize I2C peripherals redundantly */
+
+
+
+  i2c2 = up_i2cinitialize(2);
+  if (!i2c2) {
+	  message("Failed to initialize I2C bus 2\n");
+	  up_ledon(LED_AMBER);
+	  return -ENODEV;
+  }
+
+  /* set I2C speed */
+  I2C_SETFREQUENCY(i2c2, 400000);
+
+  int mag_attempts = 0;
+  int mag_fail = 0;
+
+  while (mag_attempts < 10)
+  {
+	  mag_fail = hmc5883l_attach(i2c2);
+	  mag_attempts++;
+	  if (mag_fail == 0) break;
+	  usleep(50);
+  }
+
+  int baro_attempts = 0;
+  int baro_fail = 0;
+  while (baro_attempts < 10)
+  {
+	  baro_fail = ms5611_attach(i2c2);
+	  baro_attempts++;
+	  if (baro_fail == 0) break;
+	  usleep(50);
+  }
+
+  int eeprom_attempts = 0;
+  int eeprom_fail = 0;
+
   // FIXME Report back sensor status
-  if (acc_ok || gyro_ok)
+  if (acc_fail || gyro_fail || mag_fail || baro_fail || eeprom_fail)
   {
 	  up_ledon(LED_AMBER);
   }

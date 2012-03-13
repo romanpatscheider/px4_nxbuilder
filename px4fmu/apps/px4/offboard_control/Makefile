@@ -50,7 +50,7 @@ endif
 
 APPNAME		= offboard_control
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 5000
+STACKSIZE	= 500
 
 ASRCS		=
 CSRCS		= offboard_control.c

@@ -107,19 +107,22 @@ int sensors_main(int argc, char *argv[])
 		goto out;
 	}
 
+	int ret;
+
 #define EEPROM_ADDRESS		0x50
+#define HMC5883L_ADDRESS	0x1E
 
 	//uint8_t devaddr = EEPROM_ADDRESS;
 
-	I2C_SETFREQUENCY(i2c, 400000);
-
-	uint8_t subaddr = 0x00;
-	int ret = 0;
-
-//	// ATTEMPT EEPROM READ
-//	I2C_SETADDRESS(i2c, devaddr, 7);
-//	subaddr = 0x00; // 10
-//	ret = I2C_WRITE(i2c, &subaddr, 1);
+	I2C_SETFREQUENCY(i2c, 100000);
+//
+//	uint8_t subaddr = 0x00;
+//	int ret = 0;
+//
+//	// ATTEMPT HMC5883L CONFIG
+//	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
+//	subaddr = 0x02; // mode register
+//	ret = I2C_WRITE(i2c, &subaddr, 0);
 //	if (ret < 0)
 //	{
 //		message("I2C_WRITE failed: %d\n", ret);
@@ -128,12 +131,12 @@ int sensors_main(int argc, char *argv[])
 //	{
 //		message("I2C_WRITE SUCCEEDED: %d\n", ret);
 //	}
+
+	//fflush(stdout);
 //
-//	fflush(stdout);
 //
 //
-//
-#define HMC5883L_ADDRESS	0x1E
+
 
 #define STATUS_REGISTER		0x09 // Of HMC5883L
 
@@ -141,40 +144,60 @@ int sensors_main(int argc, char *argv[])
 
 	// ATTEMPT HMC5883L WRITE
 	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-	uint8_t hmc5883l_continuous[2] = {STATUS_REGISTER, STATUS_REGISTER};
+	uint8_t cmd = 0x09;
+	uint8_t status_id[4] = {0, 0, 0, 0};
 
 
-	ret = I2C_WRITEREAD(i2c, hmc5883l_continuous, 1, hmc5883l_continuous, 1);
+	ret = I2C_WRITEREAD(i2c, &cmd, 1, status_id, 4);
 
-
-
-	//ret = I2C_WRITE(i2c, hmc5883l_continuous, 1);
-	if (ret < 0)
+	if (ret >= 0 && status_id[1] == 'H' && status_id[2] == '4' && status_id[3] == '3')
 	{
-		message("HMC5883L WRITE failed: %d\n", ret);
-	}
-	else
-	{
-		message("HMC5883L WRITE SUCCEEDED: %d\n", ret);
+		message("HMC5883L identified, device status: %d\n", status_id[0]);
+	} else {
+		message("HMC5883L identification failed: %d\n", ret);
 	}
 
-	usleep(200000);
-	up_i2cuninitialize(i2c);
 
+	//usleep(100);
+
+//	// ATTEMPT HMC5883L WRITE
+//	I2C_SETADDRESS(i2c, EEPROM_ADDRESS, 7);
+//	uint8_t eeprom[2] = {0x00, 0x00};
 //
-//	// ATTEMPT HMC5883L READ
-//	//I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-//	subaddr = STATUS_REGISTER; // 0x09
-//	uint8_t hmc5883l_status[2] = {0x09, 0x09};
-//	ret = I2C_READ(i2c, hmc5883l_status, 1);
+//
+//	ret = I2C_WRITEREAD(i2c, eeprom, 1, eeprom, 1);
+//
+//
+//
+//	//ret = I2C_WRITE(i2c, hmc5883l_continuous, 1);
 //	if (ret < 0)
 //	{
-//		message("HMC5883L READ failed: %d, val: %d\n", ret, hmc5883l_status[1]);
+//		message("EEPROM WRITEREAD failed: %d\n", ret);
 //	}
 //	else
 //	{
-//		message("HMC5883L READ SUCCEEDED: %d, val:%d\n", ret, hmc5883l_status[1]);
+//		message("EEPROM WRITEREAD SUCCEEDED: %d\n", ret);
 //	}
+//
+//	//up_i2cuninitialize(i2c);
+//
+//	//usleep(100);
+//
+//
+	// ATTEMPT HMC5883L READ
+	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
+	uint8_t hmc5883l_status[5] = {'-', '-', '-', '-', '\0'};
+	uint8_t who_am_i = 0x10;
+	I2C_WRITE(i2c, &who_am_i, 1);
+	ret = I2C_READ(i2c, hmc5883l_status, 3);
+	if (ret < 0)
+	{
+		message("HMC5883L READ failed: %d, val: %d\n", ret, hmc5883l_status[1]);
+	}
+	else
+	{
+		message("HMC5883L READ SUCCEEDED: %d, val:%s\n", ret, (char*)hmc5883l_status);
+	}
 //
 //	// ATTEMPT HMC5883L WRITE
 ////		I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
@@ -189,7 +212,7 @@ int sensors_main(int argc, char *argv[])
 //			message("HMC5883L WRITE SUCCEEDED: %d\n", ret);
 //		}
 
-	fflush(stdout);
+	//fflush(stdout);
 //
 //	// ATTEMPT MS5611-01ba WRITE
 //

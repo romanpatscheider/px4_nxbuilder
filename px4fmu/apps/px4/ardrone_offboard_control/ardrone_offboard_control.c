@@ -43,9 +43,38 @@
 #include <poll.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include "mavlink_bridge_header.h"
-#include "mavlink-1.0/common/mavlink.h"
-#include "mavlink-1.0/pixhawk/pixhawk.h"
+#include <stdbool.h>
+
+#define MAVLINK_USE_CONVENIENCE_FUNCTIONS
+
+//use efficient approach, see mavlink_helpers.h
+#define MAVLINK_SEND_UART_BYTES mavlink_send_uart_bytes
+
+#include "v1.0/mavlink_types.h"
+
+static mavlink_system_t mavlink_system = {100,50};
+
+static int uart;
+
+/**
+ * @brief Send one char (uint8_t) over a comm channel
+ *
+ * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
+ * @param ch Character to send
+ */
+static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch, uint16_t length)
+{
+
+    if (chan == MAVLINK_COMM_0)
+    {
+		write (uart, ch, length);
+    }
+}
+
+#include "v1.0/mavlink_types.h"
+
+#include "v1.0/common/mavlink.h"
+#include "v1.0/pixhawk/pixhawk.h"
 
 #include "ardrone_motor_control.h"
 
@@ -55,24 +84,26 @@
 /****************************************************************************
  * Definitions
  ****************************************************************************/
-int system_type = MAV_TYPE_FIXED_WING;
-mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
-uint8_t chan = MAVLINK_COMM_0;
+//int system_type = MAV_TYPE_FIXED_WING;
+//extern mavlink_system_t mavlink_system;// = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
 // TODO get correct custom_mode
-uint32_t custom_mode = 0;
+static uint32_t custom_mode = 0;
+static uint8_t system_type = MAV_TYPE_QUADROTOR;
 
 //threads:
-pthread_t heartbeat_thread;
-pthread_t receive_thread;
+static pthread_t heartbeat_thread;
+static pthread_t receive_thread;
 
-int leds;
-int gyro;
-int gpios;
+/* file descriptors */
+static int leds;
+static int gyro;
+static int gpios;
+static int ardrone_write;
 
 /* gyro x, y, z raw values */
-int16_t	gyro_raw[3] = {0, 0, 0};
+static int16_t	gyro_raw[3] = {0, 0, 0};
 /* gyro x, y, z metric values in rad/s */
-float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
+static float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
 
 
 struct QuadMotorsDesired {
@@ -120,6 +151,16 @@ static int led_toggle(int led)
 	return ioctl(leds, ((led == LED_BLUE) ? last_blue : last_amber), led);
 }
 
+static int led_on(int led)
+{
+	return ioctl(leds, LED_ON, led);
+}
+
+static int led_off(int led)
+{
+	return ioctl(leds, LED_OFF, led);
+}
+
 static int gyro_init()
 {
 	gyro = open("/dev/l3gd20", O_RDONLY);
@@ -148,37 +189,31 @@ static int gyro_read()
 	return ret;
 }
 
-void handleMessage(mavlink_message_t * msg);
+void arHandleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
 
-	uint8_t ch = EOF;
+	uint8_t ch;
 	mavlink_message_t msg;
 	mavlink_status_t status;
 
 	while(1) {
 
 		/* blocking read on next byte */
-		read (uart_read, &ch, 1);
-
-		// XXX Terminate on first byte
-		printf("\nARDRONE OFFBOARD CONTROL TERMINATING... \n");
-
-				//terminate other threads:
-				pthread_cancel(heartbeat_thread);
-
-				//terminate this thread (receive_thread)
-				pthread_exit(NULL);
+		int nread = read (uart, &ch, 1);
 
 
-		if (mavlink_parse_char(MAVLINK_COMM_0,ch,&msg,&status)) //parse the char
-			handleMessage(&msg);
-
-		//usleep(1); //pthread_yield seems not to work
-
+		if (nread > 0)
+		{
+			if (mavlink_parse_char(MAVLINK_COMM_0,ch,&msg,&status)) //parse the char
+			{
+				arHandleMessage(&msg);
+				led_toggle(LED_AMBER);
+			}
+		}
 	}
 
 }
@@ -296,6 +331,8 @@ static void *control_loop(void * arg)
 
 	uint16_t offsetCnt=0;
 	float antiwindup=0;
+
+
 	ar_init_motors();
 
 	while(1) {
@@ -426,7 +463,6 @@ static void *control_loop(void * arg)
 		{
 			uint8_t* motorSpeedBuf = ar_get_motor_packet(actuatorDesired.motorFront_NW, actuatorDesired.motorRight_NE, actuatorDesired.motorBack_SE, actuatorDesired.motorLeft_SW);
 			write(ardrone_write, motorSpeedBuf, 5);
-			led_toggle(LED_AMBER);
 			ledcounter = 0;
 		}
 		ledcounter++;
@@ -435,14 +471,29 @@ static void *control_loop(void * arg)
 		static int beatcount = 0;
 		if (beatcount == 400)
 		{
-			mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
+			mavlink_msg_heartbeat_send(MAVLINK_COMM_0,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 			beatcount = 0;
 
 			if (beatcount % 4 == 0)
 			{
-				mavlink_msg_raw_imu_send(chan, 0, 0, 0, 0, gyro_raw[0], gyro_raw[1], gyro_raw[2], 0, 0, 0);
+				mavlink_msg_raw_imu_send(MAVLINK_COMM_0, 0, 0, 0, 0, gyro_raw[0], gyro_raw[1], gyro_raw[2], 0, 0, 0);
+			}
+
+
+			if (!(mavlink_system.mode & MAV_MODE_FLAG_SAFETY_ARMED)) {
+				// System is not armed, blink at 1 Hz
+				led_toggle(LED_BLUE);
 			}
 		}
+
+		if (beatcount == 40)
+		{
+			if (mavlink_system.mode & MAV_MODE_FLAG_SAFETY_ARMED) {
+				// System is armed, blink at 10 Hz
+				led_toggle(LED_BLUE);
+			}
+		}
+
 		beatcount++;
 
 		usleep(2000);
@@ -453,21 +504,113 @@ static void *control_loop(void * arg)
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-void handleMessage(mavlink_message_t * msg) {
+void arHandleMessage(mavlink_message_t * msg) {
 
 	//check for terminate command
 	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)
 	{
-		printf("ARDRONE OFFBOARD CONTROL TERMINATING... \n");
+		mavlink_command_long_t cmd;
+		mavlink_msg_command_long_decode(msg, &cmd);
 
-		//terminate other threads:
-		pthread_cancel(heartbeat_thread);
+		if (cmd.target_system == mavlink_system.sysid && ((cmd.target_component == mavlink_system.compid) || (cmd.target_component == MAV_COMP_ID_ALL)))
+		{
+			bool terminate_link = false;
+			bool reboot = false;
+			/* result of the command */
+			uint8_t result = MAV_RESULT_UNSUPPORTED;
 
-		//terminate this thread (receive_thread)
-		pthread_exit(NULL);
 
+			/* supported command handling start */
+
+			/* request to set different system mode */
+			if (cmd.command == MAV_CMD_DO_SET_MODE)
+			{
+				mavlink_system.mode = cmd.param1;
+			}
+
+			/* request to arm */
+			// XXX
+
+			/* request for an autopilot reboot */
+			if (cmd.command == MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN && cmd.param1 == 1.0f)
+			{
+				reboot = true;
+				result = MAV_RESULT_ACCEPTED;
+				mavlink_msg_statustext_send(MAVLINK_COMM_0,0,"Rebooting autopilot.. ");
+			}
+
+			/* request for a link shutdown */
+			if (cmd.command == MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN && cmd.param1 == 3.0f)
+			{
+				terminate_link = true;
+				result = MAV_RESULT_ACCEPTED;
+				mavlink_msg_statustext_send(MAVLINK_COMM_0,0,"Terminating MAVLink.. ");
+			}
+
+			/* supported command handling stop */
+
+
+			/* send any requested ACKs */
+			if (cmd.confirmation > 0)
+			{
+				mavlink_msg_command_ack_send(MAVLINK_COMM_0, cmd.command, result);
+			}
+
+			/* the two termination / reset commands need special handling */
+			if (terminate_link)
+			{
+				printf("MAVLink: Terminating.. \n");
+				fflush(stdout);
+				/* sleep 100 ms to allow UART buffer to empty */
+				led_off(LED_BLUE);
+				led_on(LED_AMBER);
+				int i;
+				for (i = 0; i < 5; i++)
+				{
+					led_toggle(LED_AMBER);
+					usleep(20000);
+				}
+
+				//terminate other threads:
+				pthread_cancel(heartbeat_thread);
+
+				//terminate this thread (receive_thread)
+				pthread_exit(NULL);
+			}
+
+			if (reboot)
+			{
+				printf("MAVLink: Rebooting system.. \n");
+				fflush(stdout);
+				/* sleep 100 ms to allow UART buffer to empty */
+				led_off(LED_BLUE);
+				led_on(LED_AMBER);
+				int i;
+				for (i = 0; i < 5; i++)
+				{
+					led_toggle(LED_BLUE);
+					led_toggle(LED_AMBER);
+					usleep(20000);
+				}
+
+				//terminate other threads:
+				pthread_cancel(heartbeat_thread);
+
+				// Reset whole system
+				/* Resetting CPU */
+				// FIXME Need check for ARM architecture here
+#ifndef NVIC_AIRCR
+#define NVIC_AIRCR (*((uint32_t*)0xE000ED0C))
+#endif
+
+				/* Set the SYSRESETREQ bit to force a reset */
+				NVIC_AIRCR = 0x05fa0004;
+
+				/* Spinning until the board is really reset */
+				while(true);
+			}
+		}
 	}
-	mavlink_msg_statustext_send(chan,0,"received msg");
 }
 
 /****************************************************************************
@@ -508,9 +651,7 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	//open uart
 	printf("MAVLink UART is %s\n", mavlink_uart_name);
 	printf("ARDrone UART is %s\n", ardrone_uart_name);
-	uart_read = open(mavlink_uart_name, O_RDWR | O_NOCTTY);
-	uart_write = open(mavlink_uart_name, O_RDWR | O_NOCTTY | O_NDELAY);
-//	uart_write = open (mavlink_uart_name,"wb");
+	uart = open(mavlink_uart_name, O_RDWR | O_NOCTTY);
 	ardrone_write = open(ardrone_uart_name, O_RDWR | O_NOCTTY | O_NDELAY);
 
 	/* initialize leds and sensor */
@@ -532,8 +673,7 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	pthread_join(receive_thread, NULL);
 
 	//close uart
-	close(uart_read);
-	close(uart_write);
+	close(uart);
 	close(ardrone_write);
 	close(leds);
 	ar_multiplexing_deinit(gpios);

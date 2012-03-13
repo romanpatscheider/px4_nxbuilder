@@ -30,52 +30,56 @@
  */
 
 /*
- * Driver for the ST LIS331 MEMS accelerometer
+ * Driver for the ST MS5611 gyroscope
+ */
+
+/* IMPORTANT NOTES:
+ *
+ * SPI max. clock frequency: 10 Mhz
+ * CS has to be high before transfer,
+ * go low right before transfer and
+ * go high again right after transfer
+ *
  */
 
 #include <sys/ioctl.h>
 
-#define _LIS331BASE	0x6900
-#define LIS331C(_x)	_IOC(_LIS331BASE, _x)
+#define _MS5611BASE	0x6A00
+#define MS5611C(_x)	_IOC(_MS5611BASE, _x)
 
 /* 
  * Sets the sensor internal sampling rate, and if a buffer
  * has been configured, the rate at which entries will be
  * added to the buffer.
  */
-#define LIS331_SETRATE		LIS331C(1)
+#define MS5611_SETRATE		MS5611C(1)
 
-#define LIS331_RATE_50Hz		(0<<3)
-#define LIS331_RATE_100Hz		(1<<3)
-#define LIS331_RATE_400Hz		(2<<3)
-#define LIS331_RATE_1000Hz		(3<<3)
+/* set rate (configuration A register */
+#define MS5611_RATE_0_75HZ		(0 << 2) /* 0.75 Hz */
 
 /*
  * Sets the sensor internal range.
  */
-#define LIS331_SETRANGE		LIS331C(2)
+#define MS5611_SETRANGE		MS5611C(2)
 
-#define LIS331_RANGE_2G			(0<<4)
-#define LIS331_RANGE_4G			(1<<4)
-#define LIS331_RANGE_8G			(3<<4)
+#define MS5611_RANGE_0_88GA			(0 << 5)
 
 /*
- * Sets the address of a shared lis331_buffer
+ * Sets the address of a shared MS5611_buffer
  * structure that is maintained by the driver.
  *
  * If zero is passed as the address, disables
  * the buffer updating.
  */
-#define LIS331_SETBUFFER	LIS331C(3)
+#define MS5611_SETBUFFER	MS5611C(3)
 
-struct lis331_buffer {
+struct ms5611_buffer {
 	uint32_t	size;		/* number of entries in the samples[] array */
 	uint32_t	next;		/* the next entry that will be populated */
 	struct {
-		uint16_t	x;
-		uint16_t	y;
-		uint16_t	z;
+		uint32_t	pressure;
+		uint16_t temperature;
 	} samples[];
 };
 
-extern int	lis331_attach(struct spi_dev_s *spi, int spi_id);
+extern int	ms5611_attach(struct i2c_dev_s *i2c);

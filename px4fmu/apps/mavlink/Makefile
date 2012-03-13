@@ -49,7 +49,7 @@ endif
 # TODO: appname can be automatically extracted from the directory name
 
 APPNAME		= mavlink
-PRIORITY	= SCHED_PRIORITY_DEFAULT
+PRIORITY	= (SCHED_PRIORITY_MAX-2)
 STACKSIZE	= 2400
 
 

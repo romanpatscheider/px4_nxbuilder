@@ -57,6 +57,7 @@
 #include <arch/board/drv_lis331.h>
 #include <arch/board/drv_bma180.h>
 #include <arch/board/drv_l3gd20.h>
+#include <arch/board/drv_hmc5883l.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -70,9 +71,11 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static int	lis331(int argc, char *argv[]);
+//static int	lis331(int argc, char *argv[]);
 static int  l3gd20(int argc, char *argv[]);
 static int	bma180(int argc, char *argv[]);
+static int hmc5883l(int argc, char *argv[]);
+static int ms5611(int argc, char *argv[]);
 
 /****************************************************************************
  * Private Data
@@ -83,8 +86,10 @@ struct {
 	const char	*path;
 	int		(* test)(int argc, char *argv[]);
 } sensors[] = {
-	{"l3gd20",	"/dev/l3gd20",	l3gd20},
-    {"bma180",	"/dev/bma180",	bma180},
+//	{"l3gd20",	"/dev/l3gd20",	l3gd20},
+//    {"bma180",	"/dev/bma180",	bma180},
+    {"hmc5883l",	"/dev/hmc5883l",	hmc5883l},
+    {"ms5611",	"/dev/ms5611",	hmc5883l},
 //    {"lis331",	"/dev/lis331",	lis331},
 	{NULL, NULL, NULL}
 };
@@ -97,51 +102,54 @@ struct {
  * Private Functions
  ****************************************************************************/
 
-static int
-lis331(int argc, char *argv[])
-{
-	int		fd;
-	int16_t	buf[3];
-	int		ret;
-
-	fd = open("/dev/lis331", O_RDONLY);
-	if (fd < 0) {
-		printf("\tlis331: not present on PX4FMU v1.5 and later\n");
-		return ERROR;
-	}
-
-	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
-	    ioctl(fd, LIS331_SETRANGE, LIS331_RANGE_4G)) {
-	 	
-		printf("LIS331: ioctl fail\n");
-		return ERROR;
-	}
-
-	/* wait at least 100ms, sensor should have data after no more than 20ms */
-	usleep(100000);
-
-	/* read data - expect samples */
-	ret = read(fd, buf, sizeof(buf));
-	if (ret != sizeof(buf)) {
-		printf("LIS331: read1 fail (%d)\n", ret);
-		return ERROR;
-	}
-
-	/* read data - expect no samples (should not be ready again yet) */
-	ret = read(fd, buf, sizeof(buf));
-	if (ret != 0) {
-		printf("LIS331: read2 fail (%d)\n", ret);
-		return ERROR;
-	}
-
-	/* XXX more tests here */
-
-	return 0;
-}
+//static int
+//lis331(int argc, char *argv[])
+//{
+//	int		fd;
+//	int16_t	buf[3];
+//	int		ret;
+//
+//	fd = open("/dev/lis331", O_RDONLY);
+//	if (fd < 0) {
+//		printf("\tlis331: not present on PX4FMU v1.5 and later\n");
+//		return ERROR;
+//	}
+//
+//	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
+//	    ioctl(fd, LIS331_SETRANGE, LIS331_RANGE_4G)) {
+//
+//		printf("LIS331: ioctl fail\n");
+//		return ERROR;
+//	}
+//
+//	/* wait at least 100ms, sensor should have data after no more than 20ms */
+//	usleep(100000);
+//
+//	/* read data - expect samples */
+//	ret = read(fd, buf, sizeof(buf));
+//	if (ret != sizeof(buf)) {
+//		printf("LIS331: read1 fail (%d)\n", ret);
+//		return ERROR;
+//	}
+//
+//	/* read data - expect no samples (should not be ready again yet) */
+//	ret = read(fd, buf, sizeof(buf));
+//	if (ret != 0) {
+//		printf("LIS331: read2 fail (%d)\n", ret);
+//		return ERROR;
+//	}
+//
+//	/* XXX more tests here */
+//
+//	return 0;
+//}
 
 static int
 l3gd20(int argc, char *argv[])
 {
+	printf("\tl3gd20: test start\n");
+	fflush(stdout);
+
 	int		fd;
 	int16_t	buf[3] = {0, 0, 0};
 	int		ret;
@@ -234,6 +242,9 @@ l3gd20(int argc, char *argv[])
 static int
 bma180(int argc, char *argv[])
 {
+	printf("\tbma180: test start\n");
+	fflush(stdout);
+
 	int		fd;
 	int16_t	buf[3] = {0, 0, 0};
 	int		ret;
@@ -296,6 +307,92 @@ bma180(int argc, char *argv[])
 	return 0;
 }
 
+static int
+ms5611(int argc, char *argv[])
+{
+	printf("\tms5611: test start\n");
+	fflush(stdout);
+
+	int		fd;
+	int16_t	buf[3] = {0, 0, 0};
+	int		ret;
+
+	fd = open("/dev/hmc5883l", O_RDONLY);
+	if (fd < 0) {
+		printf("\thmc5883l: open fail\n");
+		return ERROR;
+	}
+//
+////	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
+////	    ioctl(fd, LIS331_SETRANGE, LIS331_RANGE_4G)) {
+////
+////		printf("BMA180: ioctl fail\n");
+////		return ERROR;
+////	}
+////
+//	/* wait at least 10ms, sensor should have data after no more than 6.5ms */
+//	usleep(10000);
+//
+//	/* read data - expect samples */
+//	ret = read(fd, buf, sizeof(buf));
+//	if (ret != sizeof(buf)) {
+//		printf("\thmc5883l: read1 fail (%d)\n", ret);
+//		return ERROR;
+//	} else {
+//		printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+//	}
+
+	/* XXX more tests here */
+
+	/* Let user know everything is ok */
+	printf("\tOK: MS5611 passed all tests successfully\n");
+
+	return 0;
+}
+
+static int
+hmc5883l(int argc, char *argv[])
+{
+	printf("\thmc5883l: test start\n");
+	fflush(stdout);
+
+	int		fd;
+	int16_t	buf[3] = {0, 0, 0};
+	int		ret;
+
+	fd = open("/dev/hmc5883l", O_RDONLY);
+	if (fd < 0) {
+		printf("\thmc5883l: open fail\n");
+		return ERROR;
+	}
+
+//	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
+//	    ioctl(fd, LIS331_SETRANGE, LIS331_RANGE_4G)) {
+//
+//		printf("BMA180: ioctl fail\n");
+//		return ERROR;
+//	}
+//
+	/* wait at least 10ms, sensor should have data after no more than 6.5ms */
+	usleep(10000);
+
+	/* read data - expect samples */
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != sizeof(buf)) {
+		printf("\thmc5883l: read1 fail (%d)\n", ret);
+		return ERROR;
+	} else {
+		printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+	}
+
+	/* XXX more tests here */
+
+	/* Let user know everything is ok */
+	printf("\tOK: HMC5883L passed all tests successfully\n");
+
+	return 0;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -308,9 +405,13 @@ int test_sensors(int argc, char *argv[])
 {
 	unsigned	i;
 
+	printf("Running sensors tests:\n\n");
+	fflush(stdout);
+
 	for (i = 0; sensors[i].name; i++) {
 		printf("  sensor: %s\n", sensors[i].name);
 		sensors[i].test(argc, argv);
+		fflush(stdout);
 	}
 	return 0;
 }

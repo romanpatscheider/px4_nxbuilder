@@ -246,7 +246,9 @@ l3gd20_ioctl(struct file *filp, int cmd, unsigned long arg)
 	switch (cmd) {
         case L3GD20_SETRATE:
             if ((arg & REG1_RATE_LP_MASK) == arg) {
+            	SPI_LOCK(dev.spi, true);
                 set_rate(arg);
+                SPI_LOCK(dev.spi, false);
                 result = 0;
                 dev.rate = arg;
             }
@@ -254,7 +256,9 @@ l3gd20_ioctl(struct file *filp, int cmd, unsigned long arg)
 
         case L3GD20_SETRANGE:
             if ((arg & REG4_RANGE_MASK) == arg) {
+            	SPI_LOCK(dev.spi, true);
                 set_range(arg);
+                SPI_LOCK(dev.spi, false);
                 result = 0;
             }
             break;

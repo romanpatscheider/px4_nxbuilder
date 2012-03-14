@@ -6,7 +6,7 @@
  * @brief PIOS interface to read and write from Futaba S.Bus port
  * @{
  *
- * @file       pios_sbus_priv.h
+ * @file       nuttx_sbus.h
  * @author     The OpenPilot Team, http://www.openpilot.org Copyright (C) 2011.
  * @brief      Futaba S.Bus Private structures.
  * @see        The GNU Public License (GPL) Version 3
@@ -28,12 +28,8 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#ifndef PIOS_SBUS_PRIV_H
-#define PIOS_SBUS_PRIV_H
-
-#include <pios.h>
-#include <pios_stm32.h>
-#include <pios_usart_priv.h>
+#ifndef NUTTX_SBUS_H
+#define NUTTX_SBUS_H
 
 /*
  * S.Bus serial port settings:
@@ -65,21 +61,15 @@
  */
 #define	SBUS_NUMBER_OF_CHANNELS		8
 
-/*
- * S.Bus configuration programmable invertor
- */
-struct pios_sbus_cfg {
-	struct stm32_gpio inv;
-	void (*gpio_clk_func)(uint32_t periph, FunctionalState state);
-	uint32_t gpio_clk_periph;
-	BitAction gpio_inv_enable;
-};
 
-extern const struct pios_rcvr_driver pios_sbus_rcvr_driver;
+void NUTTX_SBUS_Supervisor();
+int NUTTX_SBUS_Init(void);
+uint8_t NUTTX_SBUS_Rx(int fd, uint8_t * buf, buf_len);
 
-extern int32_t PIOS_SBUS_Init(uint32_t * sbus_id, const struct pios_sbus_cfg *cfg, const struct pios_com_driver * driver, uint32_t lower_id);
 
-#endif /* PIOS_SBUS_PRIV_H */
+
+
+#endif /* NUTTX_SBUS_H */
 
 /**
  * @}

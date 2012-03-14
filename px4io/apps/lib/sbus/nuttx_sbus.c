@@ -50,17 +50,12 @@
 
 /* Global Variables */
 
-static int32_t NUTTX_SBUS_Get(uint32_t rcvr_id, uint8_t channel);
-
-
 /* Local Variables */
 static uint16_t channel_data[SBUS_NUMBER_OF_CHANNELS];
 static uint8_t received_data[SBUS_FRAME_LENGTH - 2];
 static uint8_t receive_timer;
 static uint8_t failsafe_timer;
 static uint8_t frame_found;
-
-static void NUTTX_SBUS_Supervisor(uint32_t sbus_id);
 
 /**
  * reset_channels() function clears all channel data in case of
@@ -143,23 +138,41 @@ static void process_byte(uint8_t b)
 	}
 }
 
-static uint16_t NUTTX_SBUS_Rx(uint8_t * buf, uint16_t buf_len, uint16_t * headroom)
+
+/**
+ * Read the stream provided by NUTTX_SBUS_Init
+ * and write the channel information in the provided buffer
+ * \param filedescriptor for /dev/ttyS3
+ * \param Pointer to buffer: uint8_t, length: 8 bytes
+ * \return 0 if succesfull
+ */
+ 
+uint8_t NUTTX_SBUS_Rx(int fd, uint8_t * buf, buf_len)
 {
-	/* process byte(s) and clear receive timer */
-	for (uint8_t i = 0; i < buf_len; i++) {
-		process_byte(buf[i]);
-		receive_timer = 0;
-	}
+  /* read data from USART3 */
+  ret = read(fd, buf, sizeof(buf));
+  if (ret != 0 ) {
+    printf("USART3: read error\n")
+    return ERROR;
+  }
 
-	/* Always signal that we can accept another byte */
-	if (headroom) {
-		*headroom = SBUS_FRAME_LENGTH;
-	}
 
-	/* Always indicate that all bytes were consumed */
-	return (buf_len);
+  /* process byte(s) and clear receive timer */
+  for (uint8_t i = 0; i < buf_len; i++) {
+    process_byte(buf[i]);
+    receive_timer = 0;
+  }
+
+  /* put the channel data in the buf variable */
+  buf = channel_data;
+
+
+  /* Always indicate that all bytes were consumed */
+  return 0;  
+	
 }
 
+	
 /**
  * Initialise S.Bus receiver interface
  * \return filedescriptor for a readonly stream pointing 
@@ -167,19 +180,19 @@ static uint16_t NUTTX_SBUS_Rx(uint8_t * buf, uint16_t buf_len, uint16_t * headro
  */
 int NUTTX_SBUS_Init(void)
 {
-	int fd;
-	fd = open("/dev/ttyS3", O_RDONLY);
-	if (fd < 0) {
-		printf("error opening /dev/ttyS3 (USART3)\n")
-		return ERROR;
-	}
-	//At the moment the settings of USART3 are hard-coded,
-	//so no need to set them here.
-	
-	return fd;
-	
-
+    int fd;
+    fd = open("/dev/ttyS3", O_RDONLY);
+    if (fd < 0) {
+      printf("error opening /dev/ttyS3 (USART3)\n")
+      return ERROR;
+    }
+    //At the moment the settings of USART3 are hard-coded,
+    //so no need to set them here.
+                      
+    return fd;
+      
 }
+
 
 /**
  * Get the value of an input channel
@@ -187,14 +200,16 @@ int NUTTX_SBUS_Init(void)
  * \output -1 channel not available
  * \output >0 channel value
  */
+/*
 static int32_t NUTTX_SBUS_Get(uint8_t channel)
 {
-	/* return error if channel is not available */
+	// return error if channel is not available
 	if (channel >= SBUS_NUMBER_OF_CHANNELS) {
 		return -1;
 	}
 	return channel_data[channel];
 }
+*/
 
 /**
  * Input data supervisor is called periodically and provides
@@ -208,7 +223,7 @@ static int32_t NUTTX_SBUS_Get(uint8_t channel)
  * data reception. If no new data received in 100ms, we must call the
  * failsafe function which clears all channels.
  */
-static void NUTTX_SBUS_Supervisor()
+void NUTTX_SBUS_Supervisor()
 {
 	/* waiting for new frame if no bytes were received in 3.2ms */
 	if (++receive_timer > 2) {

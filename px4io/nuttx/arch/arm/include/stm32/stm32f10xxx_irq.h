@@ -61,7 +61,7 @@
  * External interrupts (vectors >= 16)
  */
 
-#if defined(CONFIG_STM32_VALUE_LINE) && defined(CONFIG_STM32_MEDIUMDENSITY)
+#if defined(CONFIG_STM32_VALUELINE) && defined(CONFIG_STM32_MEDIUMDENSITY)
 #  define STM32_IRQ_WWDG        (16) /* 0:  Window Watchdog interrupt */
 #  define STM32_IRQ_PVD         (17) /* 1:  PVD through EXTI Line detection interrupt */
 #  define STM32_IRQ_TAMPER      (18) /* 2:  Tamper interrupt */
@@ -78,7 +78,8 @@
 #  define STM32_IRQ_DMA1CH3     (29) /* 13: DMA1 Channel 3 global interrupt */
 #  define STM32_IRQ_DMA1CH4     (30) /* 14: DMA1 Channel 4 global interrupt */
 #  define STM32_IRQ_DMA1CH5     (31) /* 15: DMA1 Channel 5 global interrupt */
-#  define STM32_IRQ_DMA1CH6     (32) /* 16: DMA1 Channel 7 global interrupt */
+#  define STM32_IRQ_DMA1CH6     (32) /* 16: DMA1 Channel 6 global interrupt */
+#  define STM32_IRQ_DMA1CH7     (33) /* 17: DMA1 Channel 7 global interrupt */
 #  define STM32_IRQ_ADC12       (34) /* 18: ADC1 and ADC2 global interrupt */
                                      /* 19-22: reserved */
 #  define STM32_IRQ_EXTI95      (39) /* 23: EXTI Line[9:5] interrupts */
@@ -120,10 +121,9 @@
 #  define STM32_IRQ_DMA2CH1     (72) /* 56: DMA2 Channel 1 global interrupt */
 #  define STM32_IRQ_DMA2CH2     (73) /* 57: DMA2 Channel 2 global interrupt */
 #  define STM32_IRQ_DMA2CH3     (74) /* 58: DMA2 Channel 3 global interrupt */
-#  define STM32_IRQ_DMA2CH4     (75) /* 59: DMA2 Channel 4 global interrupt */
-#  define STM32_IRQ_DMA2CH5     (76) /* 60: DMA2 Channel 5 global interrupt */
-#  define NR_IRQS               (77)
-#elif defined(CONFIG_STM32_CONNECTIVITY_LINE)
+#  define STM32_IRQ_DMA2CH45    (75) /* 59: DMA2 Channel 4 global interrupt */
+#  define NR_IRQS               (76)
+#elif defined(CONFIG_STM32_CONNECTIVITYLINE)
 #  define STM32_IRQ_WWDG        (16) /* 0:  Window Watchdog interrupt */
 #  define STM32_IRQ_PVD         (17) /* 1:  PVD through EXTI Line detection interrupt */
 #  define STM32_IRQ_TAMPER      (18) /* 2:  Tamper interrupt */
@@ -140,7 +140,8 @@
 #  define STM32_IRQ_DMA1CH3     (29) /* 13: DMA1 Channel 3 global interrupt */
 #  define STM32_IRQ_DMA1CH4     (30) /* 14: DMA1 Channel 4 global interrupt */
 #  define STM32_IRQ_DMA1CH5     (31) /* 15: DMA1 Channel 5 global interrupt */
-#  define STM32_IRQ_DMA1CH6     (32) /* 16: DMA1 Channel 7 global interrupt */
+#  define STM32_IRQ_DMA1CH6     (32) /* 16: DMA1 Channel 6 global interrupt */
+#  define STM32_IRQ_DMA1CH7     (33) /* 17: DMA1 Channel 7 global interrupt */
 #  define STM32_IRQ_ADC12       (34) /* 18: ADC1 and ADC2 global interrupt */
 #  define STM32_IRQ_CAN1TX      (35) /* 19: CAN1 TX interrupts */
 #  define STM32_IRQ_CAN1RX0     (36) /* 20: CAN1 RX0 interrupts */

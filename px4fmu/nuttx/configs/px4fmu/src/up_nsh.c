@@ -42,6 +42,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <debug.h>
 #include <errno.h>
 
@@ -52,9 +53,10 @@
 
 #include "stm32_internal.h"
 #include "px4fmu-internal.h"
-#include <arch/board/board.h>
 
 #include "up_hrt.h"
+#include "up_adc.h"
+#include <arch/board/board.h>
 #include <arch/board/drv_bma180.h>
 #include <arch/board/drv_l3gd20.h>
 #include <arch/board/drv_hmc5883l.h>

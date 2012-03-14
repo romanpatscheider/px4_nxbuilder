@@ -54,7 +54,7 @@
 
 static mavlink_system_t mavlink_system = {100,50};
 
-static int uart;
+extern int uart;
 
 /**
  * @brief Send one char (uint8_t) over a comm channel
@@ -62,7 +62,7 @@ static int uart;
  * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
  * @param ch Character to send
  */
-static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch, uint16_t length)
+inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch, uint16_t length)
 {
 
     if (chan == MAVLINK_COMM_0)
@@ -474,7 +474,6 @@ static void *control_loop(void * arg)
 		if (beatcount == 400)
 		{
 			mavlink_msg_heartbeat_send(MAVLINK_COMM_0,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
-			beatcount = 0;
 
 			if (beatcount % 4 == 0)
 			{
@@ -486,6 +485,8 @@ static void *control_loop(void * arg)
 				// System is not armed, blink at 1 Hz
 				led_toggle(LED_BLUE);
 			}
+
+			beatcount = 0;
 		}
 
 		if (beatcount == 40)
@@ -629,8 +630,8 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	usleep(100000);
 
 	//default values for arguments
-	char * mavlink_uart_name = "/dev/ttyS2";
-	char * ardrone_uart_name = "/dev/ttyS1";
+	char * mavlink_uart_name = "/dev/ttyS1";
+	char * ardrone_uart_name = "/dev/ttyS2";
 
 	//read arguments
 	int i;

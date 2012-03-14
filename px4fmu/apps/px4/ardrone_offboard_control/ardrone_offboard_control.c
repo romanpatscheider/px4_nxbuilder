@@ -44,35 +44,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdbool.h>
-
-#define MAVLINK_USE_CONVENIENCE_FUNCTIONS
-
-//use efficient approach, see mavlink_helpers.h
-#define MAVLINK_SEND_UART_BYTES mavlink_send_uart_bytes
-
-#include "v1.0/mavlink_types.h"
-
-static mavlink_system_t mavlink_system = {100,50};
-
-extern int uart;
-
-/**
- * @brief Send one char (uint8_t) over a comm channel
- *
- * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
- * @param ch Character to send
- */
-inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch, uint16_t length)
-{
-
-    if (chan == MAVLINK_COMM_0)
-    {
-		write (uart, ch, length);
-    }
-}
-
-#include "v1.0/mavlink_types.h"
-
+#include "mavlink_bridge_header.h"
 #include "v1.0/common/mavlink.h"
 #include "v1.0/pixhawk/pixhawk.h"
 
@@ -84,11 +56,10 @@ inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch, uint16
 /****************************************************************************
  * Definitions
  ****************************************************************************/
-//int system_type = MAV_TYPE_FIXED_WING;
-//extern mavlink_system_t mavlink_system;// = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
+static uint8_t system_type = MAV_TYPE_QUADROTOR;
+mavlink_system_t mavlink_system;// = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255
 // TODO get correct custom_mode
 static uint32_t custom_mode = 0;
-static uint8_t system_type = MAV_TYPE_QUADROTOR;
 
 //threads:
 static pthread_t heartbeat_thread;
@@ -630,8 +601,8 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	usleep(100000);
 
 	//default values for arguments
-	char * mavlink_uart_name = "/dev/ttyS1";
-	char * ardrone_uart_name = "/dev/ttyS2";
+	char * mavlink_uart_name = "/dev/ttyS0";
+	char * ardrone_uart_name = "/dev/ttyS1";
 
 	//read arguments
 	int i;

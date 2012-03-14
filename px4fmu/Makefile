@@ -11,5 +11,6 @@ upload-usb:
 	@if test -e /dev/ttyACM1; then ../../px4_bootloader/px_uploader.py px4flow.px4 --port /dev/ttyACM1; else echo Tried /dev/ttyACM1, no device..; fi
 	@if test -e /dev/ttyACM2; then ../../px4_bootloader/px_uploader.py px4flow.px4 --port /dev/ttyACM2; else echo Tried /dev/ttyACM2, no device..; fi
 	@if test -e /dev/ttyACM3; then ../../px4_bootloader/px_uploader.py px4flow.px4 --port /dev/ttyACM3; else echo Tried /dev/ttyACM3, no device..; fi
-	@if test -e /dev/tty.usbmodemDEM1; then echo Found port: /dev/tty.usbmodemDEM1; ../../px4_bootloader/px_uploader.py px4flow.px4 --port /dev/tty.usbmodemDEM1; else echo Tried /dev/tty.usbmodemDEM1, no device..; fi
+	../../px4_bootloader/px_uploader.py px4flow.px4 --port /dev/tty.usbmodemDEM1
+	#@if test -e /dev/tty.usbmodemDEM1; then echo Found port: /dev/tty.usbmodemDEM1; ../../px4_bootloader/px_uploader.py px4flow.px4 --port /dev/tty.usbmodemDEM1; else echo Tried /dev/tty.usbmodemDEM1, no device..; fi
 

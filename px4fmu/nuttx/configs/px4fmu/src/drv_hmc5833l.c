@@ -116,7 +116,10 @@ static int read_reg(uint8_t address);
 static int
 write_reg(uint8_t address, uint8_t data)
 {
-	return I2C_WRITE(hmc5883l_dev.i2c, &data, 1);
+	uint8_t cmd[] = {address, data};
+	/* XXX change to I2C_WRITE once FSM of I2C is fully debugged */
+	uint8_t dummy;
+	return I2C_WRITEREAD(hmc5883l_dev.i2c, cmd, 2, &dummy, 1);
 }
 
 static int
@@ -269,8 +272,8 @@ hmc5883l_attach(struct i2c_dev_s *i2c)
 
 		/* set update rate to 75 Hz */
 		/* set 0.88 Ga range */
-		if ((ret != 0) /*|| (set_range(HMC5883L_RANGE_0_88GA) != 0) ||
-				(set_rate(HMC5883L_RATE_75HZ) != 0)*/)
+		if ((ret != 0) || (set_range(HMC5883L_RANGE_0_88GA) != 0) ||
+				(set_rate(HMC5883L_RATE_75HZ) != 0))
 		{
 			errno = EIO;
 		} else {

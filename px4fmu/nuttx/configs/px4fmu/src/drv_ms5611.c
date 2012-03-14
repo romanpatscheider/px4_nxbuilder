@@ -86,7 +86,10 @@ static int read_reg(uint8_t address);
 static int
 write_reg(uint8_t address, uint8_t data)
 {
-	return I2C_WRITE(dev.i2c, &data, 1);
+	uint8_t cmd[] = {address, data};
+	/* XXX change to I2C_WRITE once FSM of I2C is fully debugged */
+	uint8_t dummy;
+	return I2C_WRITEREAD(dev.i2c, &cmd, 2, &dummy, 1);
 }
 
 static int
@@ -229,7 +232,7 @@ ms5611_attach(struct i2c_dev_s *i2c)
 
 //	I2C_LOCK(dev.i2c, true);
 	I2C_SETADDRESS(dev.i2c, MS5611_ADDRESS, 7);
-	int ret = read_reg(ADDR_RESET_CMD);
+	int ret = write_reg(ADDR_RESET_CMD, 1);
 
 	/* check if the address was wrong */
 	if (ret < 0)
@@ -237,7 +240,7 @@ ms5611_attach(struct i2c_dev_s *i2c)
 		/* try second address */
 		MS5611_ADDRESS = MS5611_ADDRESS_2;
 		I2C_SETADDRESS(dev.i2c, MS5611_ADDRESS, 7);
-		ret = read_reg(ADDR_RESET_CMD);
+		ret = write_reg(ADDR_RESET_CMD, 1);
 	}
 
 	if (ret < 0) return EIO;

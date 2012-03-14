@@ -157,6 +157,82 @@ int sensors_main(int argc, char *argv[])
 		message("HMC5883L identification failed: %d\n", ret);
 	}
 
+#define HMC5883L_ADDR_CONF_A				0x00
+#define HMC5883L_ADDR_CONF_B				0x01
+#define HMC5883L_ADDR_MODE					0x02
+
+#define HMC5883L_AVERAGING_1		(0 << 5) /* conf a register */
+#define HMC5883L_AVERAGING_2		(1 << 5)
+#define HMC5883L_AVERAGING_4		(2 << 5)
+#define HMC5883L_AVERAGING_8		(3 << 5)
+
+#define HMC5883L_RATE_75HZ			(6 << 2) /* 75 Hz */
+
+#define HMC5883L_RANGE_0_88GA			(0 << 5)
+
+	uint8_t rate_cmd[] = {HMC5883L_ADDR_CONF_A, HMC5883L_RATE_75HZ | HMC5883L_AVERAGING_8};
+	ret = I2C_WRITE(i2c, rate_cmd, sizeof(rate_cmd));
+	message("Wrote %d into register 0x00 of HMC, result: %d (0 = success)\n", HMC5883L_RATE_75HZ | HMC5883L_AVERAGING_8, ret);
+
+	uint8_t range_cmd[] = {HMC5883L_ADDR_CONF_B, HMC5883L_RANGE_0_88GA};
+	ret = I2C_WRITE(i2c, range_cmd, sizeof(range_cmd));
+	message("Wrote %d into register 0x01 of HMC, result: %d (0 = success)\n", HMC5883L_RANGE_0_88GA, ret);
+
+	// Set HMC into continous mode
+	// First write address, then value
+	uint8_t cont_address[] = {HMC5883L_ADDR_MODE, 0x00};
+	ret = I2C_WRITE(i2c, cont_address, sizeof(cont_address));
+
+	message("Wrote 0x00 into register 0x02 of HMC, result: %d (0 = success)\n", ret);
+
+
+	// ATTEMPT HMC5883L READ
+	int h = 0;
+
+	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
+	for (h = 0; h < 5; h++)
+	{
+
+		cont_address[0] = HMC5883L_ADDR_MODE;
+		cont_address[1] = 0x01;
+		ret = I2C_WRITE(i2c, cont_address, sizeof(cont_address));
+
+		message("Wrote 0x01 into register 0x02 of HMC, result: %d (0 = success)\n", ret);
+
+		usleep(100000);
+
+		cont_address[1] = 0x00;
+		uint8_t dummy;
+		ret = I2C_WRITEREAD(i2c, cont_address, sizeof(cont_address), &dummy, 1);
+
+		message("Wrote 0x00 into register 0x02 of HMC, result: %d (0 = success)\n", ret);
+
+		usleep(100000);
+
+
+		int16_t hmc5883l_data[3] = {0, 0, 0};
+		uint8_t data_address = 0x03;
+		uint8_t* data_ptr = (uint8_t*)hmc5883l_data;
+		ret = I2C_WRITEREAD(i2c, &data_address, 1, data_ptr, 6);
+		if (ret < 0)
+		{
+			message("HMC5883L READ failed: %d\n", ret);
+		}
+		else
+		{
+			// mask out top four bits as only 12 bits are valid
+			hmc5883l_data[0] &= 0xFFF;
+			hmc5883l_data[1] &= 0xFFF;
+			hmc5883l_data[2] &= 0xFFF;
+
+			message("HMC5883L READ SUCCEEDED: %d, val: %d %d %d\n", ret, hmc5883l_data[0], hmc5883l_data[1], hmc5883l_data[2]);
+			uint8_t hmc_status;
+			ret = I2C_WRITEREAD(i2c, &cmd, 1, &hmc_status, 1);
+
+			message("\t status: %d\n", hmc_status);
+		}
+	}
+
 
 	//usleep(100);
 
@@ -184,20 +260,6 @@ int sensors_main(int argc, char *argv[])
 //	//usleep(100);
 //
 //
-	// ATTEMPT HMC5883L READ
-	I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);
-	uint8_t hmc5883l_status[5] = {'-', '-', '-', '-', '\0'};
-	uint8_t who_am_i = 0x10;
-	I2C_WRITE(i2c, &who_am_i, 1);
-	ret = I2C_READ(i2c, hmc5883l_status, 3);
-	if (ret < 0)
-	{
-		message("HMC5883L READ failed: %d, val: %d\n", ret, hmc5883l_status[1]);
-	}
-	else
-	{
-		message("HMC5883L READ SUCCEEDED: %d, val:%s\n", ret, (char*)hmc5883l_status);
-	}
 //
 //	// ATTEMPT HMC5883L WRITE
 ////		I2C_SETADDRESS(i2c, HMC5883L_ADDRESS, 7);

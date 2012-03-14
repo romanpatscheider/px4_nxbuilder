@@ -154,7 +154,7 @@ l3gd20(int argc, char *argv[])
 	int16_t	buf[3] = {0, 0, 0};
 	int		ret;
 
-	fd = open("/dev/l3gd20", O_RDONLY);
+	fd = open("/dev/l3gd20", O_RDONLY | O_NONBLOCK);
 	if (fd < 0) {
 		printf("L3GD20: open fail\n");
 		return ERROR;
@@ -180,7 +180,7 @@ l3gd20(int argc, char *argv[])
 		printf("\tl3gd20: read1 fail (%d should have been %d)\n", ret, sizeof(buf));
 		//return ERROR;
 	} else {
-		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+		printf("\tl3gd20 values #1: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
 	}
 
 	/* wait at least 2 ms, sensor should have data after no more than 1.5ms */
@@ -192,7 +192,7 @@ l3gd20(int argc, char *argv[])
 		printf("\tl3gd20: read2 fail (%d)\n", ret);
 		return ERROR;
 	} else {
-		printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
+		printf("\tl3gd20 values #2: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
 	}
 
 	/* empty sensor buffer */

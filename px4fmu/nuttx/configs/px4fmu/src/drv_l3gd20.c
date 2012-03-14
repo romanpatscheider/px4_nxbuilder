@@ -197,6 +197,34 @@ set_rate(uint8_t rate)
 static bool
 read_fifo(int16_t *data)
 {
+//	struct {					/* status register and data as read back from the device */
+//		uint8_t		cmd;
+//		uint8_t		temp;
+//		uint8_t		status;
+//		int16_t		x;
+//		int16_t		y;
+//		int16_t		z;
+//	} __attribute__((packed))	report;
+//
+//	report.cmd = ADDR_OUT_TEMP | DIR_READ | ADDR_INCREMENT;
+//
+//	/* exchange the report structure with the device */
+//	SPI_LOCK(l3gd20_dev.spi, true);
+//
+//	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, true);
+//
+//	read_reg(ADDR_WHO_AM_I);
+//
+//	SPI_EXCHANGE(l3gd20_dev.spi, &report, &report, sizeof(report));
+//	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, false);
+//
+//	SPI_LOCK(l3gd20_dev.spi, false);
+//
+//
+//
+//
+
+
 	struct {					/* status register and data as read back from the device */
 		uint8_t		cmd;
 		uint8_t		temp;
@@ -206,19 +234,12 @@ read_fifo(int16_t *data)
 		int16_t		z;
 	} __attribute__((packed))	report;
 
-	report.cmd = ADDR_OUT_TEMP | DIR_READ | ADDR_INCREMENT;
+	report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
 
-	/* exchange the report structure with the device */
 	SPI_LOCK(l3gd20_dev.spi, true);
-
-	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, true);
-
-	read_reg(ADDR_WHO_AM_I);
-
-
+	SPI_SELECT(l3gd20_dev.spi, PX4_SPIDEV_GYRO, true);
 	SPI_EXCHANGE(l3gd20_dev.spi, &report, &report, sizeof(report));
-	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, false);
-
+	SPI_SELECT(l3gd20_dev.spi, PX4_SPIDEV_GYRO, false);
 	SPI_LOCK(l3gd20_dev.spi, false);
 
 	data[0] = report.x;
@@ -295,28 +316,37 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 	if (read_reg(ADDR_WHO_AM_I) == WHO_I_AM) {
 
 		/* reset device memory */
-		write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
+		//write_reg(ADDR_CTRL_REG5, REG5_REBOOT_MEMORY);
 
 		/* set default configuration */
 		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
 		write_reg(ADDR_CTRL_REG5, 0);
 
-		//		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
-//		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
+		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
 
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
 				(set_rate(L3GD20_RATE_760HZ) != 0))	/* takes device out of low-power mode */
 		{
-			SPI_LOCK(l3gd20_dev.spi, false);
 			errno = EIO;
 		} else {
-			SPI_LOCK(l3gd20_dev.spi, false);
 			/* Read out the first few funky values */
-			int16_t dummy[3];
-			read_fifo(dummy);
-			read_fifo(dummy);
-			read_fifo(dummy);
+			struct {					/* status register and data as read back from the device */
+				uint8_t		cmd;
+				uint8_t		temp;
+				uint8_t		status;
+				int16_t		x;
+				int16_t		y;
+				int16_t		z;
+			} __attribute__((packed))	report;
+
+			report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
+
+			SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
+			SPI_EXCHANGE(spi, &report, &report, sizeof(report));
+			SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
+
 
 			/* make ourselves available */
 			register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
@@ -325,11 +355,11 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		}
 
 	} else {
-		SPI_LOCK(l3gd20_dev.spi, false);
+
 		errno = EIO;
 	}
 
-
+	SPI_LOCK(l3gd20_dev.spi, false);
 
 	return result;
 }

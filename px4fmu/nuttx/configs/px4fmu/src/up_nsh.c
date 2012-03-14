@@ -97,9 +97,9 @@
  *
  ****************************************************************************/
 
-static FAR struct spi_dev_s *spi1;
-static FAR struct spi_dev_s *spi3;
-static FAR struct i2c_dev_s *i2c2;
+static struct spi_dev_s *spi1;
+static struct spi_dev_s *spi3;
+static struct i2c_dev_s *i2c2;
 
 int nsh_archinitialize(void)
 {
@@ -116,12 +116,14 @@ int nsh_archinitialize(void)
   /* Initialize the user leds */
   up_ledinit(); // FIXME this might init the leds twice, but no harm
 
+#ifdef CONFIG_ADC
   int adc_state = adc_devinit();
   if (adc_state != OK)
   {
 	  message("adc_devinit failed: %d\n", adc_state);
 	  return -ENODEV;
   }
+#endif
 
   up_ledoff(LED_BLUE);
   up_ledoff(LED_AMBER);

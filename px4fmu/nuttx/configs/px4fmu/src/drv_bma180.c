@@ -132,7 +132,7 @@ struct bma180_dev_s
 	struct bma180_buffer	*buffer;
 };
 
-static FAR struct bma180_dev_s	bma180_dev;
+static struct bma180_dev_s	bma180_dev;
 
 static void	write_reg(uint8_t address, uint8_t data);
 static uint8_t	read_reg(uint8_t address);
@@ -205,7 +205,7 @@ read_fifo(uint16_t *data)
 	data[2] = report.z;
     
 	/* return 1 for all three axes new */
-	return (new_data > 2);
+	return (new_data > 0); // bit funky, depends on timing
 }
 
 static void

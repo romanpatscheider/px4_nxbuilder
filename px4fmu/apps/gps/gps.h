@@ -22,7 +22,7 @@ int open_port(char * port)
 	// Open serial port
 	// O_RDWR - Read and write
 	// O_NOCTTY - Ignore special chars like CTRL-C
-	fd = open(port, O_RDWR | O_NOCTTY);
+	fd = open(port, O_CREAT|O_RDWR | O_NOCTTY);
 	if (fd == -1)
 	{
 	   // Could not open the port.
@@ -50,17 +50,14 @@ int read_gps_nmea(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info
 	int numParsingErrors = 0;
 	int numUpdates = 0;
 
-
 	// NMEA or SINGLE-SENTENCE GPS mode
 
 	// This blocks the task until there is something on the buffer
 	while (read(fd, &c, 1) > 0)
 	{
-//		printf("Read %c\n",c);
 		// detect start while acquiring stream
 		if (!start_flag && (c == '$'))
 		{
-			printf("Read start flag\n");
 			start_flag = 1;
 			found_cr = 0;
 			rx_count = 0;
@@ -82,46 +79,26 @@ int read_gps_nmea(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info
 		}
 		else
 		{
+			// store chars in buffer
 		    gps_rx_buffer[rx_count] = c;
 		    rx_count++;
-//		    printf("rx_count: %d\n",rx_count);
 		}
 
-		if (start_flag && c == 0x0d) // look for carriage return CR
+		// look for carriage return CR
+		if (start_flag && c == 0x0d)
 		{
-			printf("Found CR\n");
 			found_cr = 1;
 		}
 
-		if (start_flag && found_cr && c == 0x0a) // look for linefeed LF
+		// and then look for line feed LF
+		if (start_flag && found_cr && c == 0x0a)
 		{
-			printf("Found LF\n");
 			break;
 		}
-
-
-
 	}
 
-//	printf("Try parsing: %s\n",gps_rx_buffer);
-//	int j;
-//	for(j=0;j<rx_count;j++)
-//	{
-//		printf("%c",gps_rx_buffer[j]);
-//	}
-//	printf("\n");
-
+	// parse one NMEA line, use buffer up to rx_count
 	int msg_read = nmea_parse(parser, gps_rx_buffer, rx_count, info);
-//		printf("nmea msg_read = %d\n", msg_read);
-
-	if(msg_read > 0)
-	{
-		printf("Found sequence\n");
-	}
-	else
-	{
-		printf("nothing found\n");
-	}
 
 	// As soon as one NMEA message has been parsed, we break out of the loop and end here
 	return(0);

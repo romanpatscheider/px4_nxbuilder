@@ -24,6 +24,7 @@ extern mavlink_system_t mavlink_system;
 
 int uart_read;
 int uart_write;
+mqd_t gps_queue;
  
 /**
  * @brief Send one char (uint8_t) over a comm channel

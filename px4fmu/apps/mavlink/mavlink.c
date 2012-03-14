@@ -43,10 +43,11 @@
 #include <poll.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <mqueue.h>
 #include "mavlink_bridge_header.h"
 #include "v1.0/common/mavlink.h"
 #include "v1.0/pixhawk/pixhawk.h"
-#include <mqueue.h>
+
 
 /****************************************************************************
  * Definitions
@@ -63,47 +64,46 @@ pthread_t receive_thread;
 pthread_t gps_receive_thread;
 
 void handleMessage(mavlink_message_t * msg);
+
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
-
 	uint8_t ch = EOF;
 	mavlink_message_t msg;
 	mavlink_status_t status;
 
 	while(1)
 	{
-		/* blocking read on next byte */
+		// blocking read on next byte
 		read(uart_read, &ch, sizeof(uint8_t));
 
 		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
 			handleMessage(&msg);
-
-		pthread_yield();
 	}
-
 }
 
 static void *gps_receiveloop(void * arg) //runs as a pthread and listens messages from GPS
 {
-	//Open Message queue to receive GPS information
-	mqd_t gps_queue;
-	gps_queue = mq_open( "gps_queue", O_CREAT|O_RDONLY|O_NONBLOCK, NULL, NULL );
+	mavlink_msg_statustext_send(chan,0,"gps receive loop running");
 
-	int inview_msg;
+	//Open Message queue to receive GPS information
+
+	int prio;
+	char * msg = malloc(5*sizeof(char));
+
+	ssize_t result_receive;
 
 	while(1)
 	{
-		if(mq_receive(gps_queue, &inview_msg, sizeof(inview_msg), 0) > 0)
+		if(result_receive = mq_receive(gps_queue, msg, 5*sizeof(char), &prio) > 0)
 		{
 			mavlink_msg_statustext_send(chan,0,"gps received msg");
+			mavlink_msg_statustext_send(chan,0,msg);
 		}
-		pthread_yield();
 	}
-	//close GPS queue
-	mq_close(gps_queue);
 }
 
 
@@ -174,6 +174,22 @@ int mavlink_main(int argc, char *argv[])
     uart_read = open(uart_name, O_RDWR | O_NOCTTY);
     uart_write = open(uart_name, O_RDWR | O_NOCTTY | O_NDELAY);
 
+    // it seems that these attributes need to be defined twice, for the reading queue and the writing queue
+    // TODO define attributes and name, etc in separate file
+    struct mq_attr attr;
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = 5;
+    attr.mq_curmsgs = 0;
+
+    // open gps queue
+    gps_queue = mq_open( "gps_queue", O_CREAT|O_RDONLY, 0666, &attr );
+
+	if(-1 == gps_queue)
+	{
+		mavlink_msg_statustext_send(chan,0,"gps queue creation in receiveloop failed");
+	}
+
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
@@ -187,6 +203,9 @@ int mavlink_main(int argc, char *argv[])
     //close uart
 	close(uart_read);
 	close(uart_write);
+
+	//close GPS queue
+	mq_close(gps_queue);
 
     return 0;
 }

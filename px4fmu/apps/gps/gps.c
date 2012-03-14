@@ -61,6 +61,7 @@
 //#define NMEA_GGA_ENABLE "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0*27\r\n" //Set GGA messages
 
 
+
 /****************************************************************************
  * user_start
  ****************************************************************************/
@@ -68,30 +69,35 @@
 int gps_main(int argc, char *argv[])
 {
     // print text
-    printf("Hello, gps!!\n");
+    printf("Hello, GPS!\n");
     usleep(100000);
 
-    //Open Message queue to send GPS information
+    // Define attributes for message queue to send GPS information
+    struct mq_attr attr;
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = 5;
+    attr.mq_curmsgs = 0;
+
+    // open message queue to write
     mqd_t gps_queue;
-    gps_queue = mq_open( "gps_queue", O_CREAT|O_WRONLY, NULL, NULL );
-
-    //test for queue
-    int inview_msg;
-
+    gps_queue = mq_open( "gps_queue", O_WRONLY, 0666, &attr );
     if(-1 == gps_queue)
-    {
-    	printf("GPS Queue creation failed\n");
-    }
+	{
+		printf("GPS Queue creation failed\n");
+	}
+    //test for queue
+    char msg[5] = "HELLO";
+    int send_result;
 
-    //read arguments
+
+    //read input arguments
     char * device = argv[1];
     char * mode = "nmea"; //TODO: write enum once all modes are defined
     if(3 <= argc)
 	{
 		mode = argv[2];
 	}
-
-
 
     int buffer_size = 2000;
     nmeaINFO * info = malloc(sizeof(nmeaINFO));
@@ -178,21 +184,18 @@ int gps_main(int argc, char *argv[])
 
 		}
 
-//		inview_msg = info->satinfo.inview;
-//
-//		//Send nuttx messages containing GPS information
-//		if (-1 == mq_send(gps_queue, &inview_msg, sizeof(inview_msg), 0)) //TODO Priority?
-//		{
-//			printf("Message could not be sent");
-//		}
-
+    	//Send GPS information in message queue
+    	send_result = mq_send(gps_queue, msg, 5*sizeof(char),0);
+    	printf("Send result: %d ", send_result);
+		if (-1 == send_result) //TODO Priority?
+		{
+			printf("Message could not be sent\n");
+		}
 	}
 
 	free(gps_rx_buffer);
 	free(info);
 
-	//close GPS queue
-	mq_close(gps_queue);
 
 	//close port
 	close_port(fd);
@@ -200,6 +203,8 @@ int gps_main(int argc, char *argv[])
 	//destroy gps parser
 	nmea_parser_destroy(&parser);
 
+	//close GPS queue
+	mq_close(gps_queue);
 
     return 0;
 }

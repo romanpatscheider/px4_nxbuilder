@@ -97,9 +97,9 @@
  *
  ****************************************************************************/
 
-static struct spi_dev_s *spi1;
-static struct spi_dev_s *spi3;
-static struct i2c_dev_s *i2c2;
+static FAR struct spi_dev_s *spi1;
+static FAR struct spi_dev_s *spi3;
+static FAR struct i2c_dev_s *i2c2;
 
 int nsh_archinitialize(void)
 {

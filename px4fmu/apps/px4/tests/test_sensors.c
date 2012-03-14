@@ -86,10 +86,10 @@ struct {
 	const char	*path;
 	int		(* test)(int argc, char *argv[]);
 } sensors[] = {
-//	{"l3gd20",	"/dev/l3gd20",	l3gd20},
-//    {"bma180",	"/dev/bma180",	bma180},
+	{"l3gd20",	"/dev/l3gd20",	l3gd20},
+    {"bma180",	"/dev/bma180",	bma180},
     {"hmc5883l",	"/dev/hmc5883l",	hmc5883l},
-    {"ms5611",	"/dev/ms5611",	hmc5883l},
+    {"ms5611",	"/dev/ms5611",	ms5611},
 //    {"lis331",	"/dev/lis331",	lis331},
 	{NULL, NULL, NULL}
 };
@@ -314,12 +314,12 @@ ms5611(int argc, char *argv[])
 	fflush(stdout);
 
 	int		fd;
-	int16_t	buf[3] = {0, 0, 0};
+	uint32_t	buf[3] = {0, 0};
 	int		ret;
 
-	fd = open("/dev/hmc5883l", O_RDONLY);
+	fd = open("/dev/ms5611", O_RDONLY);
 	if (fd < 0) {
-		printf("\thmc5883l: open fail\n");
+		printf("\tms5611: open fail\n");
 		return ERROR;
 	}
 //
@@ -330,17 +330,17 @@ ms5611(int argc, char *argv[])
 ////		return ERROR;
 ////	}
 ////
-//	/* wait at least 10ms, sensor should have data after no more than 6.5ms */
-//	usleep(10000);
-//
-//	/* read data - expect samples */
-//	ret = read(fd, buf, sizeof(buf));
-//	if (ret != sizeof(buf)) {
-//		printf("\thmc5883l: read1 fail (%d)\n", ret);
-//		return ERROR;
-//	} else {
-//		printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);
-//	}
+	/* wait at least 10ms, sensor should have data after no more than 6.5ms */
+	usleep(10000);
+
+	/* read data - expect samples */
+	ret = read(fd, buf, sizeof(buf));
+	if (ret != sizeof(buf)) {
+		printf("\tms5611: read1 fail (%d)\n", ret);
+		return ERROR;
+	} else {
+		printf("\tms5611 values: pressure raw:%d\ttemp raw:%d\n", buf[0], buf[1]);
+	}
 
 	/* XXX more tests here */
 
@@ -379,7 +379,7 @@ hmc5883l(int argc, char *argv[])
 	/* read data - expect samples */
 	ret = read(fd, buf, sizeof(buf));
 	if (ret != sizeof(buf)) {
-		printf("\thmc5883l: read1 fail (%d)\n", ret);
+		printf("\thmc5883l: read1 fail (%d) values: x:%d\ty:%d\tz:%d\n", ret, buf[0], buf[1], buf[2]);
 		return ERROR;
 	} else {
 		printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", buf[0], buf[1], buf[2]);

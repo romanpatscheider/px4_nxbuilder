@@ -113,14 +113,21 @@
 #define FIFO_CTRL_STREAM_TO_FIFO_MODE		(3<<5)
 #define FIFO_CTRL_BYPASS_TO_STREAM_MODE		(1<<7)
 
-FAR struct l3gd20_dev_s	dev;
+static FAR struct l3gd20_dev_s	l3gd20_dev;
 
 static ssize_t l3gd20_read(struct file *filp, FAR char *buffer, size_t buflen);
 static int l3gd20_ioctl(struct file *filp, int cmd, unsigned long arg);
 
 static const struct file_operations l3gd20_fops = {
+	.open  = 0,
+	.close = 0,
 	.read  = l3gd20_read,
+	.write = 0,
+	.seek  = 0,
 	.ioctl = l3gd20_ioctl,
+#ifndef CONFIG_DISABLE_POLL
+	.poll  = 0
+#endif
 };
 
 struct l3gd20_dev_s
@@ -139,9 +146,9 @@ write_reg(uint8_t address, uint8_t data)
 {
 	uint8_t cmd[2] = { address | DIR_WRITE, data };
 
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-    SPI_SNDBLOCK(dev.spi, &cmd, sizeof(cmd));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, true);
+    SPI_SNDBLOCK(l3gd20_dev.spi, &cmd, sizeof(cmd));
+	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, false);
 }
 
 static uint8_t
@@ -150,9 +157,9 @@ read_reg(uint8_t address)
 	uint8_t	cmd[2] = {address | DIR_READ, 0};
 	uint8_t data[2];
 
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-	SPI_EXCHANGE(dev.spi, cmd, data, sizeof(cmd));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, true);
+	SPI_EXCHANGE(l3gd20_dev.spi, cmd, data, sizeof(cmd));
+	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, false);
 
 	return data[1];
 }
@@ -202,17 +209,17 @@ read_fifo(int16_t *data)
 	report.cmd = ADDR_OUT_TEMP | DIR_READ | ADDR_INCREMENT;
 
 	/* exchange the report structure with the device */
-	SPI_LOCK(dev.spi, true);
+	SPI_LOCK(l3gd20_dev.spi, true);
 
-	SPI_SELECT(dev.spi, dev.spi_id, true);
+	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, true);
 
 	read_reg(ADDR_WHO_AM_I);
 
 
-	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_EXCHANGE(l3gd20_dev.spi, &report, &report, sizeof(report));
+	SPI_SELECT(l3gd20_dev.spi, l3gd20_dev.spi_id, false);
 
-	SPI_LOCK(dev.spi, false);
+	SPI_LOCK(l3gd20_dev.spi, false);
 
 	data[0] = report.x;
 	data[1] = report.y;
@@ -246,25 +253,25 @@ l3gd20_ioctl(struct file *filp, int cmd, unsigned long arg)
 	switch (cmd) {
         case L3GD20_SETRATE:
             if ((arg & REG1_RATE_LP_MASK) == arg) {
-            	SPI_LOCK(dev.spi, true);
+            	SPI_LOCK(l3gd20_dev.spi, true);
                 set_rate(arg);
-                SPI_LOCK(dev.spi, false);
+                SPI_LOCK(l3gd20_dev.spi, false);
                 result = 0;
-                dev.rate = arg;
+                l3gd20_dev.rate = arg;
             }
             break;
 
         case L3GD20_SETRANGE:
             if ((arg & REG4_RANGE_MASK) == arg) {
-            	SPI_LOCK(dev.spi, true);
+            	SPI_LOCK(l3gd20_dev.spi, true);
                 set_range(arg);
-                SPI_LOCK(dev.spi, false);
+                SPI_LOCK(l3gd20_dev.spi, false);
                 result = 0;
             }
             break;
 
         case L3GD20_SETBUFFER:
-            dev.buffer = (struct l3gd20_buffer *)arg;
+            l3gd20_dev.buffer = (struct l3gd20_buffer *)arg;
             result = 0;
             break;
 	}
@@ -279,10 +286,10 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 {
 	int	result = ERROR;
 
-	dev.spi = spi;
-	dev.spi_id = spi_id;
+	l3gd20_dev.spi = spi;
+	l3gd20_dev.spi_id = spi_id;
 
-	SPI_LOCK(dev.spi, true);
+	SPI_LOCK(l3gd20_dev.spi, true);
 
 	/* verify that the device is attached and functioning */
 	if (read_reg(ADDR_WHO_AM_I) == WHO_I_AM) {
@@ -301,10 +308,10 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
 				(set_rate(L3GD20_RATE_760HZ) != 0))	/* takes device out of low-power mode */
 		{
-			SPI_LOCK(dev.spi, false);
+			SPI_LOCK(l3gd20_dev.spi, false);
 			errno = EIO;
 		} else {
-			SPI_LOCK(dev.spi, false);
+			SPI_LOCK(l3gd20_dev.spi, false);
 			/* Read out the first few funky values */
 			int16_t dummy[3];
 			read_fifo(dummy);
@@ -318,7 +325,7 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		}
 
 	} else {
-		SPI_LOCK(dev.spi, false);
+		SPI_LOCK(l3gd20_dev.spi, false);
 		errno = EIO;
 	}
 

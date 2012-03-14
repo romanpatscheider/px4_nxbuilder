@@ -132,7 +132,7 @@ struct bma180_dev_s
 	struct bma180_buffer	*buffer;
 };
 
-FAR struct bma180_dev_s	dev;
+static FAR struct bma180_dev_s	bma180_dev;
 
 static void	write_reg(uint8_t address, uint8_t data);
 static uint8_t	read_reg(uint8_t address);
@@ -145,9 +145,9 @@ write_reg(uint8_t address, uint8_t data)
 {
 	uint8_t cmd[2] = { address | DIR_WRITE, data };
     
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-    SPI_SNDBLOCK(dev.spi, &cmd, sizeof(cmd));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_SELECT(bma180_dev.spi, bma180_dev.spi_id, true);
+    SPI_SNDBLOCK(bma180_dev.spi, &cmd, sizeof(cmd));
+	SPI_SELECT(bma180_dev.spi, bma180_dev.spi_id, false);
 }
 
 static uint8_t
@@ -156,9 +156,9 @@ read_reg(uint8_t address)
 	uint8_t	cmd[2] = {address | DIR_READ, 0};
 	uint8_t data[2];
     
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-	SPI_EXCHANGE(dev.spi, cmd, data, sizeof(cmd));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_SELECT(bma180_dev.spi, bma180_dev.spi_id, true);
+	SPI_EXCHANGE(bma180_dev.spi, cmd, data, sizeof(cmd));
+	SPI_SELECT(bma180_dev.spi, bma180_dev.spi_id, false);
     
 	return data[1];	
 }
@@ -177,13 +177,13 @@ read_fifo(uint16_t *data)
 	report.cmd = ADDR_ACC_X_LSB | DIR_READ | ADDR_INCREMENT;
 
 	/* exchange the report structure with the device */
-//	SPI_LOCK(dev.spi, true);
-//	SPI_SELECT(dev.spi, dev.spi_id, true);
-//	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
-//	SPI_SELECT(dev.spi, dev.spi_id, false);
-//	SPI_LOCK(dev.spi, false);
+//	SPI_LOCK(bma180_dev.spi, true);
+//	SPI_SELECT(bma180_dev.spi, bma180_dev.spi_id, true);
+//	SPI_EXCHANGE(bma180_dev.spi, &report, &report, sizeof(report));
+//	SPI_SELECT(bma180_dev.spi, bma180_dev.spi_id, false);
+//	SPI_LOCK(bma180_dev.spi, false);
 
-	SPI_LOCK(dev.spi, true);
+	SPI_LOCK(bma180_dev.spi, true);
 	report.x = read_reg(ADDR_ACC_X_LSB);
 	report.x |= (read_reg(ADDR_ACC_X_LSB+1) << 8);
 	report.y = read_reg(ADDR_ACC_X_LSB+2);
@@ -191,7 +191,7 @@ read_fifo(uint16_t *data)
 	report.z = read_reg(ADDR_ACC_X_LSB+4);
 	report.z |= (read_reg(ADDR_ACC_X_LSB+5) << 8);
 	report.temp = read_reg(ADDR_ACC_X_LSB+6);
-	SPI_LOCK(dev.spi, false);
+	SPI_LOCK(bma180_dev.spi, false);
 
 	// Collect status and remove two top bits
 
@@ -249,7 +249,7 @@ bma180_ioctl(struct file *filp, int cmd, unsigned long arg)
 //            if ((arg & REG1_RATE_MASK) == arg) {
 //                set_rate(arg);
 //                result = 0;
-//                dev.rate = arg;
+//                bma180_dev.rate = arg;
 //            }
             break;
 
@@ -261,7 +261,7 @@ bma180_ioctl(struct file *filp, int cmd, unsigned long arg)
             break;
 
         case BMA180_SETBUFFER:
-            dev.buffer = (struct bma180_buffer *)arg;
+            bma180_dev.buffer = (struct bma180_buffer *)arg;
             result = 0;
             break;
 	}
@@ -276,10 +276,10 @@ bma180_attach(struct spi_dev_s *spi, int spi_id)
 {
 	int	result = ERROR;
 	
-	dev.spi = spi;
-	dev.spi_id = spi_id;
+	bma180_dev.spi = spi;
+	bma180_dev.spi_id = spi_id;
     
-	SPI_LOCK(dev.spi, true);
+	SPI_LOCK(bma180_dev.spi, true);
 
 	/* verify that the device is attached and functioning */
 	if (read_reg(ADDR_CHIP_ID) == CHIP_ID) {
@@ -324,7 +324,7 @@ bma180_attach(struct spi_dev_s *spi, int spi_id)
 		errno = EIO;
 	}
 
-	SPI_LOCK(dev.spi, false);
+	SPI_LOCK(bma180_dev.spi, false);
     
 	return result;
 }

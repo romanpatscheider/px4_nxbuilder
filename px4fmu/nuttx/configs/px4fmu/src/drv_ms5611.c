@@ -61,7 +61,7 @@
 #define ADDR_DATA				0x00 /* address of 4 bytes pressure data */
 #define ADDR_PROM				0xA0 /* address of 16 bytes calibration data */
 
-FAR struct ms5611_dev_s	dev;
+static FAR struct ms5611_dev_s	dev;
 
 static ssize_t ms5611_read(struct file *filp, FAR char *buffer, size_t buflen);
 static int ms5611_ioctl(struct file *filp, int cmd, unsigned long arg);
@@ -145,10 +145,10 @@ read_values(int16_t *data)
 
 	/* exchange the report structure with the device */
 //	I2C_LOCK(dev.i2c, true);
-	I2C_SETADDRESS(dev.i2c, MS5611_ADDRESS, 7);
+	I2C_SETADDRESS(dev.i2c, MS5611_ADDRESS_2, 7);
 
 	uint8_t cmd = ADDR_DATA;
-	int ret;
+	int ret = 1;
 
 	cmd = ADDR_DATA;
 	ret = I2C_WRITEREAD(dev.i2c, &cmd, 1, (uint8_t*)&(report), sizeof(report));
@@ -163,7 +163,7 @@ read_values(int16_t *data)
 
 	/* return 1 if new data is available, 0 else */
 	/* XXX Check if last read was at least 9.5 ms ago */
-	return 1;
+	return ret;
 }
 
 static ssize_t
@@ -225,9 +225,11 @@ ms5611_attach(struct i2c_dev_s *i2c)
 	MS5611_ADDRESS = MS5611_ADDRESS_1;
 	uint8_t cmd = ADDR_PROM;
 
+	/* reset */
+
 //	I2C_LOCK(dev.i2c, true);
 	I2C_SETADDRESS(dev.i2c, MS5611_ADDRESS, 7);
-	int ret = I2C_WRITEREAD(i2c, &cmd, 1, (uint8_t*)dev.prom, sizeof(dev.prom));
+	int ret = read_reg(ADDR_RESET_CMD);
 
 	/* check if the address was wrong */
 	if (ret < 0)
@@ -235,8 +237,16 @@ ms5611_attach(struct i2c_dev_s *i2c)
 		/* try second address */
 		MS5611_ADDRESS = MS5611_ADDRESS_2;
 		I2C_SETADDRESS(dev.i2c, MS5611_ADDRESS, 7);
-		ret = I2C_WRITEREAD(i2c, &cmd, 1, (uint8_t*)dev.prom, sizeof(dev.prom));
+		ret = read_reg(ADDR_RESET_CMD);
 	}
+
+	if (ret < 0) return EIO;
+
+	/* wait for PROM contents to be in the device */
+	usleep(10000);
+
+	/* read PROM */
+	ret = I2C_WRITEREAD(i2c, &cmd, 1, (uint8_t*)dev.prom, sizeof(dev.prom));
 
 	/* OR PROM contents as poor-man's alive check, PROM cannot be all-zero */
 	int sum = dev.prom[0] | dev.prom[1] | dev.prom[2] | dev.prom[3] | dev.prom[4] | dev.prom[5] | dev.prom[6] | dev.prom[7];
@@ -244,29 +254,18 @@ ms5611_attach(struct i2c_dev_s *i2c)
 	/* verify that the device is attached and functioning */
 	if ((ret >= 0) && (sum > 0)) {
 
-		/* set device into continous mode */
-		/* takes device out of low-power mode */
-		//write_reg(ADDR_MODE, MODE_REG_CONTINOUS_MODE);
+		/* start first conversion */
+		read_reg(ADDR_CMD_CONVERT_D1);
+		/* wait */
+		usleep(10000);
+		read_reg(ADDR_CMD_CONVERT_D2);
 
-		/* set update rate to 75 Hz */
-		/* set 0.88 Ga range */
+		/* make ourselves available */
+		register_driver("/dev/ms5611", &ms5611_fops, 0666, NULL);
 
-//		if ((set_range(MS5611_RANGE_0_88GA) != 0) ||
-//				(set_rate(MS5611_RATE_75HZ) != 0))
-//		{
-////			I2C_LOCK(dev.i2c, false);
-//			errno = EIO;
-//		} else {
-//			I2C_LOCK(dev.i2c, false);
-
-			/* make ourselves available */
-			register_driver("/dev/ms5611", &ms5611_fops, 0666, NULL);
-
-			result = 0;
-//		}
+		result = 0;
 
 	} else {
-//		I2C_LOCK(dev.i2c, false);
 		errno = EIO;
 	}
 

@@ -86,7 +86,7 @@
 #define ID_B_WHO_AM_I			'4'
 #define ID_C_WHO_AM_I			'3'
 
-FAR struct hmc5883l_dev_s	dev;
+static FAR struct hmc5883l_dev_s	hmc5883l_dev;
 
 static ssize_t hmc5883l_read(struct file *filp, FAR char *buffer, size_t buflen);
 static int hmc5883l_ioctl(struct file *filp, int cmd, unsigned long arg);
@@ -116,7 +116,7 @@ static int read_reg(uint8_t address);
 static int
 write_reg(uint8_t address, uint8_t data)
 {
-	return I2C_WRITE(dev.i2c, &data, 1);
+	return I2C_WRITE(hmc5883l_dev.i2c, &data, 1);
 }
 
 static int
@@ -125,7 +125,7 @@ read_reg(uint8_t address)
 	uint8_t cmd = address;
 	uint8_t data;
 
-	int ret = I2C_WRITEREAD(dev.i2c, &cmd, 1, &data, 1);
+	int ret = I2C_WRITEREAD(hmc5883l_dev.i2c, &cmd, 1, &data, 1);
 	/* return data on success, error code on failure */
 	if (ret == 0) ret = data;
 	return ret;
@@ -134,34 +134,35 @@ read_reg(uint8_t address)
 static int
 set_range(uint8_t range)
 {
-	I2C_SETADDRESS(dev.i2c, HMC5883L_ADDRESS, 7);
-//	/* mask out illegal bit positions */
-//	uint8_t write_range = range & REG4_RANGE_MASK;
-//	/* immediately return if user supplied invalid value */
-//	if (write_range != range) return EINVAL;
+	I2C_SETADDRESS(hmc5883l_dev.i2c, HMC5883L_ADDRESS, 7);
+
+
+	/* mask out illegal bit positions */
+	uint8_t write_range = range;// & REG4_RANGE_MASK;
+	/* immediately return if user supplied invalid value */
+	if (write_range != range) return EINVAL;
 //	/* set remaining bits to a sane value */
 //	write_range |= REG4_BDU;
-//	/* write to device */
-//	write_reg(ADDR_CTRL_REG4, write_range);
-//	/* return 0 if register value is now written value, 1 if unchanged */
-//	return !(read_reg(ADDR_CTRL_REG4) == write_range);
-	return 0;
+	/* write to device */
+	write_reg(ADDR_CONF_B, write_range);
+	/* return 0 if register value is now written value, 1 if unchanged */
+	return !(read_reg(ADDR_CONF_B) == write_range);
 }
 
 static int
 set_rate(uint8_t rate)
 {
-	I2C_SETADDRESS(dev.i2c, HMC5883L_ADDRESS, 7);
-//	/* mask out illegal bit positions */
-//	uint8_t write_rate = rate & REG1_RATE_LP_MASK;
-//	/* immediately return if user supplied invalid value */
-//	if (write_rate != rate) return EINVAL;
+	I2C_SETADDRESS(hmc5883l_dev.i2c, HMC5883L_ADDRESS, 7);
+	/* mask out illegal bit positions */
+	uint8_t write_rate = rate;// & REG1_RATE_LP_MASK;
+	/* immediately return if user supplied invalid value */
+	if (write_rate != rate) return EINVAL;
 //	/* set remaining bits to a sane value */
 //	write_rate |= REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE;
-//	/* write to device */
-//	write_reg(ADDR_CTRL_REG1, write_rate);
-//	/* return 0 if register value is now written value, 1 if unchanged */
-//	return !(read_reg(ADDR_CTRL_REG1) == write_rate);
+	/* write to device */
+	write_reg(ADDR_CONF_A, write_rate);
+	/* return 0 if register value is now written value, 1 if unchanged */
+	return !(read_reg(ADDR_CONF_A) == write_rate);
 	return 0;
 }
 
@@ -177,15 +178,13 @@ read_values(int16_t *data)
 	hmc_report.status = 0;
 
 	/* exchange the report structure with the device */
-//	I2C_LOCK(dev.i2c, true);
-	I2C_SETADDRESS(dev.i2c, HMC5883L_ADDRESS, 7);
 
 	uint8_t cmd = ADDR_DATA_OUT_X_MSB;
 
-	I2C_SETADDRESS(dev.i2c, HMC5883L_ADDRESS, 7);
-	I2C_WRITEREAD(dev.i2c, &cmd, 1, (uint8_t*)&hmc_report, sizeof(hmc_report));
-
-//	I2C_LOCK(dev.i2c, false);
+	I2C_SETADDRESS(hmc5883l_dev.i2c, HMC5883L_ADDRESS, 7);
+	I2C_WRITEREAD(hmc5883l_dev.i2c, &cmd, 1, (uint8_t*)&hmc_report, 6);
+	cmd = ADDR_STATUS;
+	I2C_WRITEREAD(hmc5883l_dev.i2c, &cmd, 1, (uint8_t*)&(hmc_report.status), 1);
 
 	/* write values and clamp them to 12 bit */
 	data[0] = hmc_report.x & 0xFFF;
@@ -223,7 +222,7 @@ hmc5883l_ioctl(struct file *filp, int cmd, unsigned long arg)
 //            if ((arg & REG1_RATE_LP_MASK) == arg) {
 //                set_rate(arg);
 //                result = 0;
-//                dev.rate = arg;
+//                hmc5883l_dev.rate = arg;
 //            }
 //            break;
 //
@@ -235,7 +234,7 @@ hmc5883l_ioctl(struct file *filp, int cmd, unsigned long arg)
 //            break;
 //
 //        case HMC5883L_SETBUFFER:
-//            dev.buffer = (struct hmc5883l_buffer *)arg;
+//            hmc5883l_dev.buffer = (struct hmc5883l_buffer *)arg;
 //            result = 0;
 //            break;
 //	}
@@ -250,10 +249,10 @@ hmc5883l_attach(struct i2c_dev_s *i2c)
 {
 	int	result = ERROR;
 
-	dev.i2c = i2c;
+	hmc5883l_dev.i2c = i2c;
 
-//	I2C_LOCK(dev.i2c, true);
-	I2C_SETADDRESS(dev.i2c, HMC5883L_ADDRESS, 7);
+//	I2C_LOCK(hmc5883l_dev.i2c, true);
+	I2C_SETADDRESS(hmc5883l_dev.i2c, HMC5883L_ADDRESS, 7);
 
 	uint8_t cmd = ADDR_STATUS;
 	uint8_t status_id[4] = {0, 0, 0, 0};
@@ -266,18 +265,19 @@ hmc5883l_attach(struct i2c_dev_s *i2c)
 
 		/* set device into continous mode */
 		/* takes device out of low-power mode */
-		write_reg(ADDR_MODE, MODE_REG_CONTINOUS_MODE);
+		ret = write_reg(ADDR_MODE, MODE_REG_CONTINOUS_MODE);
 
 		/* set update rate to 75 Hz */
 		/* set 0.88 Ga range */
-
-		if ((set_range(HMC5883L_RANGE_0_88GA) != 0) ||
-				(set_rate(HMC5883L_RATE_75HZ) != 0))
+		if ((ret != 0) /*|| (set_range(HMC5883L_RANGE_0_88GA) != 0) ||
+				(set_rate(HMC5883L_RATE_75HZ) != 0)*/)
 		{
-//			I2C_LOCK(dev.i2c, false);
 			errno = EIO;
 		} else {
-//			I2C_LOCK(dev.i2c, false);
+
+			/* read out samples to enable data re-capture */
+			int16_t values[3];
+			read_values(values);
 
 			/* make ourselves available */
 			register_driver("/dev/hmc5883l", &hmc5883l_fops, 0666, NULL);
@@ -286,7 +286,6 @@ hmc5883l_attach(struct i2c_dev_s *i2c)
 		}
 
 	} else {
-//		I2C_LOCK(dev.i2c, false);
 		errno = EIO;
 	}
 

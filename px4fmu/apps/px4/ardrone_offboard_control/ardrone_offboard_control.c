@@ -461,7 +461,9 @@ static void *control_loop(void * arg)
 		static int ledcounter = 0;
 		if (ledcounter == 5)
 		{
-			uint8_t* motorSpeedBuf = ar_get_motor_packet(actuatorDesired.motorFront_NW, actuatorDesired.motorRight_NE, actuatorDesired.motorBack_SE, actuatorDesired.motorLeft_SW);
+			//uint8_t* motorSpeedBuf = ar_get_motor_packet(actuatorDesired.motorFront_NW, actuatorDesired.motorRight_NE, actuatorDesired.motorBack_SE, actuatorDesired.motorLeft_SW);
+			uint8_t* motorSpeedBuf = ar_get_motor_packet(15, 15, 15, 15);
+
 			write(ardrone_write, motorSpeedBuf, 5);
 			ledcounter = 0;
 		}
@@ -651,6 +653,7 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	//open uart
 	printf("MAVLink UART is %s\n", mavlink_uart_name);
 	printf("ARDrone UART is %s\n", ardrone_uart_name);
+	fflush(stdout);
 	uart = open(mavlink_uart_name, O_RDWR | O_NOCTTY);
 	ardrone_write = open(ardrone_uart_name, O_RDWR | O_NOCTTY | O_NDELAY);
 

@@ -46,6 +46,7 @@
 #include "mavlink_bridge_header.h"
 #include "v1.0/common/mavlink.h"
 #include "v1.0/pixhawk/pixhawk.h"
+#include <mqueue.h>
 
 /****************************************************************************
  * Definitions
@@ -59,6 +60,7 @@ uint32_t custom_mode = 0;
 //threads:
 pthread_t heartbeat_thread;
 pthread_t receive_thread;
+pthread_t gps_receive_thread;
 
 void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
@@ -82,6 +84,26 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 		pthread_yield();
 	}
 
+}
+
+static void *gps_receiveloop(void * arg) //runs as a pthread and listens messages from GPS
+{
+	//Open Message queue to receive GPS information
+	mqd_t gps_queue;
+	gps_queue = mq_open( "gps_queue", O_CREAT|O_RDONLY|O_NONBLOCK, NULL, NULL );
+
+	int inview_msg;
+
+	while(1)
+	{
+		if(mq_receive(gps_queue, &inview_msg, sizeof(inview_msg), 0) > 0)
+		{
+			mavlink_msg_statustext_send(chan,0,"gps received msg");
+		}
+		pthread_yield();
+	}
+	//close GPS queue
+	mq_close(gps_queue);
 }
 
 
@@ -155,10 +177,12 @@ int mavlink_main(int argc, char *argv[])
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
+    pthread_create (&gps_receive_thread, NULL, gps_receiveloop, NULL);
 
     //wait for threads to complete:
     pthread_join(heartbeat_thread, NULL);
     pthread_join(receive_thread, NULL);
+    pthread_join(gps_receive_thread, NULL);
 
     //close uart
 	close(uart_read);

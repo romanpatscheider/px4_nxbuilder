@@ -45,6 +45,7 @@
 #include "gps.h"
 #include "nmealib/nmea/nmea.h"
 #include "custom.h"
+#include <mqueue.h>
 
 
 /****************************************************************************
@@ -70,6 +71,18 @@ int gps_main(int argc, char *argv[])
     printf("Hello, gps!!\n");
     usleep(100000);
 
+    //Open Message queue to send GPS information
+    mqd_t gps_queue;
+    gps_queue = mq_open( "gps_queue", O_CREAT|O_WRONLY, NULL, NULL );
+
+    //test for queue
+    int inview_msg;
+
+    if(-1 == gps_queue)
+    {
+    	printf("GPS Queue creation failed\n");
+    }
+
     //read arguments
     char * device = argv[1];
     char * mode = "nmea"; //TODO: write enum once all modes are defined
@@ -80,7 +93,7 @@ int gps_main(int argc, char *argv[])
 
 
 
-    int buffer_size = 1000;
+    int buffer_size = 2000;
     nmeaINFO * info = malloc(sizeof(nmeaINFO));
 
     //open port (baud rate is set in defconfig file)
@@ -162,15 +175,24 @@ int gps_main(int argc, char *argv[])
 
 			//Test output
 			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(info->lat), (int)info->lon, (int)info->elv, info->sig, info->fix, info->satinfo.inview);
+
 		}
+
+//		inview_msg = info->satinfo.inview;
+//
+//		//Send nuttx messages containing GPS information
+//		if (-1 == mq_send(gps_queue, &inview_msg, sizeof(inview_msg), 0)) //TODO Priority?
+//		{
+//			printf("Message could not be sent");
+//		}
 
 	}
 
-	free( gps_rx_buffer );
-
-
-
+	free(gps_rx_buffer);
 	free(info);
+
+	//close GPS queue
+	mq_close(gps_queue);
 
 	//close port
 	close_port(fd);

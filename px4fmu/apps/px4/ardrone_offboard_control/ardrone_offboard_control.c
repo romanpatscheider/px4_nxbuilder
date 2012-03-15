@@ -52,6 +52,8 @@
 
 #include <arch/board/drv_led.h>
 #include <arch/board/drv_l3gd20.h>
+#include <arch/board/drv_bma180.h>
+#include <arch/board/drv_hmc5883l.h>
 
 /****************************************************************************
  * Definitions
@@ -68,6 +70,7 @@ static pthread_t receive_thread;
 /* file descriptors */
 static int leds;
 static int gyro;
+static int acc;
 static int gpios;
 static int ardrone_write;
 
@@ -75,6 +78,12 @@ static int ardrone_write;
 static int16_t	gyro_raw[3] = {0, 0, 0};
 /* gyro x, y, z metric values in rad/s */
 static float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
+
+
+/* gyro x, y, z raw values */
+static int16_t	acc_raw[3] = {0, 0, 0};
+/* gyro x, y, z metric values in rad/s */
+static float acc_g[3] = {0.0f, 0.0f, 0.0f};
 
 static uint64_t loop_interval = 5000;	// = 200Hz, loop interval in microseconds
 
@@ -92,6 +101,8 @@ static int led_init();
 static int led_toggle(int led);
 static int gyro_init();
 static int gyro_read();
+static int acc_init();
+static int acc_read();
 static void *receiveloop(void * arg);
 
 
@@ -161,6 +172,34 @@ static int gyro_read()
 	return ret;
 }
 
+static int acc_init()
+{
+	acc = open("/dev/bma180", O_RDONLY);
+	if (acc < 0) {
+		printf("BMA180: open fail\n");
+		return ERROR;
+	}
+
+//	if (ioctl(gyro, BMA180, L3GD20_RATE_760HZ_LP_50HZ) ||
+//			ioctl(gyro, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
+//
+//		printf("BMA180: ioctl fail\n");
+//		return ERROR;
+//	} else {
+//		printf("\tacc configured..\n");
+//	}
+	return 0;
+}
+
+static int acc_read()
+{
+	int ret = read(acc, acc_raw, sizeof(acc_raw));
+	if (ret != sizeof(acc_raw)) {
+		printf("acc read failed!\n");
+	}
+	return ret;
+}
+
 void arHandleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
@@ -199,12 +238,6 @@ static void ar_init_motors()
 	uint8_t initbuf[] = {0xE0, 0x91, 0xA1, 0x00, 0x40};
 	uint8_t multicastbuf[] = {0xA0, 0xA0, 0xA0, 0xA0, 0xA0, 0xA0};
 
-	// XXX remove
-	if (ar_select_motor(gpios, 0) != 0)
-	{
-		printf("AR: Motor select failed!\n");
-	}
-
 	/* initialize all motors
 	 * - select one motor at a time
 	 * - configure motor
@@ -219,28 +252,30 @@ static void ar_init_motors()
 
 		write(ardrone_write, initbuf+0, 1);
 
+		printf("Configure Motor:%i ", i);
+
 		/* sleep one second */
+		//usleep(200000);
+		//usleep(200000);
+		//usleep(200000);
 		usleep(200000);
 		usleep(200000);
-//		usleep(200000);
-//		usleep(200000);
-//		usleep(200000);
 
 		write(ardrone_write, initbuf+1, 1);
 		/* wait 5 ms */
-		usleep(5000);
+		usleep(50000);
 
 		write(ardrone_write, initbuf+2, 1);
 		/* wait 5 ms */
-		usleep(5000);
+		usleep(50000);
 
 		write(ardrone_write, initbuf+3, 1);
 		/* wait 5 ms */
-		usleep(5000);
+		usleep(50000);
 
 		write(ardrone_write, initbuf+4, 1);
 		/* wait 5 ms */
-		usleep(5000);
+		usleep(50000);
 
 		/* enable multicast */
 		write(ardrone_write, multicastbuf+0, 1);
@@ -265,7 +300,7 @@ static void ar_init_motors()
 
 		write(ardrone_write, multicastbuf+5, 1);
 		/* wait 5 ms XXX change to 100 us */
-		usleep(5000);
+		usleep(50000);
 	}
 
 	//start the multicast part
@@ -274,6 +309,7 @@ static void ar_init_motors()
 	if (errcounter != 0)
 	{
 		printf("AR: init sequence incomplete, failed %d times", -errcounter);
+		fflush(stdout);
 	}
 }
 
@@ -438,12 +474,16 @@ static void *control_loop(void * arg)
 		if (ledcounter == 5)
 		{
 			//uint8_t* motorSpeedBuf = ar_get_motor_packet(actuatorDesired.motorFront_NW, actuatorDesired.motorRight_NE, actuatorDesired.motorBack_SE, actuatorDesired.motorLeft_SW);
-			uint8_t* motorSpeedBuf = ar_get_motor_packet(15, 15, 15, 15);
+			uint8_t* motorSpeedBuf = ar_get_motor_packet(40, 40, 40, 0);
 
 			write(ardrone_write, motorSpeedBuf, 5);
+			led_toggle(LED_BLUE);
 			ledcounter = 0;
 		}
 		ledcounter++;
+
+
+
 
 		// Send heartbeat every 400th iteration
 		static int beatcount = 0;
@@ -451,15 +491,19 @@ static void *control_loop(void * arg)
 		{
 			mavlink_msg_heartbeat_send(MAVLINK_COMM_0,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 
+
 			if (beatcount % 4 == 0)
 			{
-				mavlink_msg_raw_imu_send(MAVLINK_COMM_0, 0, 0, 0, 0, gyro_raw[0], gyro_raw[1], gyro_raw[2], 0, 0, 0);
+				// XXX
+				mavlink_msg_raw_imu_send(MAVLINK_COMM_0, 0, acc_raw[0], acc_raw[1], acc_raw[2], gyro_raw[0], gyro_raw[1], gyro_raw[2], 0, 0, 0);
+				//mavlink_msg_raw_imu_send(MAVLINK_COMM_0, 0, 0, 0, 0, gyro_raw[0], gyro_raw[1], gyro_raw[2], 0, 0, 0);
 			}
+
 
 
 			if (!(mavlink_system.mode & MAV_MODE_FLAG_SAFETY_ARMED)) {
 				// System is not armed, blink at 1 Hz
-				led_toggle(LED_BLUE);
+
 			}
 
 			beatcount = 0;
@@ -645,7 +689,7 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	/* initialize leds and sensor */
 
 
-	if ((led_init() != 0) || (gyro_init() != 0)) ret = ERROR;
+	if ((led_init() != 0) || (gyro_init() != 0)/* || (acc_init() != 0)*/) ret = ERROR;
 
 	fflush(stdout);
 
@@ -666,6 +710,7 @@ int ardrone_offboard_control_main(int argc, char *argv[])
 	close(leds);
 	ar_multiplexing_deinit(gpios);
 	close(gyro);
+	close(acc);
 
 	return ret;
 }

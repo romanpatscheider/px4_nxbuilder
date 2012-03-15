@@ -118,10 +118,10 @@ int ar_multiplexing_init()
 
 	/* deactivate all outputs */
 	int ret = 0;
-	ret += ioctl(fd, GPIO_CLEAR, 0);
-	ret += ioctl(fd, GPIO_CLEAR, 1);
-	ret += ioctl(fd, GPIO_CLEAR, 2);
-	ret += ioctl(fd, GPIO_CLEAR, 3);
+	ret += ioctl(fd, GPIO_SET, 0);
+	ret += ioctl(fd, GPIO_SET, 1);
+	ret += ioctl(fd, GPIO_SET, 2);
+	ret += ioctl(fd, GPIO_SET, 3);
 	if (ret < 0)
 	{
 		printf("GPIO: clearing pins fail\n");
@@ -140,10 +140,10 @@ int ar_multiplexing_deinit(int fd)
 	}
 
 	int ret = 0;
-	ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//deselect 1
-	ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
-	ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 3
-	ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+	ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//deselect 1
+	ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//deselect 2
+	ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//deselect 3
+	ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//deselect 4
 
 	if (ret != 0)
 	{
@@ -169,49 +169,50 @@ int ar_select_motor(int fd, uint8_t motor)
 	//		GPIO_UART2_CTS
 	//		GPIO_UART2_RTS
 
+	/* select motor 0 to enable broadcast */
 	if (motor == 0)
 	{
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//select 1
-		ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//select 1
-		ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//select 1
-		ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//select 1
 	}
 	else if (motor == 3)
 	{
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
-		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 3
-		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+		ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//deselect 2
+		ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//deselect 3
+		ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//deselect 4
 	}
 	else if (motor == 4)
 	{
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//select 1
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//select 2
-		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//deselect 3
-		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//select 2
+		ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//deselect 3
+		ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//deselect 4
 	}
 	else if (motor == 1)
 	{
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//select 1
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
-		ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//select 3
-		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
+		ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//deselect 2
+		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//select 3
+		ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//deselect 4
 	}
 	else if (motor == 2)
 	{
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_CLEAR, 0); // CHECK!;//select 1
+		ret += ioctl(fd, GPIO_SET, 0); // CHECK!;//select 1
 		// XXX FIXME CHECK!!!!!
-		ret += ioctl(fd, GPIO_CLEAR, 1); // CHECK!;//deselect 2
-		ret += ioctl(fd, GPIO_CLEAR, 2); // CHECK!;//select 3
-		ret += ioctl(fd, GPIO_SET, 3); // CHECK!;//deselect 4
+		ret += ioctl(fd, GPIO_SET, 1); // CHECK!;//deselect 2
+		ret += ioctl(fd, GPIO_SET, 2); // CHECK!;//select 3
+		ret += ioctl(fd, GPIO_CLEAR, 3); // CHECK!;//deselect 4
 	}
 	return ret;
 }

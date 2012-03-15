@@ -44,7 +44,8 @@
 #include <fcntl.h>
 #include "gps.h"
 #include "nmealib/nmea/nmea.h"
-#include "custom.h"
+#include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
+#include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
 
 
@@ -130,6 +131,11 @@ int gps_main(int argc, char *argv[])
 	mtk_state->print_errors = false;
 	size_t result_write;
 
+	//ubx state
+	gps_bin_ubx_state_t * ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
+	ubx_decode_init(ubx_state);
+	ubx_state->print_errors = false;
+
 
 	if	( !strcmp("custom",mode) )
 	{
@@ -157,6 +163,25 @@ int gps_main(int argc, char *argv[])
 	}
 
 
+    if( !strcmp("ubx",mode) )
+	{
+    	printf("ubx mode\n");
+    	//set parameters for ubx
+
+		if (configure_gps_ubx(fd) != 0)
+		{
+			printf("Configuration of gps module to ubx failed\n");
+		}
+		else
+		{
+			printf("Configuration of gps module to ubx successful\n");
+		}
+
+	}
+
+
+
+
 	while(1)
 	{
 		if( !strcmp("nmea",mode) )
@@ -168,6 +193,14 @@ int gps_main(int argc, char *argv[])
 			lon_dec = ndeg2degree(info->lon);
 
 			//Test output
+			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inview);
+		}
+		else if ( !strcmp("ubx",mode) )
+		{
+			//get gps data into info
+			read_gps_ubx(fd, gps_rx_buffer, buffer_size, info, ubx_state); //TODO: atm using the info struct from the nmea library, once the gps/mavlink structures are clear--> use own struct
+			lat_dec = info->lat;
+			lon_dec = info->lon;
 			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inview);
 		}
 		else if	( !strcmp("custom",mode) )

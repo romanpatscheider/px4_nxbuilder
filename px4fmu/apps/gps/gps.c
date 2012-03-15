@@ -82,7 +82,7 @@ int gps_main(int argc, char *argv[])
 
     // open message queue to write
     mqd_t gps_queue;
-    gps_queue = mq_open( "gps_queue", O_WRONLY, 0666, &attr );
+    gps_queue = mq_open( "gps_queue", O_CREAT|O_WRONLY|O_NONBLOCK, 0666, &attr );
     if(-1 == gps_queue)
 	{
 		printf("GPS Queue creation failed\n");

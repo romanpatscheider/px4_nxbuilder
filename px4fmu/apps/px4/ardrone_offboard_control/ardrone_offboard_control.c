@@ -476,7 +476,9 @@ static void *control_loop(void * arg)
 		beatcount++;
 
 		gettimeofday(&tv, NULL);
-		uint64_t time_elapsed = ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec - last_run;
+		uint64_t now = ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
+		uint64_t time_elapsed = now - last_run;
+		last_run = now;
 		if (time_elapsed < loop_interval)
 		{
 			usleep(loop_interval - time_elapsed);

@@ -92,7 +92,7 @@ int sbus_test(int argc, char *argv[]) {
     return ERROR;
   } 
 
-  if(NUTTX_SBUS_Rx){
+  if(NUTTX_SBUS_Rx(fd, rx_buf, SBUS_NUMBER_OF_CHANNELS)){
     printf("No succes receiving Sbus channel data\n")
     return ERROR;
   }

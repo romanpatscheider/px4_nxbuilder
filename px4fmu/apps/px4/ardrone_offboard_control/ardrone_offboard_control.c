@@ -76,6 +76,7 @@ static int16_t	gyro_raw[3] = {0, 0, 0};
 /* gyro x, y, z metric values in rad/s */
 static float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
 
+static uint64_t loop_interval = 5000;	// = 200Hz, loop interval in microseconds
 
 struct QuadMotorsDesired {
 	uint16_t motorRight_NE;
@@ -306,6 +307,10 @@ static void *control_loop(void * arg)
 
 	ar_init_motors();
 
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	uint64_t last_run = ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
+
 	while(1) {
 
 		// Update gyro
@@ -442,7 +447,7 @@ static void *control_loop(void * arg)
 
 		// Send heartbeat every 400th iteration
 		static int beatcount = 0;
-		if (beatcount == 400)
+		if (beatcount == 100)
 		{
 			mavlink_msg_heartbeat_send(MAVLINK_COMM_0,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
 
@@ -470,8 +475,16 @@ static void *control_loop(void * arg)
 
 		beatcount++;
 
-		usleep(2000);
-
+		gettimeofday(&tv, NULL);
+		uint64_t time_elapsed = ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec - last_run;
+		if (time_elapsed < loop_interval)
+		{
+			usleep(loop_interval - time_elapsed);
+		}
+		else
+		{
+			//TODO: add warning, cpu overload here
+		}
 	}
 	return 0;
 }

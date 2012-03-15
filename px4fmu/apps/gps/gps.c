@@ -201,7 +201,7 @@ int gps_main(int argc, char *argv[])
 			read_gps_ubx(fd, gps_rx_buffer, buffer_size, info, ubx_state); //TODO: atm using the info struct from the nmea library, once the gps/mavlink structures are clear--> use own struct
 			lat_dec = info->lat;
 			lon_dec = info->lon;
-			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inview:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inview);
+			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inuse:%d, PDOP:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inuse, (int)(info->PDOP*1e4));
 		}
 		else if	( !strcmp("custom",mode) )
 		{

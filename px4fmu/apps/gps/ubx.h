@@ -17,6 +17,7 @@ uint8_t UBX_CFG_MSG_NAV_POSLLH[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 
 uint8_t UBX_CFG_MSG_NAV_TIMEUTC[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x21,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CFG_MSG_NAV_DOP[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x04,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CFG_MSG_NAV_SVINFO[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x30,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
+uint8_t UBX_CFG_MSG_NAV_SOL[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x06,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CFG_MSG_NAV_VELNED[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x12,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CFG_SAVE[] = {0xB5, 0x62, 0x06, 0x09, 0x0d, 0x00,   0x00, 0x00, 0x00,0x00,   0xFF,0xFF,0x00,0x00,   0x00,0x00,0x00,0x00, 0x07,  0x00,0x00};
 
@@ -254,7 +255,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 			if (b == 0xb5)
 				{
 				ubx_state->decode_state = UBX_DECODE_GOT_SYNC1;
-//				printf("UBX_DECODE_GOT_SYNC1\n",b);
 				}
 		}
 		else if (ubx_state->decode_state == UBX_DECODE_GOT_SYNC1)
@@ -262,7 +262,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 			if (b == 0x62)
 			{
 				ubx_state->decode_state = UBX_DECODE_GOT_SYNC2;
-//				printf("UBX_DECODE_GOT_SYNC2\n",b);
 			}
 			else
 			{
@@ -297,7 +296,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 			switch (ubx_state->message_class)
 			{
 			case NAV: //NAV
-//				printf("message id = %x\n", b);
 				switch (b)
 				{
 				case UBX_MESSAGE_NAV_POSLLH: //NAV-POSLLH: Geodetic Position Solution
@@ -341,7 +339,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 
 			ubx_state->payload_size = b;
 			ubx_state->decode_state = UBX_DECODE_GOT_LENGTH1;
-//			printf("UBX_DECODE_GOT_LENGTH1\n");
 		}
 		else if (ubx_state->decode_state == UBX_DECODE_GOT_LENGTH1)
 		{
@@ -350,14 +347,12 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 
 			ubx_state->payload_size += b << 8;
 			ubx_state->decode_state = UBX_DECODE_GOT_LENGTH2;
-//			printf("UBX_DECODE_GOT_LENGTH2\n");
 		}
 		else if (ubx_state->decode_state == UBX_DECODE_GOT_LENGTH2)
 		{
 			uint8_t ret = 0;
 
 			// Add to checksum if not yet at checksum byte
-//			printf("rxcount: %d, payloadsize: %d\n", ubx_state->rx_count, ubx_state->payload_size);
 			if (ubx_state->rx_count < ubx_state->payload_size) ubx_checksum(b, &(ubx_state->ck_a), &(ubx_state->ck_b));
 
 			// Fill packet buffer
@@ -371,7 +366,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 				{
 				case NAV_POSLLH:
 				{
-					printf("GOT NAV_POSLLH MESSAGE\n");
+//					printf("GOT NAV_POSLLH MESSAGE\n");
 					gps_bin_nav_posllh_packet_t* packet = (gps_bin_nav_posllh_packet_t*) gps_rx_buffer;
 
 					//Check if checksum is valid and the store the gps information
@@ -396,13 +391,12 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 				}
 				case NAV_SOL:
 				{
-					printf("GOT NAV_SOL MESSAGE\n");
+//					printf("GOT NAV_SOL MESSAGE\n");
 					gps_bin_nav_sol_packet_t* packet = (gps_bin_nav_sol_packet_t*) gps_rx_buffer;
 
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
-						info->PDOP = (float)packet->pDOP*0.01;
 						info->fix = packet->gpsFix;
 						info->satinfo.inuse = packet->numSV;
 
@@ -421,7 +415,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 				}
 				case NAV_DOP:
 				{
-					printf("GOT NAV_DOP MESSAGE\n");
+//					printf("GOT NAV_DOP MESSAGE\n");
 					gps_bin_nav_dop_packet_t* packet = (gps_bin_nav_dop_packet_t*) gps_rx_buffer;
 //					printf("DEBUG: got NAV_DOP packet\n");
 					//Check if checksum is valid and the store the gps information
@@ -446,7 +440,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 				}
 				case NAV_TIMEUTC:
 				{
-					printf("GOT NAV_TIMEUTC MESSAGE\n");
+//					printf("GOT NAV_TIMEUTC MESSAGE\n");
 					gps_bin_nav_timeutc_packet_t* packet = (gps_bin_nav_timeutc_packet_t*) gps_rx_buffer;
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
@@ -474,7 +468,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 				}
 				case NAV_SVINFO:
 				{
-					printf("GOT NAV_SVINFO MESSAGE\n");
+//					printf("GOT NAV_SVINFO MESSAGE\n");
 
 					//this is a more complicated message: the length depends on the number of satellites. This number is extracted from the first part of the message
 					const int length_part1 = 8;
@@ -483,7 +477,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 					gps_bin_nav_svinfo_part1_packet_t* packet_part1 = (gps_bin_nav_svinfo_part1_packet_t*) gps_rx_buffer_part1;
 
 					//read numCH elements from the message
-//					printf("numCH: %d\n", packet_part1->numCH);
 					int i;
 					const int length_part2 = 12;
 					gps_bin_nav_svinfo_part2_packet_t* packet_part2[packet_part1->numCH];
@@ -492,10 +485,8 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 						char gps_rx_buffer_part2[length_part2]; //TODO: save these in array once this works
 						memcpy(gps_rx_buffer_part2, &(gps_rx_buffer[length_part1+i*length_part2]), length_part2);
 						packet_part2[i] = (gps_bin_nav_svinfo_part2_packet_t*) gps_rx_buffer_part2;
-//						printf("chn: %d ", packet_part2[i]->chn);
 					}
 
-					printf("\n");
 					//read checksum
 					const int length_part3 = 2;
 					char gps_rx_buffer_part3[length_part3];
@@ -522,7 +513,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 				}
 				case NAV_VELNED:
 				{
-					printf("GOT NAV_VELNED MESSAGE\n");
+//					printf("GOT NAV_VELNED MESSAGE\n");
 					gps_bin_nav_velned_packet_t* packet = (gps_bin_nav_velned_packet_t*) gps_rx_buffer;
 //					printf("DEBUG: got NAV_DOP packet\n");
 					//Check if checksum is valid and the store the gps information
@@ -630,6 +621,15 @@ int configure_gps_ubx(int fd)
 	if(result_write != length) success = 1;
 	usleep(100000);
 
+	//NAV_SOL:
+	//calculate and write checksum to the end
+	length = sizeof(UBX_CFG_MSG_NAV_SOL)/sizeof(uint8_t);
+	calculate_ubx_checksum(UBX_CFG_MSG_NAV_SOL, length);
+
+	result_write =  write(fd, UBX_CFG_MSG_NAV_SOL, length);
+	if(result_write != length) success = 1;
+	usleep(100000);
+
 
 	//NAV_SVINFO:
 	//calculate and write checksum to the end
@@ -697,8 +697,6 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info,
 		}
 
 		int msg_read = ubx_parse(c, gps_rx_buffer, ubx_state, info);
-
-//		printf("nmea msg_read = %d\n", msg_read);
 
 		if(msg_read > 0)
 		{

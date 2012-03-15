@@ -48,6 +48,7 @@
 #include "mavlink_bridge_header.h"
 #include "v1.0/common/mavlink.h"
 #include "v1.0/pixhawk/pixhawk.h"
+#include "../mq_config.h"
 
 
 #include <arch/board/drv_led.h>
@@ -240,14 +241,23 @@ static void *gps_receiveloop(void * arg) //runs as a pthread and listens message
 	int prio;
 	char * msg = malloc(5*sizeof(char));
 
+    typedef struct
+    {
+    	char str1;
+    	char str2;
+
+    } __attribute__((__packed__)) test_struct;
+    test_struct mystruct;
+
 	ssize_t result_receive;
 
 	while(1)
 	{
-		if(result_receive = mq_receive(gps_queue, msg, 5*sizeof(char), &prio) > 0)
+		if(mq_receive(gps_queue, &mystruct, sizeof(test_struct), &prio) > 0)
 		{
 			mavlink_msg_statustext_send(chan,0,"gps received msg");
-			mavlink_msg_statustext_send(chan,0,msg);
+			mavlink_msg_statustext_send(chan,0,&(mystruct.str1));
+			mavlink_msg_statustext_send(chan,0,&(mystruct.str2));
 		}
 	}
 }
@@ -457,16 +467,8 @@ int mavlink_main(int argc, char *argv[])
 	led_on(LED_BLUE);
 	led_off(LED_AMBER);
 
-    // it seems that these attributes need to be defined twice, for the reading queue and the writing queue
-    // TODO define attributes and name, etc in separate file
-    struct mq_attr attr;
-    attr.mq_flags = 0;
-    attr.mq_maxmsg = 10;
-    attr.mq_msgsize = 5;
-    attr.mq_curmsgs = 0;
-
     // open gps queue
-    gps_queue = mq_open( "gps_queue", O_CREAT|O_RDONLY, 0666, &attr );
+    gps_queue = mq_open( "gps_queue", O_CREAT|O_RDONLY, 0666, &MQ_ATTR_GPS );
 
 	if(-1 == gps_queue)
 	{

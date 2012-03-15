@@ -48,6 +48,7 @@
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
+#include "../mq_config.h" //TODO: fix makefile
 
 
 /****************************************************************************
@@ -68,22 +69,19 @@ int gps_main(int argc, char *argv[])
     usleep(100000);
 
     // Define attributes for message queue to send GPS information
-    struct mq_attr attr;
-    attr.mq_flags = 0;
-    attr.mq_maxmsg = 10;
-    attr.mq_msgsize = 5;
-    attr.mq_curmsgs = 0;
+//    struct mq_attr attr;
+//    attr.mq_flags = 0;
+//    attr.mq_maxmsg = 10;
+//    attr.mq_msgsize = 2;
+//    attr.mq_curmsgs = 0;
 
     // open message queue to write
     mqd_t gps_queue;
-    gps_queue = mq_open( "gps_queue", O_CREAT|O_WRONLY|O_NONBLOCK, 0666, &attr );
+    gps_queue = mq_open( "gps_queue", O_CREAT|O_WRONLY|O_NONBLOCK, 0666, &MQ_ATTR_GPS );
     if(-1 == gps_queue)
 	{
 		printf("GPS Queue creation failed\n");
 	}
-    //test for queue
-    char msg[5] = "HELLO";
-    int send_result;
 
     //default values
     char * commandline_usage = "\tusage: gps -d devicename -m mode\n";
@@ -219,7 +217,25 @@ int gps_main(int argc, char *argv[])
 		}
 
     	//Send GPS information in message queue
-    	send_result = mq_send(gps_queue, msg, 5*sizeof(char),0);
+	    //test for queue
+	    char msg[5] = "HELLO";
+	    int send_result;
+
+	    typedef struct
+	    {
+	    	char str1;
+	    	char str2;
+
+	    } __attribute__((__packed__)) test_struct;
+
+	    test_struct mystruct;
+	    mystruct.str1 = 'j';
+	    mystruct.str2 = 'o';
+
+	    //printf("***sizeof test_struct=%d***\n", sizeof(test_struct));
+//	    sleep(2);
+
+    	send_result = mq_send(gps_queue, &mystruct, sizeof(test_struct),0);
     	printf("Send result: %d ", send_result);
 		if (-1 == send_result) //TODO Priority?
 		{

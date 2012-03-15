@@ -172,7 +172,7 @@ l3gd20_test_read(struct spi_dev_s *spi)
 
 	report.cmd = 0x26 | DIR_READ | ADDR_INCREMENT;
 
-<<<<<<< HEAD
+/*<<<<<<< HEAD
 	if (id == WHO_I_AM)
 	{
 		message("SUCCESS:\n");
@@ -183,12 +183,12 @@ l3gd20_test_read(struct spi_dev_s *spi)
 	}
 	message("got id 0x%02x, expected ID 0x%02x \n", id,WHO_I_AM);
 =======
+*/
 	SPI_LOCK(spi, true);
 	SPI_SELECT(spi, PX4_SPIDEV_GYRO, true);
 	SPI_EXCHANGE(spi, &report, &report, sizeof(report));
 	SPI_SELECT(spi, PX4_SPIDEV_GYRO, false);
 	SPI_LOCK(spi, false);
->>>>>>> d47b323fd6c5a92ed757753d7016bb8ac9d86ccc
 
 	message("gyro: x: %d\ty: %d\tz: %d\n", report.x, report.y, report.z);
 	usleep(1000);

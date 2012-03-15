@@ -33,7 +33,6 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
-#include <sys/assert.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +43,7 @@
 
 #include <arch/board/board.h>
 
-#include "nuttx_sbus.h"
+#include "nuttx_spektrum.h"
 
 
 /**
@@ -60,14 +59,17 @@
 /* Global Variables */
 
 /* Local Variables */
-static uint16_t channel_data[NUTTX_SPEKTRUM_NUM_INPUTS],channel_data_temp[NUTTX_SPEKTRUM_NUM_INPUTS];
+static uint16_t channel_data[NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS];
+static uint16_t channel_data_temp[NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS];
 static uint8_t prev_byte = 0xFF, sync = 0, bytecount = 0, datalength=0, frame_error=0, byte_array[20] = { 0 };
 uint8_t sync_of = 0;
 uint16_t supv_timer=0;
+uint16_t receive_timer;
 
-static uint8_t NUTTX_SPEKTRUM_Reset(){
+static uint8_t NUTTX_SPEKTRUM_Reset(void){
 
-  for (int i = 0; i < SPEKTRUM_NUMBER_OF_INPUTS; i++) {
+  int i;
+  for (i=0; i < NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS; i++) {
     channel_data[i] = 0;
     channel_data_temp[i] = 0;
   }
@@ -138,17 +140,18 @@ static int32_t NUTTX_SPEKTRUM_Decode(uint8_t b)
 			{
 				frame_error=1;
 			}
-			if (channeln < SPEKTRUM_NUMBER_OF_CHANNELS && !frame_error)
+			if (channeln < NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS && !frame_error)
 				channel_data_temp[channeln] = data;
-	    
-	}
+	        }
+        }
 	if (bytecount == 16) {
 		bytecount = 0;
 		sync = 0;
 		sync_of = 0;
 		if (!frame_error)
 		{
-			for(int i=0;i< SPEKTRUM_NUMBER_OF_CHANNELS;i++)
+                        int i;
+			for(i=0;i< NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS;i++)
 			{
 				channel_data[i] = channel_data_temp[i];
 			}
@@ -160,6 +163,36 @@ static int32_t NUTTX_SPEKTRUM_Decode(uint8_t b)
 	return 0;
 }
 
+///**
+//* Spektrum bind function
+//* \output true Successful bind
+//* \output false Bind failed
+//*/
+//uint8_t NUTTX_SPEKTRUM_Bind()
+//{
+//	/* just to limit bind pulses */
+//	bind=(bind<=10)?bind:10;
+//
+//	GPIO_Init(cfg->bind.gpio, &cfg->bind.init);
+//	/* RX line, set high */
+//	GPIO_SetBits(cfg->bind.gpio, cfg->bind.init.GPIO_Pin);
+//
+//	/* on CC works upto 140ms, I guess bind window is around 20-140ms after powerup */
+//	PIOS_DELAY_WaitmS(60);
+//
+//	for (int i = 0; i < bind ; i++) {
+//		/* RX line, drive low for 120us */
+//		GPIO_ResetBits(cfg->bind.gpio, cfg->bind.init.GPIO_Pin);
+//		PIOS_DELAY_WaituS(120);
+//		/* RX line, drive high for 120us */
+//		GPIO_SetBits(cfg->bind.gpio, cfg->bind.init.GPIO_Pin);
+//		PIOS_DELAY_WaituS(120);
+//	}
+//	/* RX line, set input and wait for data, PIOS_SPEKTRUM_Init */
+//	GPIO_Init(cfg->bind.gpio, &GPIO_InitStructure);
+//
+//	return true;
+//}
 
 
 /**
@@ -170,21 +203,25 @@ static int32_t NUTTX_SPEKTRUM_Decode(uint8_t b)
  * \return 0 if succesfull
  */
  
-uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, buf_len)
+uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, uint8_t buf_len)
 {
   /* read data from SPECTRUM_IN_PORT */
+  int ret;
   ret = read(fd, buf, sizeof(buf));
   if (ret != 0 ) {
-    printf("SPEKTRUM_INPUT_PORT: read error\n")
+    printf("NUTTX_SPEKTRUM_INPUT_PORT: read error\n");
     return ERROR;
   }
 
 
   /* process byte(s) and clear receive timer */
-  for (uint8_t i = 0; i < buf_len; i++) {
+  int i;
+  for (i = 0; i < buf_len; i++) {
     NUTTX_SPEKTRUM_Decode(buf[i]);
     receive_timer = 0;
   }
+  //Sync between Frames
+  NUTTX_SPEKTRUM_Supervisor();
 
   /* put the channel data in the buf variable */
   buf = channel_data;
@@ -205,9 +242,9 @@ int NUTTX_SPEKTRUM_Init(void)
 {
     NUTTX_SPEKTRUM_Reset;
     int fd;
-    fd = open("SPEKTRUM_INPUT_PORT", O_RDONLY);
+    fd = open(NUTTX_SPEKTRUM_INPUT_PORT, O_RDONLY);
     if (fd < 0) {
-      printf("error opening SPEKTRUM_INPUT_PORT\n")
+      printf("error opening NUTTX_SPEKTRUM_INPUT_PORT\n");
       return ERROR;
     }
     //At the moment the settings of SPEKTRUM_INPUT_PORT are hard-coded,
@@ -222,7 +259,7 @@ int NUTTX_SPEKTRUM_Init(void)
  *@brief This function is called between frames and when a spektrum word hasnt been decoded for too long
  *@brief clears the channel values
  */
-static void NUTTX_SPEKTRUM_Supervisor() {
+ void NUTTX_SPEKTRUM_Supervisor(void) {
 	/* 625hz */
 	supv_timer++;
 	if(supv_timer > 4) {

@@ -200,7 +200,7 @@ int sensors_main(int argc, char *argv[])
 		fflush(stdout);
 
 
-
+/*
 	// TESTING CODE, I2C TRANSACTION
 	uint8_t val[1];
 
@@ -237,7 +237,7 @@ int sensors_main(int argc, char *argv[])
 		printf("# %d of 10\n", i+1);
 		usleep(50000);
 	}
-
+*/
 
 	out:
 	//SPI_LOCK(spi, false);

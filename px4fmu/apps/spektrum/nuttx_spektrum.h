@@ -33,20 +33,16 @@
 #define NUTTX_SPEKTRUM_H
 
 
-#define SPEKTRUM_INPUT_PORT                     /dev/ttyS2
-#define	SPEKTRUM_NUMBER_OF_CHANNELS		8
+#define NUTTX_SPEKTRUM_INPUT_PORT                     "/dev/ttyS2"
+#define	NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS		8
 
 
-void NUTTX_SPEKTRUM_Supervisor();
+void NUTTX_SPEKTRUM_Supervisor(void);
 int NUTTX_SPEKTRUM_Init(void);
-uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, buf_len);
+uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, uint8_t buf_len);
 
 
 
 
 #endif NUTTX_SPEKTRUM_H
 
-/**
- * @}
- * @}
- */

@@ -40,3 +40,5 @@ CONFIGURED_APPS += examples/nsh
 CONFIGURED_APPS += system/readline
 CONFIGURED_APPS += nshlib
 
+#Test Apps for our library Functions
+CONFIGURED_APPS += lib/spektrum

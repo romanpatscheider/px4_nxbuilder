@@ -1,5 +1,5 @@
 /****************************************************************************
- * /apps/lib/sbus/sbus_test.c
+ * /apps/lib/spektrum/spektrum_test.c
  *
  *   Copyright (C) 2012 Nils Wenzler. All rights reserved.
  *   Authors: Nils Wenzler <wenzlern@ethz.ch>
@@ -47,10 +47,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <debug.h>
+#include <string.h>
 
 #include <arch/board/board.h>
 
-#include <nuttx_sbus.h>
+#include "nuttx_spektrum.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -69,7 +70,7 @@
  * Private Data
  ****************************************************************************/
 
-int rx_buf[SBUS_NUMBER_OF_CHANNELS];
+uint8_t rx_buf[NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS];
 
 /****************************************************************************
  * Public Data
@@ -82,26 +83,61 @@ int rx_buf[SBUS_NUMBER_OF_CHANNELS];
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-int sbus_test(int argc, char *argv[]) {
+int spektrum_main(int argc, char *argv[]) {
 
   int fd;
-  fd = NUTTX_SBUS_Init();
+  fd = NUTTX_SPEKTRUM_Init();
   
   if (fd < 0) {
-    printf("Could not open /dev/ttyS3\n")
+    printf("Could not open NUTTX_SPEKTRUM_INPUT_PORT\n");
     return ERROR;
   } 
+  
+  
+  if(argc >= 2) {
+    char* cmd1= "bind";
+    char* cmd2= "read";
 
-  if(NUTTX_SBUS_Rx(fd, rx_buf, SBUS_NUMBER_OF_CHANNELS)){
-    printf("No succes receiving Sbus channel data\n")
-    return ERROR;
-  }
+    if(!strcmp(argv[1], cmd1)){
+      
+    //  if (!NUTTX_SPEKTRUM_Bind()){
+    //    printf("Binding failed\n");
+    //    return ERROR;
+      printf("Binding not yet implemented\n");
+      return ERROR;
+      }
 
-  else {
-    printf("Received channel Data from SBus\n");
-    for (int i=0; i < SBUS_NUMBER_OF_CHANNELS; i++)
-      printf("\tChannel %d : %d\n", (i+1), rx_buf[i]);
+      if (!strcmp(argv[1], cmd2) && argc > 2) {
+        int n_reads;
+        n_reads = atoi(argv[2]);
+        while(n_reads){
+      
+         if(NUTTX_SPEKTRUM_Rx(fd, rx_buf, NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS)){
+            printf("No succes receiving Sbus channel data\n");
+            return ERROR;
+          }
+
+          else {
+            printf("Received channel Data from Spektrum\n");
+            int i;
+            for (i=0; i < NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS; i++)
+            printf("\tChannel %d : %d\n", (i+1), rx_buf[i]);
+          }
+
+        n_reads--;
+        }
+    
+      }
+    }
+    else {
+      printf("Usage: spektrum_test <cmd> <value>\n Availabale commands:\t bind, read");
+      return ERROR;
+  
+  
+  
     }
 
+  
+  return 0;
 }
 

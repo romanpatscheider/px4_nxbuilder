@@ -1,7 +1,8 @@
 /************************************************************************************
- * arch/arm/src/stm32/chip.h
+ * configs/stm3240g-eval/src/up_adc.c
+ * arch/arm/src/board/up_adc.c
  *
- *   Copyright (C) 2009, 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,68 +34,54 @@
  *
  ************************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32_CHIP_H
-#define __ARCH_ARM_SRC_STM32_CHIP_H
-
 /************************************************************************************
  * Included Files
  ************************************************************************************/
 
 #include <nuttx/config.h>
 
-/* Include the chip capabilities file */
-
-#include <arch/stm32/chip.h>
-
-/* Include the chip pin configuration file */
-
-#if defined(CONFIG_STM32_STM32F10XX)
-#  if defined(CONFIG_STM32_VALUELINE)
-#    include "chip/stm32f100_pinmap.h"
-#  elif defined(CONFIG_ARCH_CHIP_STM32F103ZET6) 
-#    include "chip/stm32f103ze_pinmap.h"
-#  elif defined(CONFIG_ARCH_CHIP_STM32F103RET6)
-#    include "chip/stm32f103re_pinmap.h"
-#  elif defined(CONFIG_ARCH_CHIP_STM32F103VCT6)
-#    include "chip/stm32f103vc_pinmap.h"
-#  elif defined(CONFIG_ARCH_CHIP_STM32F105VBT7)
-#    include "chip/stm32f105vb_pinmap.h"
-#  elif defined(CONFIG_ARCH_CHIP_STM32F107VC)
-#    include "chip/stm32f107vc_pinmap.h"
-#  else
-#    error "Unsupported STM32F10XXX chip"
-#  endif
-#elif defined(CONFIG_STM32_STM32F20XX)
-#  include "chip/stm32f20xxx_pinmap.h"
-#elif defined(CONFIG_STM32_STM32F40XX)
-#  include "chip/stm32f40xxx_pinmap.h"
-#else
-#  error "No pinmap file for this STM32 chip"
-#endif
-
-/* If the common ARMv7-M vector handling logic is used, then include the
- * required vector definitions as well.
- */
-
-#ifdef CONFIG_ARMV7M_CMNVECTOR
-#  if defined(CONFIG_STM32_STM32F10XX)
-#    include "chip/stm32f10xxx_vectors.h"
-#  elif defined(CONFIG_STM32_STM32F20XX)
-#    include "chip/stm32f20xxx_vectors.h"
-#  elif defined(CONFIG_STM32_STM32F40XX)
-#    include "chip/stm32f40xxx_vectors.h"
-#  else
-#    error "No vector file for this STM32 family"
-#  endif
-#endif
-
-/* Include only the mchip emory map. */
-
-#include "chip/stm32_memorymap.h"
+#ifdef CONFIG_ADC
 
 /************************************************************************************
- * Pre-processor Definitions
+ * Definitions
  ************************************************************************************/
 
-#endif /* __ARCH_ARM_SRC_STM32_CHIP_H */
+/* Configuration ************************************************************/
+/* Up to 3 ADC interfaces are supported */
 
+#if STM32_NADC < 3
+#  undef CONFIG_STM32_ADC3
+#endif
+
+#if STM32_NADC < 2
+#  undef CONFIG_STM32_ADC2
+#endif
+
+#if STM32_NADC < 1
+#  undef CONFIG_STM32_ADC3
+#endif
+
+#if defined(CONFIG_STM32_ADC1) || defined(CONFIG_STM32_ADC2) || defined(CONFIG_STM32_ADC3)
+#ifndef CONFIG_STM32_ADC3
+#  warning "Channel information only available for ADC3"
+#endif
+
+#define ADC3_NCHANNELS 4
+
+/************************************************************************************
+ * Public Functions
+ ************************************************************************************/
+
+/************************************************************************************
+ * Name: adc_devinit
+ *
+ * Description:
+ *   All STM32 architectures must provide the following interface to work with
+ *   examples/adc.
+ *
+ ************************************************************************************/
+
+int adc_devinit(void);
+
+#endif /* CONFIG_STM32_ADC || CONFIG_STM32_ADC2 || CONFIG_STM32_ADC3 */
+#endif /* CONFIG_ADC */

@@ -40,7 +40,7 @@
 include $(APPDIR)/Make.defs
 
 ASRCS		=
-CSRCS		= tests_main.c test_sensors.c test_gpio.c test_hrt.c test_led.c
+CSRCS		= tests_main.c test_sensors.c test_gpio.c test_hrt.c test_led.c test_adc.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))
@@ -58,7 +58,7 @@ ROOTDEPPATH	= --dep-path .
 
 APPNAME		= tests
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 2048
+STACKSIZE	= 4096
 
 # Common build
 

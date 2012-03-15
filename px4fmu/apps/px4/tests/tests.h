@@ -84,5 +84,6 @@ extern int	test_sensors(int argc, char *argv[]);
 extern int	test_gpio(int argc, char *argv[]);
 extern int	test_hrt(int argc, char *argv[]);
 extern int	test_led(int argc, char *argv[]);
+extern int	test_adc(int argc, char *argv[]);
 
 #endif /* __APPS_PX4_TESTS_H */

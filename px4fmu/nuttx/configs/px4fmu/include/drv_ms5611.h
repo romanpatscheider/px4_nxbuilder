@@ -29,22 +29,57 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * Driver for the ST MS5611 gyroscope
+ */
+
+/* IMPORTANT NOTES:
+ *
+ * SPI max. clock frequency: 10 Mhz
+ * CS has to be high before transfer,
+ * go low right before transfer and
+ * go high again right after transfer
+ *
+ */
+
 #include <sys/ioctl.h>
 
-#define _GPIOCBASE	0x6700
-#define GPIOC(_x)	_IOC(_GPIOCBASE, _x)
+#define _MS5611BASE	0x6A00
+#define MS5611C(_x)	_IOC(_MS5611BASE, _x)
 
-/* set the GPIO identified by the argument */
-#define GPIO_SET	GPIOC(1)
+/* 
+ * Sets the sensor internal sampling rate, and if a buffer
+ * has been configured, the rate at which entries will be
+ * added to the buffer.
+ */
+#define MS5611_SETRATE		MS5611C(1)
 
-/* clear the GPIO identified by the argument */
-#define GPIO_CLEAR	GPIOC(2)
+/* set rate (configuration A register */
+#define MS5611_RATE_0_75HZ		(0 << 2) /* 0.75 Hz */
 
-/* read the GPIO identified by the argument */
-#define GPIO_GET	GPIOC(3)
+/*
+ * Sets the sensor internal range.
+ */
+#define MS5611_SETRANGE		MS5611C(2)
 
-/* set the direction of all GPIOs to input (arg==0) or output (arg!=0) */
-#define GPIO_DIRECTION	GPIOC(4)
+#define MS5611_RANGE_0_88GA			(0 << 5)
 
-#define GPIO_ALL_OUTPUTS 1
-#define GPIO_ALL_INPUTS 0
+/*
+ * Sets the address of a shared MS5611_buffer
+ * structure that is maintained by the driver.
+ *
+ * If zero is passed as the address, disables
+ * the buffer updating.
+ */
+#define MS5611_SETBUFFER	MS5611C(3)
+
+struct ms5611_buffer {
+	uint32_t	size;		/* number of entries in the samples[] array */
+	uint32_t	next;		/* the next entry that will be populated */
+	struct {
+		uint32_t	pressure;
+		uint16_t temperature;
+	} samples[];
+};
+
+extern int	ms5611_attach(struct i2c_dev_s *i2c);

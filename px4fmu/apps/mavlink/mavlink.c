@@ -425,7 +425,7 @@ int mavlink_main(int argc, char *argv[])
 	int i;
 	for (i = 1; i < argc; i++) //argv[0] is "mavlink"
 	{
-		if (strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--uart") == 0)  //uart set
+		if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--device") == 0)  //uart set
 		{
 			if(argc > i+1)
 			{
@@ -433,7 +433,7 @@ int mavlink_main(int argc, char *argv[])
 			}
 			else
 			{
-				printf("\tusage: mavlink -u devicename\n");
+				printf("\tusage: mavlink -d devicename\n");
 				return 0;
 			}
 		}

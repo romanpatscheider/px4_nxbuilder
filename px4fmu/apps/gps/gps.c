@@ -43,7 +43,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include "gps.h"
-#include "nmealib/nmea/nmea.h"
+#include "nmealib/nmea/nmea.h" // the nmea library
+#include "nmea.h" //header files for interacting with the nmea library
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
@@ -52,14 +53,7 @@
 /****************************************************************************
  * Definitions
  ****************************************************************************/
-//Definition for custom mode
-#define MEDIATEK_REFRESH_RATE_4HZ "$PMTK220,250*29\r\n" //refresh rate - 4Hz - 250 milliseconds
-#define MEDIATEK_REFRESH_RATE_5HZ "$PMTK220,200*2C\r\n"
-#define MEDIATEK_REFRESH_RATE_10HZ "$PMTK220,100*2F\r\n" //refresh rate - 10Hz - 100 milliseconds
-#define MEDIATEK_FACTORY_RESET "$PMTK104*37\r\n" //clear current settings
-#define MEDIATEK_CUSTOM_BINARY_MODE "$PGCMD,16,0,0,0,0,0*6A\r\n"
-#define MEDIATEK_FULL_COLD_RESTART "$PMTK104*37\r\n"
-//#define NMEA_GGA_ENABLE "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0*27\r\n" //Set GGA messages
+
 
 
 
@@ -91,16 +85,43 @@ int gps_main(int argc, char *argv[])
     char msg[5] = "HELLO";
     int send_result;
 
+    //default values
+    char * commandline_usage = "\tusage: gps -d devicename -m mode\n";
+    char * device = "/dev/ttyS3";
+    char * mode = "nmea";
 
-    //read input arguments
-    char * device = argv[1];
-    char * mode = "nmea"; //TODO: write enum once all modes are defined
-    if(3 <= argc)
+    //read arguments
+	int i;
+	for (i = 1; i < argc; i++) //argv[0] is "mavlink"
 	{
-		mode = argv[2];
+		if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--device") == 0)  //device set
+		{
+			if(argc > i+1)
+			{
+				device = argv[i+1];
+			}
+			else
+			{
+				printf(commandline_usage);
+				return 0;
+			}
+		}
+		if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--mode") == 0)  //device set
+		{
+			if(argc > i+1)
+			{
+				mode = argv[i+1];
+			}
+			else
+			{
+				printf(commandline_usage);
+				return 0;
+			}
+		}
 	}
 
-    int buffer_size = 2000;
+	//Initialize GPS stuff
+    int buffer_size = 1000;
     nmeaINFO * info = malloc(sizeof(nmeaINFO));
 
     //open port (baud rate is set in defconfig file)
@@ -129,7 +150,6 @@ int gps_main(int argc, char *argv[])
 	gps_bin_custom_state_t * mtk_state = malloc(sizeof(gps_bin_custom_state_t));
 	mtk_decode_init(mtk_state);
 	mtk_state->print_errors = false;
-	size_t result_write;
 
 	//ubx state
 	gps_bin_ubx_state_t * ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
@@ -140,26 +160,7 @@ int gps_main(int argc, char *argv[])
 	if	( !strcmp("custom",mode) )
 	{
 		printf("custom mode\n");
-		//set 10Hz
-		result_write =  write(fd, MEDIATEK_REFRESH_RATE_10HZ, strlen(MEDIATEK_REFRESH_RATE_10HZ));
-		if(result_write != strlen(MEDIATEK_REFRESH_RATE_10HZ))
-		{
-			printf("Set update speed to 10 Hz failed\n");
-		}
-		else
-		{
-			printf("Set update speed to 10 Hz successful\n");
-		}
-		//set custom mode
-		result_write =  write(fd, MEDIATEK_CUSTOM_BINARY_MODE, strlen(MEDIATEK_CUSTOM_BINARY_MODE));
-		if(result_write != strlen(MEDIATEK_CUSTOM_BINARY_MODE))
-		{
-			printf("Set custom mode failed");
-		}
-		else
-		{
-			printf("Set custom mode successful");
-		}
+		configure_gps_custom(fd);
 	}
 
 

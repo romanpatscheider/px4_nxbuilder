@@ -10,6 +10,17 @@
 
 #include <stdint.h>
 
+//Definition for custom mode
+#define MEDIATEK_REFRESH_RATE_4HZ "$PMTK220,250*29\r\n" //refresh rate - 4Hz - 250 milliseconds
+#define MEDIATEK_REFRESH_RATE_5HZ "$PMTK220,200*2C\r\n"
+#define MEDIATEK_REFRESH_RATE_10HZ "$PMTK220,100*2F\r\n" //refresh rate - 10Hz - 100 milliseconds
+#define MEDIATEK_FACTORY_RESET "$PMTK104*37\r\n" //clear current settings
+#define MEDIATEK_CUSTOM_BINARY_MODE "$PGCMD,16,0,0,0,0,0*6A\r\n"
+#define MEDIATEK_FULL_COLD_RESTART "$PMTK104*37\r\n"
+//#define NMEA_GGA_ENABLE "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0*27\r\n" //Set GGA messages
+
+
+
 
 // ************
 // the structure of the binary packet
@@ -211,6 +222,35 @@ int read_gps_custom(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * in
 	}
 
 	return 0;
+}
+
+int configure_gps_custom(int fd)
+{
+	int success = 0;
+	size_t result_write;
+	result_write =  write(fd, MEDIATEK_REFRESH_RATE_10HZ, strlen(MEDIATEK_REFRESH_RATE_10HZ));
+	if(result_write != strlen(MEDIATEK_REFRESH_RATE_10HZ))
+	{
+		printf("Set update speed to 10 Hz failed\n");
+		success = 1;
+	}
+	else
+	{
+		printf("Set update speed to 10 Hz successful\n");
+	}
+	//set custom mode
+	result_write =  write(fd, MEDIATEK_CUSTOM_BINARY_MODE, strlen(MEDIATEK_CUSTOM_BINARY_MODE));
+	if(result_write != strlen(MEDIATEK_CUSTOM_BINARY_MODE))
+	{
+		printf("Set custom mode failed");
+		success = 1;
+	}
+	else
+	{
+		printf("Set custom mode successful");
+	}
+
+	return success;
 }
 
 #endif /* MTK_H_ */

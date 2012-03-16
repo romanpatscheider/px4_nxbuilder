@@ -120,7 +120,7 @@ typedef type_gps_bin_nav_dop_packet gps_bin_nav_dop_packet_t;
 typedef struct
 {
 	uint32_t time_milliseconds; // GPS Millisecond Time of Week
-	uint8_t numCH; //Number of channels
+	uint8_t numCh; //Number of channels
 	uint8_t globalFlags;
 	uint16_t reserved2;
 
@@ -486,10 +486,10 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//read numCH elements from the message
 					int i;
 					const int length_part2 = 12;
-					gps_bin_nav_svinfo_part2_packet_t* packet_part2[packet_part1->numCH];
-					for(i =0; i < packet_part1->numCH; i++)
+					gps_bin_nav_svinfo_part2_packet_t* packet_part2[packet_part1->numCh];
+					for(i =0; i < packet_part1->numCh; i++)
 					{
-						char gps_rx_buffer_part2[length_part2]; //TODO: save these in array once this works
+						char gps_rx_buffer_part2[length_part2];
 						memcpy(gps_rx_buffer_part2, &(gps_rx_buffer[length_part1+i*length_part2]), length_part2);
 						packet_part2[i] = (gps_bin_nav_svinfo_part2_packet_t*) gps_rx_buffer_part2;
 					}
@@ -503,7 +503,39 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					if (ubx_state->ck_a == packet_part3->ck_a && ubx_state->ck_b == packet_part3->ck_b)
 					{
 
-//						printf("checksum ok\n"); //TODO: store values once (which are in packet_part2)  structure of mavlink gps message is clear...
+						/* Write satellite information */
+						gps_data.satellites_visible = packet_part1->numCh; //TODO: check if numCh is the num of visible satellites
+
+						int i;
+						for(i =0; i < packet_part1->numCh; i++)
+						{
+
+							gps_data.satellite_prn[i] = packet_part2[i]->svid;
+
+							if((packet_part2[i]->flags) & 1) //flags is a bitfield
+							{
+								gps_data.satellite_used[i] = 1;
+							}
+							else
+							{
+								gps_data.satellite_used[i] = 0;
+							}
+
+							gps_data.satellite_elevation[i] = (uint8_t)(packet_part2[i]->elev);
+							gps_data.satellite_azimuth[i] = (uint8_t)(packet_part2[i]->azim);
+							gps_data.satellite_snr[i] = packet_part2[i]->cno;
+
+
+						}
+						for(i =0; i < 20; i++)
+						{
+							gps_data.satellite_prn[i] = 0;
+							gps_data.satellite_used[i] = 0;
+							gps_data.satellite_elevation[i] = 0;
+							gps_data.satellite_azimuth[i] = 0;
+							gps_data.satellite_snr[i] = 0;
+						}
+
 						ret = 1;
 					}
 					else

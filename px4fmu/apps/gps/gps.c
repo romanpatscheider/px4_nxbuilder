@@ -48,6 +48,7 @@
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
+#include <v1.0/common/mavlink.h> //for storage of gps information
 
 
 /****************************************************************************
@@ -153,6 +154,15 @@ int gps_main(int argc, char *argv[])
 	gps_bin_ubx_state_t * ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
 	ubx_decode_init(ubx_state);
 	ubx_state->print_errors = false;
+
+	/* Struct for storage of gps information and transmission to mavlink app  */
+	typedef struct //TODO: make me global
+	    {
+			mavlink_gps_raw_int_t gps_raw_int_data;
+			mavlink_gps_status_t gps_status_data;
+
+	    } __attribute__((__packed__)) gps_data_t;
+	gps_data_t gps_data;
 
 
 	if	( !strcmp("custom",mode) )

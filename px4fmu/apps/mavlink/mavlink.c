@@ -50,6 +50,7 @@
 #include "v1.0/pixhawk/pixhawk.h"
 #include "../mq_config.h"
 #include <arch/board/drv_led.h>
+#include "../gps_data_t.h"
 
 
 /****************************************************************************
@@ -70,6 +71,8 @@ uint8_t chan = MAVLINK_COMM_0;
 uint32_t custom_mode = 0;
 mavlink_status_t status;
 
+/* initialize global GPS data */
+//extern gps_data_t gps_data;
 
 /* 3: Define waypoint helper functions */
 void mavlink_wpm_send_message(mavlink_message_t* msg);
@@ -232,31 +235,39 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 
 static void *gps_receiveloop(void * arg) //runs as a pthread and listens messages from GPS
 {
-	mavlink_msg_statustext_send(chan,0,"gps receive loop running");
 
-	//Open Message queue to receive GPS information
-
-	int prio;
-	char * msg = malloc(5*sizeof(char));
-
-    typedef struct
-    {
-    	char str1;
-    	char str2;
-
-    } __attribute__((__packed__)) test_struct;
-    test_struct mystruct;
-
-	ssize_t result_receive;
 	while(1)
 	{
-		if(mq_receive(gps_queue, &mystruct, sizeof(test_struct), &prio) > 0)
-		{
-			mavlink_msg_statustext_send(chan,0,"gps received msg");
-			mavlink_msg_statustext_send(chan,0,&(mystruct.str1));
-			mavlink_msg_statustext_send(chan,0,&(mystruct.str2));
-		}
+		mavlink_msg_statustext_send(chan,0,"gps mavlink raw sending");
+		mavlink_msg_gps_raw_int_send(MAVLINK_COMM_0, gps_data.time_usec, gps_data.fix_type, gps_data.lat, gps_data.lon, gps_data.alt, gps_data.eph, gps_data.epv, gps_data.vel, gps_data.cog, gps_data.satellites_visible);
+
+		mavlink_msg_gps_status_send(MAVLINK_COMM_0, gps_data.satellites_visible, gps_data.satellite_prn, gps_data.satellite_used, gps_data.satellite_elevation, gps_data.satellite_azimuth, gps_data.satellite_snr);
+
+		usleep(10000);
 	}
+//	//Open Message queue to receive GPS information
+//
+//	int prio;
+//	char * msg = malloc(5*sizeof(char));
+//
+//    typedef struct
+//    {
+//    	char str1;
+//    	char str2;
+//
+//    } __attribute__((__packed__)) test_struct;
+//    test_struct mystruct;
+//
+//	ssize_t result_receive;
+//	while(1)
+//	{
+//		if(mq_receive(gps_queue, &mystruct, sizeof(test_struct), &prio) > 0)
+//		{
+//			mavlink_msg_statustext_send(chan,0,"gps received msg");
+//			mavlink_msg_statustext_send(chan,0,&(mystruct.str1));
+//			mavlink_msg_statustext_send(chan,0,&(mystruct.str2));
+//		}
+//	}
 }
 
 
@@ -464,14 +475,14 @@ int mavlink_main(int argc, char *argv[])
 	led_on(LED_BLUE);
 	led_off(LED_AMBER);
 
-	struct mq_attr mq_attr_gps = MQ_ATTR_GPS;
-	// open gps queue
-    gps_queue = mq_open( MQ_NAME_GPS, O_CREAT|O_RDONLY, 0666, &mq_attr_gps );
-
-	if(-1 == gps_queue)
-	{
-		mavlink_msg_statustext_send(chan,0,"gps queue creation in receiveloop failed");
-	}
+//	struct mq_attr mq_attr_gps = MQ_ATTR_GPS;
+//	// open gps queue
+//    gps_queue = mq_open( MQ_NAME_GPS, O_CREAT|O_RDONLY, 0666, &mq_attr_gps );
+//
+//	if(-1 == gps_queue)
+//	{
+//		mavlink_msg_statustext_send(chan,0,"gps queue creation in receiveloop failed");
+//	}
 
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);

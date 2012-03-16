@@ -205,9 +205,9 @@ int gps_main(int argc, char *argv[])
 		{
 			//get gps data into info
 			read_gps_ubx(fd, gps_rx_buffer, buffer_size, ubx_state); //TODO: atm using the info struct from the nmea library, once the gps/mavlink structures are clear--> use own struct
-			lat_dec = info->lat;
-			lon_dec = info->lon;
-			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inuse:%d, PDOP:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inuse, (int)(info->PDOP*1e4));
+//			lat_dec = info->lat;
+//			lon_dec = info->lon;
+//			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inuse:%d, PDOP:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inuse, (int)(info->PDOP*1e4));
 		}
 		else if	( !strcmp("custom",mode) )
 		{
@@ -223,31 +223,31 @@ int gps_main(int argc, char *argv[])
 
 		}
 
-    	//Send GPS information in message queue
-	    //test for queue
-	    char msg[5] = "HELLO";
-	    int send_result;
-
-	    typedef struct
-	    {
-	    	char str1;
-	    	char str2;
-
-	    } __attribute__((__packed__)) test_struct;
-
-	    test_struct mystruct;
-	    mystruct.str1 = 'j';
-	    mystruct.str2 = 'o';
-
-	    //printf("***sizeof test_struct=%d***\n", sizeof(test_struct));
-//	    sleep(2);
-
-    	send_result = mq_send(gps_queue, &mystruct, sizeof(test_struct),0);
-    	printf("Send result: %d ", send_result);
-		if (-1 == send_result) //TODO Priority?
-		{
-			printf("Message could not be sent\n");
-		}
+//    	//Send GPS information in message queue
+//	    //test for queue
+//	    char msg[5] = "HELLO";
+//	    int send_result;
+//
+//	    typedef struct
+//	    {
+//	    	char str1;
+//	    	char str2;
+//
+//	    } __attribute__((__packed__)) test_struct;
+//
+//	    test_struct mystruct;
+//	    mystruct.str1 = 'j';
+//	    mystruct.str2 = 'o';
+//
+//	    //printf("***sizeof test_struct=%d***\n", sizeof(test_struct));
+////	    sleep(2);
+//
+//    	send_result = mq_send(gps_queue, &mystruct, sizeof(test_struct),0);
+//    	printf("Send result: %d ", send_result);
+//		if (-1 == send_result) //TODO Priority?
+//		{
+//			printf("Message could not be sent\n");
+//		}
 	}
 
 	free(gps_rx_buffer);

@@ -80,9 +80,9 @@ static int16_t	gyro_raw[3] = {0, 0, 0};
 static float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
 
 
-/* gyro x, y, z raw values */
+/* acc x, y, z raw values */
 static int16_t	acc_raw[3] = {0, 0, 0};
-/* gyro x, y, z metric values in rad/s */
+/* acc x, y, z metric values in rad/s */
 static float acc_g[3] = {0.0f, 0.0f, 0.0f};
 
 static uint64_t loop_interval = 5000;	// = 200Hz, loop interval in microseconds

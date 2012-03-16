@@ -53,7 +53,7 @@ PRIORITY	= SCHED_PRIORITY_DEFAULT
 STACKSIZE	= 10000
 
 
-#CFLAGS		+= 
+CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
 CSRCS		= gps.c nmealib/context.c nmealib/generate.c nmealib/generator.c nmealib/gmath.c nmealib/info.c nmealib/parse.c nmealib/parser.c nmealib/sentence.c nmealib/time.c nmealib/tok.c

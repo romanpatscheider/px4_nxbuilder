@@ -9,6 +9,7 @@
 #define MTK_H_
 
 #include <stdint.h>
+#include <string.h>
 
 //Definition for custom mode
 #define MEDIATEK_REFRESH_RATE_4HZ "$PMTK220,250*29\r\n" //refresh rate - 4Hz - 250 milliseconds

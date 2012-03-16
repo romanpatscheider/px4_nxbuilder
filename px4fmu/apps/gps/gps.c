@@ -48,7 +48,7 @@
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
-#include <v1.0/common/mavlink.h> //for storage of gps information
+#include "gps_data_t.h" //for storage of gps information
 
 
 /****************************************************************************
@@ -156,12 +156,6 @@ int gps_main(int argc, char *argv[])
 	ubx_state->print_errors = false;
 
 	/* Struct for storage of gps information and transmission to mavlink app  */
-	typedef struct //TODO: make me global
-	    {
-			mavlink_gps_raw_int_t gps_raw_int_data;
-			mavlink_gps_status_t gps_status_data;
-
-	    } __attribute__((__packed__)) gps_data_t;
 	gps_data_t gps_data;
 
 
@@ -207,7 +201,7 @@ int gps_main(int argc, char *argv[])
 		else if ( !strcmp("ubx",mode) )
 		{
 			//get gps data into info
-			read_gps_ubx(fd, gps_rx_buffer, buffer_size, info, ubx_state); //TODO: atm using the info struct from the nmea library, once the gps/mavlink structures are clear--> use own struct
+			read_gps_ubx(fd, gps_rx_buffer, buffer_size, &gps_data, ubx_state); //TODO: atm using the info struct from the nmea library, once the gps/mavlink structures are clear--> use own struct
 			lat_dec = info->lat;
 			lon_dec = info->lon;
 			printf("Lat:%d, Lon:%d,Elev:%d, Sig:%d, Fix:%d, Inuse:%d, PDOP:%d\n", (int)(lat_dec*1e6), (int)(lon_dec*1e6), (int)(info->elv*1e6), info->sig, info->fix, info->satinfo.inuse, (int)(info->PDOP*1e4));

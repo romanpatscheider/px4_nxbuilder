@@ -9,6 +9,7 @@
 #define UBX_H_
 
 #include <stdint.h>
+#include "gps_data_t.h"
 
 //Definitions for ubx, last two bytes are checksum which is calculated below
 uint8_t UBX_CFG_PRT_PART1[] = {0xB5 , 0x62 , 0x06 , 0x00 , 0x14 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0xD0 , 0x08 , 0x00 , 0x00 , 0x80 , 0x25 , 0x00 , 0x00 , 0x07 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0xA0 , 0xA9}; //it may be possible to do this with one message, this was just copied from ucenter
@@ -244,7 +245,7 @@ void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b)
 
 
 
-int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state, nmeaINFO * info) //adapted from GTOP_BIN_CUSTOM_update_position
+int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state, gps_data_t * gps_data) //adapted from GTOP_BIN_CUSTOM_update_position
 {
 //	printf("b=%x\n",b);
 	// Debug output to telemetry port
@@ -372,9 +373,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
-						info->lat = (float)packet->lat*1e-7;
-						info->lon =(float)packet->lon*1e-7;
-						info->elv = (float)packet->height_msl*1e-3; //(converting mm to m)
+						gps_data->gps_raw_int_data.lat = packet->lat;
+						gps_data->gps_raw_int_data.lon = packet->lon;
+						gps_data->gps_raw_int_data.alt = packet->height_msl;
 
 						ret = 1;
 					}
@@ -397,8 +398,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
-						info->fix = packet->gpsFix;
-						info->satinfo.inuse = packet->numSV;
+						gps_data->gps_raw_int_data.fix_type = packet->gpsFix;
 
 						ret = 1;
 					}
@@ -421,9 +421,8 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
-						info->PDOP = packet->pDOP*0.01;
-						info->VDOP = packet->vDOP*0.01;
-						info->HDOP = packet->hDOP*0.01;
+						gps_data->gps_raw_int_data.eph =  packet->hDOP;
+						gps_data->gps_raw_int_data.epv =  packet->vDOP;
 
 						ret = 1;
 					}
@@ -445,13 +444,17 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
-						info->utc.year = packet->year;
-						info->utc.mon = packet->month;
-						info->utc.day = packet->day;
-						info->utc.hour = packet->hour;
-						info->utc.min = packet->min;
-						info->utc.sec = packet->sec;
-						info->utc.hsec = packet->time_nanoseconds*1e7;
+						//TODO:correct storage
+
+//						info->utc.year = packet->year;
+//						info->utc.mon = packet->month;
+//						info->utc.day = packet->day;
+//						info->utc.hour = packet->hour;
+//						info->utc.min = packet->min;
+//						info->utc.sec = packet->sec;
+//						info->utc.hsec = packet->time_nanoseconds*1e7;
+
+
 
 						ret = 1;
 					}
@@ -519,7 +522,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state,
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
-						info->speed = (float)packet->speed; //TODO: save more data once mavlink/gps data structures are clear
+						gps_data->gps_raw_int_data.vel = (uint16_t)packet->speed;
 
 						ret = 1;
 					}
@@ -660,7 +663,7 @@ int configure_gps_ubx(int fd)
 	return 0;
 }
 
-int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info, gps_bin_ubx_state_t * ubx_state)
+int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_data_t * gps_data, gps_bin_ubx_state_t * ubx_state)
 {
 
 	uint8_t c;
@@ -696,7 +699,7 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info,
 
 		}
 
-		int msg_read = ubx_parse(c, gps_rx_buffer, ubx_state, info);
+		int msg_read = ubx_parse(c, gps_rx_buffer, ubx_state, gps_data);
 
 		if(msg_read > 0)
 		{

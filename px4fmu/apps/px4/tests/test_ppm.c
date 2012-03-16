@@ -1,5 +1,5 @@
 /****************************************************************************
- * px4/sensors/tests_main.c
+ * px4/sensors/test_gpio.c
  *
  *   Copyright (C) 2012 Michael Smith. All rights reserved.
  *   Authors: Michael Smith <DrZiplok@me.com>
@@ -43,7 +43,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -52,6 +51,8 @@
 #include <arch/board/board.h>
 
 #include <nuttx/spi.h>
+#include <arch/board/drv_ppm.h>
+#include "stm32_tim.h"
 
 #include "tests.h"
 
@@ -67,29 +68,12 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static int test_help(int argc, char *argv[]);
-static int test_all(int argc, char *argv[]);
-
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 
-struct {
-	const char 	*name;
-	int		(* fn)(int argc, char *argv[]);
-	unsigned	options;
-#define OPT_NOHELP	(1<<0)
-#define OPT_NOALLTEST	(1<<1)
-} tests[] = {
-	{"sensors",	test_sensors,	0},
-	{"gpio",	test_gpio,	0},
-	{"hrt",		test_hrt,	0},
-	{"led",		test_led,	0},
-	{"ppm",		test_ppm,	0},
-	{"all",		test_all,	OPT_NOALLTEST},
-	{"help",	test_help,	OPT_NOALLTEST | OPT_NOHELP},
-	{NULL,		NULL}
-};
+static struct stm32_tim_dev_s tim_str;
+stm32_tim_channel_t mode = STM32_TIM_CH_INCAPTURE;
 
 /****************************************************************************
  * Public Data
@@ -99,57 +83,20 @@ struct {
  * Private Functions
  ****************************************************************************/
 
-static int
-test_help(int argc, char *argv[])
-{
-	unsigned	i;
-	
-	printf("Available tests:\n");
-	for (i = 0; tests[i].name; i++)
-		printf("  %s\n", tests[i].name);
-	return 0;
-}
-
-static int
-test_all(int argc, char *argv[])
-{
-	unsigned	i;
-	char		*args[2] = {"all", NULL};
-	
-	printf("Running all tests...\n\n");
-	for (i = 0; tests[i].name; i++) {
-		printf("  %s:\n", tests[i].name);
-		if (tests[i].fn(1, args)) {
-			printf("  FAIL\n");
-		} else {
-			printf("  PASS\n");			
-		}
-	}
-	return 0;
-}
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: tests_main
+ * Name: test_gpio
  ****************************************************************************/
 
-int tests_main(int argc, char *argv[])
+int test_ppm(int argc, char *argv[])
 {
-	unsigned	i;
-
-	if (argc < 2) {
-		printf("tests: missing test name - 'tests help' for a list of tests\n");
-		return 1;
-	}
-
-	for (i = 0; tests[i].name; i++) {
-		if (!strcmp(tests[i].name, argv[1]))
-			return tests[i].fn(argc - 1, argv + 1);
-	}
-
-	printf("tests: no test called '%s' - 'tests help' for a list of tests\n", argv[1]);
-	return 1;
+	tim_str = stm32_tim_init(ppm_cfg.timer);
+	printf("Initialized timer ,%i\n",ppm_cfg.timer);
+	STM32_TIM_SETCHANNEL(tim_str,1,mode);
+	printf("Set timer %i to input capture mode\n",ppm_cfg.timer);
+	return 0;
 }

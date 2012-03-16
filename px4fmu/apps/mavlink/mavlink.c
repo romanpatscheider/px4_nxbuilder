@@ -48,7 +48,6 @@
 #include "mavlink_bridge_header.h"
 #include "v1.0/common/mavlink.h"
 #include "v1.0/pixhawk/pixhawk.h"
-#include "../mq_config.h"
 
 
 #include <arch/board/drv_led.h>
@@ -468,6 +467,7 @@ int mavlink_main(int argc, char *argv[])
 	led_off(LED_AMBER);
 
     // open gps queue
+	const struct mq_attr MQ_ATTR_GPS = { .mq_flags = 0, .mq_maxmsg = 10, .mq_msgsize = 2, .mq_curmsgs = 0 }; //TODO:make this global
     gps_queue = mq_open( "gps_queue", O_CREAT|O_RDONLY, 0666, &MQ_ATTR_GPS );
 
 	if(-1 == gps_queue)

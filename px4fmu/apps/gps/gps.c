@@ -48,7 +48,6 @@
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
-#include "../mq_config.h" //TODO: fix makefile
 
 
 /****************************************************************************
@@ -77,6 +76,7 @@ int gps_main(int argc, char *argv[])
 
     // open message queue to write
     mqd_t gps_queue;
+    const struct mq_attr MQ_ATTR_GPS = { .mq_flags = 0, .mq_maxmsg = 10, .mq_msgsize = 2, .mq_curmsgs = 0 }; //TODO: make this global
     gps_queue = mq_open( "gps_queue", O_CREAT|O_WRONLY|O_NONBLOCK, 0666, &MQ_ATTR_GPS );
     if(-1 == gps_queue)
 	{

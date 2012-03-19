@@ -36,7 +36,6 @@ void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b)
 {
 	*(ck_a) = *(ck_a) + b;
 	*(ck_b) = *(ck_b) + *(ck_a);
-//	printf("Checksum now: %d\n",*(ck_b));
 }
 
 
@@ -44,8 +43,6 @@ void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b)
 int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state) //adapted from GTOP_BIN_CUSTOM_update_position
 {
 //	printf("b=%x\n",b);
-	// Debug output to telemetry port
-	//	PIOS_COM_SendBufferNonBlocking(PIOS_COM_TELEM_RF, &b, 1);
 		if (ubx_state->decode_state == UBX_DECODE_UNINIT)
 		{
 
@@ -229,7 +226,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 				{
 //					printf("GOT NAV_DOP MESSAGE\n");
 					gps_bin_nav_dop_packet_t* packet = (gps_bin_nav_dop_packet_t*) gps_rx_buffer;
-//					printf("DEBUG: got NAV_DOP packet\n");
+
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
@@ -292,46 +289,41 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					memcpy(gps_rx_buffer_part1, gps_rx_buffer, length_part1);
 					gps_bin_nav_svinfo_part1_packet_t* packet_part1 = (gps_bin_nav_svinfo_part1_packet_t*) gps_rx_buffer_part1;
 
-					//read numCH elements from the message
-					int i;
-					const int length_part2 = 12;
-					gps_bin_nav_svinfo_part2_packet_t* packet_part2[20]; //TODO: use numCH
-
-					char gps_rx_buffer_part2[20][length_part2];
-
-					for(i = 0; i < packet_part1->numCh; i++)
-					{
-
-						memcpy(gps_rx_buffer_part2[i], &(gps_rx_buffer[length_part1+i*length_part2]), length_part2);
-						packet_part2[i] = (gps_bin_nav_svinfo_part2_packet_t*) gps_rx_buffer_part2[i];
-					}
-
 					//read checksum
 					const int length_part3 = 2;
 					char gps_rx_buffer_part3[length_part3];
-					memcpy(gps_rx_buffer_part3, &(gps_rx_buffer[length_part1+packet_part1->numCh*length_part2]), length_part3);
+					memcpy(gps_rx_buffer_part3, &(gps_rx_buffer[ubx_state->rx_count - 1]), length_part3);
 					gps_bin_nav_svinfo_part3_packet_t* packet_part3 = (gps_bin_nav_svinfo_part3_packet_t*) gps_rx_buffer_part3;
 
 					//Check if checksum is valid and then store the gps information
 					if (ubx_state->ck_a == packet_part3->ck_a && ubx_state->ck_b == packet_part3->ck_b)
 					{
-
-						/* Write satellite information */
+						//definitions needed to read numCh elements from the buffer:
+						const int length_part2 = 12;
+						gps_bin_nav_svinfo_part2_packet_t* packet_part2;
+						char gps_rx_buffer_part2[length_part2]; //for temporal storage
 
 						int i;
-						for(i = 0; i < packet_part1->numCh; i++)
+						for(i = 0; i < packet_part1->numCh; i++) //for each channel
 						{
-//							printf("flags %x, ", packet_part2[i]->flags);
 
-							gps_data.satellite_prn[i] = packet_part2[i]->svid;
+							/* Get satellite information from the buffer */
+
+							memcpy(gps_rx_buffer_part2, &(gps_rx_buffer[length_part1+i*length_part2]), length_part2);
+							packet_part2 = (gps_bin_nav_svinfo_part2_packet_t*) gps_rx_buffer_part2;
+
+
+							/* Write satellite information in the global storage */
+
+							gps_data.satellite_prn[i] = packet_part2->svid;
+
 							//if satellite information is healthy store the data
-							uint8_t unhealthy = packet_part2[i]->flags & 1 << 4;
-//							printf("unhealthy: %d,", unhealthy);
+							uint8_t unhealthy = packet_part2->flags & 1 << 4; //flags is a bitfield
+
 							if(!unhealthy)
 							{
 
-	//							printf("svid: [%d, %d]",gps_data.satellite_prn[i], packet_part2[i]->svid);//DEBUG
-								if((packet_part2[i]->flags) & 1) //flags is a bitfield
+								if((packet_part2->flags) & 1) //flags is a bitfield
 								{
 									gps_data.satellite_used[i] = 1;
 								}
@@ -339,33 +331,28 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 								{
 									gps_data.satellite_used[i] = 0;
 								}
-								gps_data.satellite_snr[i] = packet_part2[i]->cno;
-//								printf("cno: [%d, %d]",gps_data.satellite_snr[i], packet_part2[i]->cno);//DEBUG
-								gps_data.satellite_elevation[i] = (uint8_t)(packet_part2[i]->elev); //TODO: correct conversion: 360 to 255
-								gps_data.satellite_azimuth[i] = (uint8_t)(packet_part2[i]->azim);
-	//							printf("azim: [%d, %d, %d]",gps_data.satellite_azimuth[i], packet_part2[i]->azim);//DEBUG
+								gps_data.satellite_snr[i] = packet_part2->cno;
+								gps_data.satellite_elevation[i] = (uint8_t)(packet_part2->elev);
+								gps_data.satellite_azimuth[i] = (uint8_t)((float)packet_part2->azim*255.0f/360.0f);
 							}
 							else
 							{
-								gps_data.satellite_prn[i] = 0;
 								gps_data.satellite_used[i] = 0;
+								gps_data.satellite_snr[i] = 0;
 								gps_data.satellite_elevation[i] = 0;
 								gps_data.satellite_azimuth[i] = 0;
-								gps_data.satellite_snr[i] = 0;
+
 							}
 
-
-
 						}
-//						printf("\n");//DEBUG
 
-						for(i = packet_part1->numCh; i < 20; i++)
+						for(i = packet_part1->numCh; i < 20; i++) //these channels are unused //TODO: check with mavlink if it's necessary to set these to zero
 						{
 							gps_data.satellite_prn[i] = 0;
 							gps_data.satellite_used[i] = 0;
+							gps_data.satellite_snr[i] = 0;
 							gps_data.satellite_elevation[i] = 0;
 							gps_data.satellite_azimuth[i] = 0;
-							gps_data.satellite_snr[i] = 0;
 						}
 
 						ret = 1;
@@ -386,7 +373,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 				{
 //					printf("GOT NAV_VELNED MESSAGE\n");
 					gps_bin_nav_velned_packet_t* packet = (gps_bin_nav_velned_packet_t*) gps_rx_buffer;
-//					printf("DEBUG: got NAV_DOP packet\n");
+
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
@@ -438,8 +425,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 
 
 			}
-
-			// TODO: update that new data is available
 
 			(ubx_state->rx_count)++;
 
@@ -585,7 +570,7 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_stat
 	// This blocks the task until there is something on the buffer
 	while (read(fd, &c, 1) > 0)
 	{
-		printf("Read %x\n",c);
+//		printf("Read %x\n",c);
 		if (rx_count >= buffer_size)
 		{
 			// The buffer is already full and we haven't found a valid NMEA sentence.

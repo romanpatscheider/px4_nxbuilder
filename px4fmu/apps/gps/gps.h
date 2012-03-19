@@ -10,6 +10,7 @@
 
 #include <termios.h>
 #include <stdio.h>
+#include <signal.h>
 
 
 int open_port(char * port)

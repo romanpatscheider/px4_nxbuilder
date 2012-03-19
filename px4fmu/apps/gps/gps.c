@@ -222,6 +222,8 @@ int gps_main(int argc, char *argv[])
 
 		}
 
+		// TODO: update that new data is available
+
 //    	//Send GPS information in message queue
 //	    //test for queue
 //	    char msg[5] = "HELLO";

@@ -530,9 +530,10 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//read checksum
 					const int length_part3 = 2;
 					char gps_rx_buffer_part3[length_part3];
-					memcpy(gps_rx_buffer_part3, &(gps_rx_buffer[length_part1+i*length_part2]), length_part3);
+					memcpy(gps_rx_buffer_part3, &(gps_rx_buffer[length_part1+packet_part1->numCh*length_part2]), length_part3);
 					gps_bin_nav_svinfo_part3_packet_t* packet_part3 = (gps_bin_nav_svinfo_part3_packet_t*) gps_rx_buffer_part3;
-					//Check if checksum is valid and the store the gps information
+
+					//Check if checksum is valid and then store the gps information
 					if (ubx_state->ck_a == packet_part3->ck_a && ubx_state->ck_b == packet_part3->ck_b)
 					{
 
@@ -541,25 +542,44 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						int i;
 						for(i =0; i < packet_part1->numCh; i++)
 						{
-
 							gps_data.satellite_prn[i] = packet_part2[i]->svid;
-
-							if((packet_part2[i]->flags) & 1) //flags is a bitfield
+							//if satellite information is healthy store the data
+							uint8_t unhealthy = packet_part2[i]->flags & 1 << 4;
+							printf("unhealthy: %d,", unhealthy);
+							if(!unhealthy)
 							{
-								gps_data.satellite_used[i] = 1;
+
+	//							printf("svid: [%d, %d]",gps_data.satellite_prn[i], packet_part2[i]->svid);//DEBUG
+
+								if((packet_part2[i]->flags) & 1) //flags is a bitfield
+								{
+									gps_data.satellite_used[i] = 1;
+								}
+								else
+								{
+									gps_data.satellite_used[i] = 0;
+								}
+								gps_data.satellite_snr[i] = packet_part2[i]->cno;
+//								printf("cno: [%d, %d]",gps_data.satellite_snr[i], packet_part2[i]->cno);//DEBUG
+								gps_data.satellite_elevation[i] = (uint8_t)(packet_part2[i]->elev); //TODO: correct conversion: 360 to 255
+								gps_data.satellite_azimuth[i] = (uint8_t)(packet_part2[i]->azim);
+	//							printf("azim: [%d, %d, %d]",gps_data.satellite_azimuth[i], packet_part2[i]->azim);//DEBUG
 							}
 							else
 							{
+								gps_data.satellite_prn[i] = 0;
 								gps_data.satellite_used[i] = 0;
+								gps_data.satellite_elevation[i] = 0;
+								gps_data.satellite_azimuth[i] = 0;
+								gps_data.satellite_snr[i] = 0;
 							}
 
-							gps_data.satellite_elevation[i] = (uint8_t)(packet_part2[i]->elev);
-							gps_data.satellite_azimuth[i] = (uint8_t)(packet_part2[i]->azim);
-							gps_data.satellite_snr[i] = packet_part2[i]->cno;
 
 
 						}
-						for(i =0; i < 20; i++)
+						printf("\n");//DEBUG
+
+						for(i =packet_part1->numCh; i < 20; i++)
 						{
 							gps_data.satellite_prn[i] = 0;
 							gps_data.satellite_used[i] = 0;

@@ -28,15 +28,16 @@
 //#define UBX_CFG_SAVE (uint8_t[21]){0xB5,0x62,0x06,0x09,0x0d,0x00,0x00,0x00,0x00,0x00,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x07,0x00,0x00}
 
 
-
 //UBX Protocoll definitions (this is the subset of the messages that are parsed)
 #define UBX_CLASS_NAV 0x01
+#define UBX_CLASS_RXM 0x02
 #define UBX_MESSAGE_NAV_POSLLH 0x02
 #define UBX_MESSAGE_NAV_SOL 0x06
 #define UBX_MESSAGE_NAV_TIMEUTC 0x21
 #define UBX_MESSAGE_NAV_DOP 0x04
 #define UBX_MESSAGE_NAV_SVINFO 0x30
 #define UBX_MESSAGE_NAV_VELNED 0x12
+#define UBX_MESSAGE_RXM_SVSI 0x20
 
 // ************
 // the structures of the binary packets
@@ -175,6 +176,18 @@ typedef struct
 
 typedef type_gps_bin_nav_velned_packet gps_bin_nav_velned_packet_t;
 
+typedef struct
+{
+	int32_t time_milliseconds; // Measurement integer millisecond GPS time of week
+	int16_t week; //Measurement GPS week number
+	uint8_t numVis; //Number of visible satellites
+
+	//... rest of package is not used in this implementation
+
+}  __attribute__((__packed__)) type_gps_bin_rxm_svsi_packet;
+
+typedef type_gps_bin_rxm_svsi_packet gps_bin_rxm_svsi_packet_t;
+
 
 // END the structures of the binary packets
 // ************
@@ -182,7 +195,8 @@ typedef type_gps_bin_nav_velned_packet gps_bin_nav_velned_packet_t;
 enum UBX_MESSAGE_CLASSES
 {
 	CLASS_UNKNOWN = 0,
-	NAV = 1
+	NAV = 1,
+	RXM = 2
 };
 
 enum UBX_MESSAGE_IDS
@@ -194,7 +208,8 @@ enum UBX_MESSAGE_IDS
 	NAV_TIMEUTC = 3,
 	NAV_DOP = 4,
 	NAV_SVINFO = 5,
-	NAV_VELNED = 6
+	NAV_VELNED = 6,
+	RXM_SVSI = 7
 
 };
 
@@ -235,8 +250,6 @@ typedef type_gps_bin_ubx_state gps_bin_ubx_state_t;
 void ubx_decode_init(gps_bin_ubx_state_t* ubx_state);
 
 void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b);
-
-
 
 int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state); //adapted from GTOP_BIN_CUSTOM_update_position
 

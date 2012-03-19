@@ -56,7 +56,7 @@ STACKSIZE	= 10000
 CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
-CSRCS		= gps.c nmealib/context.c nmealib/generate.c nmealib/generator.c nmealib/gmath.c nmealib/info.c nmealib/parse.c nmealib/parser.c nmealib/sentence.c nmealib/time.c nmealib/tok.c
+CSRCS		= gps.c ubx.c custom.c nmea_helper.c nmealib/context.c nmealib/generate.c nmealib/generator.c nmealib/gmath.c nmealib/info.c nmealib/parse.c nmealib/parser.c nmealib/sentence.c nmealib/time.c nmealib/tok.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))

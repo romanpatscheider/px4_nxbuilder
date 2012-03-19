@@ -1,14 +1,13 @@
 /*
- * nmea.h
+ * nmea_helper.c
  *
- *  Created on: Mar 15, 2012
- *      Author: thomasgubler
+ *  Created on: Mar 19, 2012
+ *      Author: julianoes
  */
 
-#ifndef NMEA_H_
-#define NMEA_H_
+#include "nmea_helper.h"
+//#include "nmealib/nmea/nmea.h"
 
-#include "nmealib/nmea/nmea.h"
 
 int read_gps_nmea(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info, nmeaPARSER * parser)
 {
@@ -85,6 +84,3 @@ float ndeg2degree(float val)
     val = deg + (val - deg * 100) / 60;
     return val;
 }
-
-
-#endif /* NMEA_H_ */

@@ -63,6 +63,7 @@ pthread_t receive_thread;
 pthread_t gps_receive_thread;
 
 int leds;
+bool foo;
 
 int system_type = MAV_TYPE_FIXED_WING;
 mavlink_system_t mavlink_system = {100,50}; // System ID, 1-255, Component/Subsystem ID, 1-255

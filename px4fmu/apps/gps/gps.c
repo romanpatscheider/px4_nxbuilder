@@ -44,7 +44,7 @@
 #include <fcntl.h>
 #include "gps.h"
 #include "nmealib/nmea/nmea.h" // the nmea library
-#include "nmea.h" //header files for interacting with the nmea library
+#include "nmea_helper.h" //header files for interacting with the nmea library
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
@@ -55,7 +55,6 @@
 /****************************************************************************
  * Definitions
  ****************************************************************************/
-
 
 /* Struct for storage of gps information and transmission to mavlink app  */
 gps_data_t gps_data;

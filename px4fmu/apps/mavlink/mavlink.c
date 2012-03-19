@@ -239,6 +239,9 @@ static void *gps_receiveloop(void * arg) //runs as a pthread and listens message
 
 	while(1)
 	{
+		//TODO: wait for new data
+
+
 		mavlink_msg_statustext_send(chan,0,"gps mavlink raw sending");
 		mavlink_msg_gps_raw_int_send(MAVLINK_COMM_0, gps_data.time_usec, gps_data.fix_type, gps_data.lat, gps_data.lon, gps_data.alt, gps_data.eph, gps_data.epv, gps_data.vel, gps_data.cog, gps_data.satellites_visible);
 

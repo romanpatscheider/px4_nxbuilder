@@ -7,6 +7,7 @@
 
 #include "ubx.h"
 
+
 //Definitions for ubx, last two bytes are checksum which is calculated below
 uint8_t UBX_CFG_PRT_PART1[] = {0xB5 , 0x62 , 0x06 , 0x00 , 0x14 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0xD0 , 0x08 , 0x00 , 0x00 , 0x80 , 0x25 , 0x00 , 0x00 , 0x07 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0xA0 , 0xA9}; //it may be possible to do this with one message, this was just copied from ucenter
 uint8_t UBX_CFG_PRT_PART2[] = {0xB5 , 0x62 , 0x06 , 0x00 , 0x14 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0xC0 , 0x08 , 0x00 , 0x00 , 0x80 , 0x25 , 0x00 , 0x00 , 0x07 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0xA0 , 0xA9};
@@ -438,6 +439,8 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 
 			}
 
+			// TODO: update that new data is available
+
 			(ubx_state->rx_count)++;
 
 
@@ -582,7 +585,7 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_stat
 	// This blocks the task until there is something on the buffer
 	while (read(fd, &c, 1) > 0)
 	{
-//		printf("Read %x\n",c);
+		printf("Read %x\n",c);
 		if (rx_count >= buffer_size)
 		{
 			// The buffer is already full and we haven't found a valid NMEA sentence.

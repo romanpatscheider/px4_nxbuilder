@@ -13,6 +13,7 @@
 #include "../gps_data_t.h" //for storage of gps information
 #include <math.h>
 #include <stdbool.h>
+#include <signal.h>
 
 //Definitions for ubx, last two bytes are checksum which is calculated below
 

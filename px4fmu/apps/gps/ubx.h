@@ -559,10 +559,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
 						gps_data.vel = (uint16_t)packet->speed;
-						printf("VelN: %d, VelE %d, VelD %d", packet->velN, packet->velE, packet->velD);
-						printf("Heading: %d, heading accuracy: %d",packet->heading,packet->cAcc);
-						printf("Time milliseconds: %d, speed: %d\n",packet->time_milliseconds,packet->speed);
-						gps_data.cog = (uint16_t)((float)(packet->heading+180*10e5) *1e-3) ; //TODO:check cast, negative values?
+						gps_data.cog = (uint16_t)((float)(packet->heading) *1e-3) ;
 
 						ret = 1;
 					}

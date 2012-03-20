@@ -1,1 +1,5 @@
 # Do nothing by default, just let NSH run
+
+#Start apps
+mavlink -d /dev/ttyS2 &
+gps -d /dev/ttyS1 -m ubx &

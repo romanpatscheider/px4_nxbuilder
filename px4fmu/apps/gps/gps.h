@@ -21,7 +21,6 @@
 #include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
-#include "../mq_config.h"
 #include "../global_data_gps_t.h" //for storage of gps information
 #include "../global_data_sys_status_t.h"
 #include "../global_data.h"

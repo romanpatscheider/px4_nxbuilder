@@ -48,7 +48,6 @@
 #include "mavlink_bridge_header.h"
 #include "v1.0/common/mavlink.h"
 #include "v1.0/pixhawk/pixhawk.h"
-#include "../mq_config.h"
 #include <arch/board/drv_led.h>
 #include "../global_data_gps_t.h"
 #include "../global_data_sys_status_t.h"

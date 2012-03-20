@@ -30,7 +30,7 @@ typedef struct
 
 	//*****END: Add your variables here *****
 
-} __attribute__((__packed__)) global_data_sys_status_t; //adjust this line!
+} global_data_sys_status_t; //adjust this line!
 
 extern global_data_sys_status_t global_data_sys_status; //adjust this line!
 

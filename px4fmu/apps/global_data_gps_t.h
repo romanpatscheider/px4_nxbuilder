@@ -34,7 +34,7 @@ typedef struct
 
 	//*****END: Add your variables here *****
 
-} __attribute__((__packed__)) global_data_gps_t; //adjust this line!
+} global_data_gps_t; //adjust this line!
 
 extern global_data_gps_t global_data_gps; //adjust this line!
 

@@ -1,12 +1,7 @@
-/*
- * gps_data_t.h
- *
- *  Created on: Mar 16, 2012
- *      Author: thomasgubler
- */
+//Structure for storage of shared variables
 
-#ifndef GLOBAL_DATA_GPS_T_H_
-#define GLOBAL_DATA_GPS_T_H_
+#ifndef GLOBAL_DATA_GPS_T_H_ //adjust this line!
+#define GLOBAL_DATA_GPS_T_H_ //adjust this line!
 
 #include "global_data.h"
 
@@ -14,9 +9,11 @@ typedef struct
 {
 	/* Struct which stores the access configuration, this is the same for all shared structs */
 
-	access_conf_t access_conf;
+	access_conf_t access_conf; //don't remove this line!
 
 	/* Actual data, this is specific to the type of data which is stored in this struct */
+
+	//***** Start: Add your variables here *****
 
 	uint64_t time_usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
 	int32_t lat; ///< Latitude in 1E7 degrees
@@ -35,8 +32,10 @@ typedef struct
 	uint8_t satellite_azimuth[20]; ///< Direction of satellite, 0: 0 deg, 255: 360 deg.
 	uint8_t satellite_snr[20]; ///< Signal to noise ratio of satellite
 
-} __attribute__((__packed__)) global_data_gps_t;
+	//*****END: Add your variables here *****
 
-extern global_data_gps_t global_data_gps;
+} __attribute__((__packed__)) global_data_gps_t; //adjust this line!
 
-#endif /* GLOBAL_DATA_GPS_T_H_ */
+extern global_data_gps_t global_data_gps; //adjust this line!
+
+#endif

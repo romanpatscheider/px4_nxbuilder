@@ -1,5 +1,1 @@
-# Create a RAMDISK and mount it at XXXRDMOUNTPOUNTXXX
-
-#mkrd -m XXXMKRDMINORXXX -s XXMKRDSECTORSIZEXXX XXMKRDBLOCKSXXX
-#mkfatfs /dev/ramXXXMKRDMINORXXX
-mount -t vfat /dev/ramXXXMKRDMINORXXX XXXRDMOUNTPOUNTXXX
+# Do nothing by default, just let NSH run

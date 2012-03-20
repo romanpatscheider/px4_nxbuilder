@@ -36,6 +36,9 @@ void global_data_init(access_conf_t * access_conf);
 /* Locks access to data structure, call before every write or direct read */
 void global_data_lock(access_conf_t * access_conf);
 
+/* Tries to lock access to data structure, if already locked returns with nonzero value, success returns 0 */
+int global_data_trylock(access_conf_t * access_conf);
+
 /* Unlocks access to data structure, call after every write and read */
 void global_data_unlock(access_conf_t * access_conf);
 

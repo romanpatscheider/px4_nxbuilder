@@ -18,6 +18,11 @@ void global_data_lock(access_conf_t * access_conf)
 	pthread_mutex_lock(&(access_conf->mutex));
 }
 
+int global_data_trylock(access_conf_t * access_conf)
+{
+	return pthread_mutex_trylock(&(access_conf->mutex));
+}
+
 void global_data_unlock(access_conf_t * access_conf)
 {
 	pthread_mutex_unlock(&(access_conf->mutex));

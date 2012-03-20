@@ -61,8 +61,9 @@ int gps_main(int argc, char *argv[])
 //    attr.mq_msgsize = 2;
 //    attr.mq_curmsgs = 0;
 
-    /* Initialize cond and mutex of global gps data structure */
+    /* initialize shared data structures */
     global_data_init(&global_data_gps.access_conf);
+    global_data_init(&global_data_sys_status.access_conf);
 
     // open message queue to write
     mqd_t gps_queue;
@@ -163,11 +164,27 @@ int gps_main(int argc, char *argv[])
 		if (configure_gps_ubx(fd) != 0)
 		{
 			printf("Configuration of gps module to ubx failed\n");
+
+			/* Write shared variable sys_status */
+
+			global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
+			global_data_sys_status.onboard_control_sensors_enabled &= ~(1 << 5);
+			global_data_unlock(&global_data_sys_status.access_conf);
 		}
 		else
 		{
 			printf("Configuration of gps module to ubx successful\n");
+			global_data_lock(&global_data_sys_status.access_conf);
+
+			/* Write shared variable sys_status */
+
+			global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
+			global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
+			global_data_unlock(&global_data_sys_status.access_conf);
 		}
+
+		/* Inform the other processes that there is new gps data available */
+		global_data_broadcast(&global_data_sys_status.access_conf);
 
 	}
 

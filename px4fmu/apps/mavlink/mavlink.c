@@ -51,6 +51,7 @@
 #include "../mq_config.h"
 #include <arch/board/drv_led.h>
 #include "../global_data_gps_t.h"
+#include "../global_data_sys_status_t.h"
 #include <time.h>
 #include "../global_data.h"
 
@@ -58,6 +59,10 @@
 /****************************************************************************
  * Definitions
  ****************************************************************************/
+
+/* Struct for storage of system status (global)  */
+global_data_sys_status_t global_data_sys_status = {.access_conf.initialized = 0};
+
 
 //threads:
 pthread_t heartbeat_thread;
@@ -95,19 +100,19 @@ mavlink_wpm_storage wpm;
 
 mavlink_pm_storage pm;
 
-uint32_t onboard_control_sensors_present;
-uint32_t onboard_control_sensors_enabled;
-uint32_t onboard_control_sensors_health;
-uint16_t load;
-uint16_t voltage_battery;
-uint16_t current_battery;
-int8_t battery_remaining;
-int16_t drop_rate_comm;
-int16_t errors_comm;
-int16_t external_i2c_err_count;
-int16_t internal_i2c_err_count;
-int16_t spi_err_count;
-int16_t sd_err_count;
+//uint32_t onboard_control_sensors_present;
+//uint32_t onboard_control_sensors_enabled;
+//uint32_t onboard_control_sensors_health;
+//uint16_t load;
+//uint16_t voltage_battery;
+//uint16_t current_battery;
+//int8_t battery_remaining;
+//int16_t drop_rate_comm;
+//int16_t errors_comm;
+//int16_t external_i2c_err_count;
+//int16_t internal_i2c_err_count;
+//int16_t spi_err_count;
+//int16_t sd_err_count;
 
 /**
  * @brief reset all parameters to default
@@ -257,7 +262,6 @@ static void *gps_receiveloop(void * arg) //runs as a pthread and listens message
 
 }
 
-
 static void *heartbeatloop(void * arg)
 {
 
@@ -267,6 +271,7 @@ static void *heartbeatloop(void * arg)
 	mavlink_pm_reset_params(&pm);
 
 	int lowspeed_counter = 0;
+	int result_sys_status_trylock;
 
 	while(1) {
 
@@ -276,9 +281,14 @@ static void *heartbeatloop(void * arg)
 		// 1 Hz
 		if (lowspeed_counter == 10)
 		{
-			// Send heartbeat and status
+			/* Send heartbeat */
 			mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
-			mavlink_msg_sys_status_send(chan, onboard_control_sensors_present, onboard_control_sensors_enabled, onboard_control_sensors_health, load, voltage_battery, current_battery, battery_remaining, drop_rate_comm, errors_comm, external_i2c_err_count, internal_i2c_err_count, spi_err_count, sd_err_count);
+
+
+			/* Send status */
+			result_sys_status_trylock = global_data_trylock(&global_data_sys_status.access_conf);
+			if(0 == result_sys_status_trylock) mavlink_msg_sys_status_send(chan, global_data_sys_status.onboard_control_sensors_present, global_data_sys_status.onboard_control_sensors_enabled, global_data_sys_status.onboard_control_sensors_health, global_data_sys_status.load, global_data_sys_status.voltage_battery, global_data_sys_status.current_battery, global_data_sys_status.battery_remaining, global_data_sys_status.drop_rate_comm, global_data_sys_status.errors_comm, global_data_sys_status.errors_count1, global_data_sys_status.errors_count2, global_data_sys_status.errors_count3, global_data_sys_status.errors_count4);
+			global_data_unlock(&global_data_sys_status.access_conf);
 
 			if (!(mavlink_system.mode & MAV_MODE_FLAG_SAFETY_ARMED)) {
 				// System is not armed, blink at 1 Hz
@@ -471,8 +481,9 @@ int mavlink_main(int argc, char *argv[])
 //		mavlink_msg_statustext_send(chan,0,"gps queue creation in receiveloop failed");
 //	}
 
-    /* Initialize cond and mutex of global gps data structure */
+    /* initialize shared data structures */
     global_data_init(&global_data_gps.access_conf);
+    global_data_init(&global_data_sys_status.access_conf);
 
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);

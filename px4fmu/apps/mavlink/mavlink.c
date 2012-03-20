@@ -40,7 +40,7 @@
 
 #include <nuttx/config.h>
 #include <pthread.h>
-#include <poll.h>
+//#include <poll.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <fcntl.h>
@@ -474,10 +474,6 @@ int mavlink_main(int argc, char *argv[])
 
 	//close uart
 	close(uart);
-
-
-	//close GPS queue
-	mq_close(gps_queue);
 
     return 0;
 }

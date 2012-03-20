@@ -314,7 +314,7 @@ ms5611(int argc, char *argv[])
 	fflush(stdout);
 
 	int		fd;
-	uint32_t	buf[3] = {0, 0};
+	uint32_t	buf[2] = {0, 0};
 	int		ret;
 
 	fd = open("/dev/ms5611", O_RDONLY);

@@ -13,7 +13,17 @@
 
 
 #include <nuttx/config.h>
+#include <arch/board/drv_lis331.h>
+#include <arch/board/drv_bma180.h>
+#include <arch/board/drv_l3gd20.h>
+#include <arch/board/drv_hmc5883l.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include "../global_data_sensors_raw_t.h"
 
+pthread_t gyro_accelerometer_thread;
 
+static void *gyro_accelerometer_loop(void * arg);
 
 #endif /* SENSORS_H_ */

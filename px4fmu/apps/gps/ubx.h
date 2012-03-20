@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include <time.h>
-#include "../gps_data_t.h" //for storage of gps information
+#include "../global_data_gps_t.h" //for storage of gps information
 #include <math.h>
 #include <stdbool.h>
 

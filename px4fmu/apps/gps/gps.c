@@ -41,7 +41,7 @@
  ****************************************************************************/
 
 /* Struct for storage of gps information and transmission to mavlink app  */
-gps_data_t gps_data = {.initialized = 0};
+global_data_gps_t global_data_gps = {.access_conf.initialized = 0};
 
 
 /****************************************************************************
@@ -62,7 +62,7 @@ int gps_main(int argc, char *argv[])
 //    attr.mq_curmsgs = 0;
 
     /* Initialize cond and mutex of global gps data structure */
-    init_gps_data_t(&gps_data);
+    global_data_init(&global_data_gps.access_conf);
 
     // open message queue to write
     mqd_t gps_queue;
@@ -210,35 +210,8 @@ int gps_main(int argc, char *argv[])
 		}
 
 		/* Inform the other processes that there is new gps data available */
-		pthread_cond_broadcast(&gps_data.cond);
+		global_data_broadcast(&global_data_gps.access_conf);
 
-
-
-//    	//Send GPS information in message queue
-//	    //test for queue
-//	    char msg[5] = "HELLO";
-//	    int send_result;
-//
-//	    typedef struct
-//	    {
-//	    	char str1;
-//	    	char str2;
-//
-//	    } __attribute__((__packed__)) test_struct;
-//
-//	    test_struct mystruct;
-//	    mystruct.str1 = 'j';
-//	    mystruct.str2 = 'o';
-//
-//	    //printf("***sizeof test_struct=%d***\n", sizeof(test_struct));
-////	    sleep(2);
-//
-//    	send_result = mq_send(gps_queue, &mystruct, sizeof(test_struct),0);
-//    	printf("Send result: %d ", send_result);
-//		if (-1 == send_result) //TODO Priority?
-//		{
-//			printf("Message could not be sent\n");
-//		}
 	}
 
 	free(gps_rx_buffer);

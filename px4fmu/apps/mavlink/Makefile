@@ -56,7 +56,7 @@ STACKSIZE	= 2400
 CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
-CSRCS		= mavlink.c mavlink_parameters.c waypoints.c ../gps_data_t.c
+CSRCS		= mavlink.c mavlink_parameters.c waypoints.c ../global_data.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))

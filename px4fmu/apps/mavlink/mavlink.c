@@ -50,8 +50,9 @@
 #include "v1.0/pixhawk/pixhawk.h"
 #include "../mq_config.h"
 #include <arch/board/drv_led.h>
-#include "../gps_data_t.h"
+#include "../global_data_gps_t.h"
 #include <time.h>
+#include "../global_data.h"
 
 
 /****************************************************************************
@@ -74,7 +75,7 @@ uint32_t custom_mode = 0;
 mavlink_status_t status;
 
 /* initialize global GPS data */
-//extern gps_data_t gps_data;
+//extern global_data_gps_t global_data_gps;
 
 /* 3: Define waypoint helper functions */
 void mavlink_wpm_send_message(mavlink_message_t* msg);
@@ -237,48 +238,23 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 
 static void *gps_receiveloop(void * arg) //runs as a pthread and listens messages from GPS
 {
-	static struct timespec time_to_wait = {0, 0};
-	int waits = 1; //TODO: define this global...
 
 	while(1)
 	{
-		time_to_wait.tv_sec = time(NULL) + waits;
-
-		pthread_mutex_lock(&gps_data.mutex);
-		int res = pthread_cond_timedwait(&gps_data.cond, &gps_data.mutex, &time_to_wait);
-
-		if(0 == res) //only send if pthread_cond_timedwait received a con signal
+		if(0 == global_data_wait(&global_data_gps.access_conf)) //only send if pthread_cond_timedwait received a con signal
 		{
-			mavlink_msg_gps_raw_int_send(MAVLINK_COMM_0, gps_data.time_usec, gps_data.fix_type, gps_data.lat, gps_data.lon, gps_data.alt, gps_data.eph, gps_data.epv, gps_data.vel, gps_data.cog, gps_data.satellites_visible);
+			mavlink_msg_gps_raw_int_send(MAVLINK_COMM_0, global_data_gps.time_usec, global_data_gps.fix_type, global_data_gps.lat, global_data_gps.lon, global_data_gps.alt, global_data_gps.eph, global_data_gps.epv, global_data_gps.vel, global_data_gps.cog, global_data_gps.satellites_visible);
 
-			mavlink_msg_gps_status_send(MAVLINK_COMM_0, gps_data.satellites_visible, gps_data.satellite_prn, gps_data.satellite_used, gps_data.satellite_elevation, gps_data.satellite_azimuth, gps_data.satellite_snr);
+			mavlink_msg_gps_status_send(MAVLINK_COMM_0, global_data_gps.satellites_visible, global_data_gps.satellite_prn, global_data_gps.satellite_used, global_data_gps.satellite_elevation, global_data_gps.satellite_azimuth, global_data_gps.satellite_snr);
 		}
-		pthread_mutex_unlock(&gps_data.mutex);
-//		usleep(10000);
-	}
-//	//Open Message queue to receive GPS information
-//
-//	int prio;
-//	char * msg = malloc(5*sizeof(char));
-//
-//    typedef struct
-//    {
-//    	char str1;
-//    	char str2;
-//
-//    } __attribute__((__packed__)) test_struct;
-//    test_struct mystruct;
-//
-//	ssize_t result_receive;
-//	while(1)
-//	{
-//		if(mq_receive(gps_queue, &mystruct, sizeof(test_struct), &prio) > 0)
+//		else
 //		{
-//			mavlink_msg_statustext_send(chan,0,"gps received msg");
-//			mavlink_msg_statustext_send(chan,0,&(mystruct.str1));
-//			mavlink_msg_statustext_send(chan,0,&(mystruct.str2));
+//			mavlink_msg_statustext_send(chan,0,"timeout");
 //		}
-//	}
+
+		global_data_unlock(&global_data_gps.access_conf);
+	}
+
 }
 
 
@@ -496,7 +472,7 @@ int mavlink_main(int argc, char *argv[])
 //	}
 
     /* Initialize cond and mutex of global gps data structure */
-    init_gps_data_t(&gps_data);
+    global_data_init(&global_data_gps.access_conf);
 
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);

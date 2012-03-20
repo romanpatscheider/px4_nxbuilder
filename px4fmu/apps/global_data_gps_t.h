@@ -5,26 +5,18 @@
  *      Author: thomasgubler
  */
 
-#ifndef GPS_DATA_T_H_
-#define GPS_DATA_T_H_
+#ifndef GLOBAL_DATA_GPS_T_H_
+#define GLOBAL_DATA_GPS_T_H_
 
-#include <pthread.h>
+#include "global_data.h"
 
 typedef struct
 {
-	/* Pthread condition used for waking up threads when new data is available */
+	/* Struct which stores the access configuration, this is the same for all shared structs */
 
-	pthread_cond_t cond;
+	access_conf_t access_conf;
 
-	/* Pthread mutex used for locking access to data */
-
-	pthread_mutex_t mutex;
-
-	/* Pthread mutex used for locking access to data */
-
-	uint8_t initialized;
-
-	/* Actual data */
+	/* Actual data, this is specific to the type of data which is stored in this struct */
 
 	uint64_t time_usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
 	int32_t lat; ///< Latitude in 1E7 degrees
@@ -43,13 +35,8 @@ typedef struct
 	uint8_t satellite_azimuth[20]; ///< Direction of satellite, 0: 0 deg, 255: 360 deg.
 	uint8_t satellite_snr[20]; ///< Signal to noise ratio of satellite
 
+} __attribute__((__packed__)) global_data_gps_t;
 
+extern global_data_gps_t global_data_gps;
 
-} __attribute__((__packed__)) gps_data_t;
-
-extern gps_data_t gps_data;
-
-void init_gps_data_t(gps_data_t * data);
-
-
-#endif /* GPS_DATA_T_H_ */
+#endif /* GLOBAL_DATA_GPS_T_H_ */

@@ -22,7 +22,8 @@
 #include "ubx.h" //header files for the ubx protocol
 #include <mqueue.h>
 #include "../mq_config.h"
-#include "../gps_data_t.h" //for storage of gps information
+#include "../global_data_gps_t.h" //for storage of gps information
+#include "../global_data.h"
 #include <termios.h>
 
 

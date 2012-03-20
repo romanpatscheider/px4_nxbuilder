@@ -100,20 +100,6 @@ mavlink_wpm_storage wpm;
 
 mavlink_pm_storage pm;
 
-//uint32_t onboard_control_sensors_present;
-//uint32_t onboard_control_sensors_enabled;
-//uint32_t onboard_control_sensors_health;
-//uint16_t load;
-//uint16_t voltage_battery;
-//uint16_t current_battery;
-//int8_t battery_remaining;
-//int16_t drop_rate_comm;
-//int16_t errors_comm;
-//int16_t external_i2c_err_count;
-//int16_t internal_i2c_err_count;
-//int16_t spi_err_count;
-//int16_t sd_err_count;
-
 /**
  * @brief reset all parameters to default
  * @warning DO NOT USE THIS IN FLIGHT!
@@ -471,15 +457,6 @@ int mavlink_main(int argc, char *argv[])
 	// Initialize leds
 	led_on(LED_BLUE);
 	led_off(LED_AMBER);
-
-//	struct mq_attr mq_attr_gps = MQ_ATTR_GPS;
-//	// open gps queue
-//    gps_queue = mq_open( MQ_NAME_GPS, O_CREAT|O_RDONLY, 0666, &mq_attr_gps );
-//
-//	if(-1 == gps_queue)
-//	{
-//		mavlink_msg_statustext_send(chan,0,"gps queue creation in receiveloop failed");
-//	}
 
     /* initialize shared data structures */
     global_data_init(&global_data_gps.access_conf);

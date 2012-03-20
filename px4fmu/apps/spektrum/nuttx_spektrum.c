@@ -203,11 +203,11 @@ static int32_t NUTTX_SPEKTRUM_Decode(uint8_t b)
  * \return 0 if succesfull
  */
  
-uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, uint8_t buf_len)
+uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint16_t * buf, uint8_t buf_len)
 {
   /* read data from SPECTRUM_IN_PORT */
   int ret;
-  ret = read(fd, buf, sizeof(buf));
+  ret = read(fd, buf, buf_len);
   if (ret != 0 ) {
     printf("NUTTX_SPEKTRUM_INPUT_PORT: read error\n");
     return ERROR;
@@ -221,7 +221,7 @@ uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, uint8_t buf_len)
     receive_timer = 0;
   }
   //Sync between Frames
-//  NUTTX_SPEKTRUM_Supervisor();
+  NUTTX_SPEKTRUM_Supervisor();
 
   /* put the channel data in the buf variable */
   buf = channel_data;

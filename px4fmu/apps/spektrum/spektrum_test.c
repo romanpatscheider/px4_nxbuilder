@@ -70,7 +70,7 @@
  * Private Data
  ****************************************************************************/
 
-uint8_t rx_buf[NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS];
+uint16_t rx_buf[NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS];
 
 /****************************************************************************
  * Public Data
@@ -92,7 +92,8 @@ int spektrum_main(int argc, char *argv[]) {
     printf("Could not open NUTTX_SPEKTRUM_INPUT_PORT\n");
     return ERROR;
   } 
-  
+  printf("fd = %d\n", fd);
+  fflush(stdout);
   
   if(argc >= 2) {
     char* cmd1= "bind";
@@ -107,13 +108,15 @@ int spektrum_main(int argc, char *argv[]) {
       return ERROR;
       }
 
-      if (!strcmp(argv[1], cmd2) && argc > 2) {
+      if (!strcmp(argv[1], cmd2)) {
         int n_reads;
         n_reads = atoi(argv[2]);
+        
         while(n_reads){
-      
+        printf("Read Nr. %d :", n_reads);
+        fflush(stdout);
          int ret;
-         ret = NUTTX_SPEKTRUM_Rx(fd, rx_buf, NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS)
+         ret = NUTTX_SPEKTRUM_Rx(fd, rx_buf, NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS);
 
          if (ret){
             printf("No succes receiving Sbus channel data\n");
@@ -128,14 +131,15 @@ int spektrum_main(int argc, char *argv[]) {
           }
 
         n_reads--;
+        usleep(1000);
         }
     
       }
+    
+      else {
+        printf("Usage: spektrum_test <cmd> <value>\n Availabale commands:\t bind, read\n");
+        return ERROR;
     }
-    else {
-      printf("Usage: spektrum_test <cmd> <value>\n Availabale commands:\t bind, read\n");
-      return ERROR;
-  
   
   
     }

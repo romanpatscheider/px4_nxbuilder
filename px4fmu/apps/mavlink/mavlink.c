@@ -51,6 +51,7 @@
 #include "../mq_config.h"
 #include <arch/board/drv_led.h>
 #include "../gps_data_t.h"
+#include <time.h>
 
 
 /****************************************************************************
@@ -236,18 +237,24 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 
 static void *gps_receiveloop(void * arg) //runs as a pthread and listens messages from GPS
 {
+	static struct timespec time_to_wait = {0, 0};
+	int waits = 1; //TODO: define this global...
 
 	while(1)
 	{
-		//TODO: wait for new data
+		time_to_wait.tv_sec = time(NULL) + waits;
 
+		pthread_mutex_lock(&gps_data.mutex);
+		int res = pthread_cond_timedwait(&gps_data.cond, &gps_data.mutex, &time_to_wait);
 
-		mavlink_msg_statustext_send(chan,0,"gps mavlink raw sending");
-		mavlink_msg_gps_raw_int_send(MAVLINK_COMM_0, gps_data.time_usec, gps_data.fix_type, gps_data.lat, gps_data.lon, gps_data.alt, gps_data.eph, gps_data.epv, gps_data.vel, gps_data.cog, gps_data.satellites_visible);
+		if(0 == res) //only send if pthread_cond_timedwait received a con signal
+		{
+			mavlink_msg_gps_raw_int_send(MAVLINK_COMM_0, gps_data.time_usec, gps_data.fix_type, gps_data.lat, gps_data.lon, gps_data.alt, gps_data.eph, gps_data.epv, gps_data.vel, gps_data.cog, gps_data.satellites_visible);
 
-		mavlink_msg_gps_status_send(MAVLINK_COMM_0, gps_data.satellites_visible, gps_data.satellite_prn, gps_data.satellite_used, gps_data.satellite_elevation, gps_data.satellite_azimuth, gps_data.satellite_snr);
-
-		usleep(10000);
+			mavlink_msg_gps_status_send(MAVLINK_COMM_0, gps_data.satellites_visible, gps_data.satellite_prn, gps_data.satellite_used, gps_data.satellite_elevation, gps_data.satellite_azimuth, gps_data.satellite_snr);
+		}
+		pthread_mutex_unlock(&gps_data.mutex);
+//		usleep(10000);
 	}
 //	//Open Message queue to receive GPS information
 //
@@ -487,6 +494,9 @@ int mavlink_main(int argc, char *argv[])
 //	{
 //		mavlink_msg_statustext_send(chan,0,"gps queue creation in receiveloop failed");
 //	}
+
+    /* Initialize cond and mutex of global gps data structure */
+    init_gps_data_t(&gps_data);
 
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);

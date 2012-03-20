@@ -33,23 +33,7 @@
  *
  ****************************************************************************/
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-
-
-#include <nuttx/config.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
 #include "gps.h"
-#include "nmealib/nmea/nmea.h" // the nmea library
-#include "nmea_helper.h" //header files for interacting with the nmea library
-#include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
-#include "ubx.h" //header files for the ubx protocol
-#include <mqueue.h>
-#include "../mq_config.h"
-#include "../gps_data_t.h" //for storage of gps information
 
 
 /****************************************************************************
@@ -57,7 +41,7 @@
  ****************************************************************************/
 
 /* Struct for storage of gps information and transmission to mavlink app  */
-gps_data_t gps_data;
+gps_data_t gps_data = {.initialized = 0};
 
 
 /****************************************************************************
@@ -76,6 +60,9 @@ int gps_main(int argc, char *argv[])
 //    attr.mq_maxmsg = 10;
 //    attr.mq_msgsize = 2;
 //    attr.mq_curmsgs = 0;
+
+    /* Initialize cond and mutex of global gps data structure */
+    init_gps_data_t(&gps_data);
 
     // open message queue to write
     mqd_t gps_queue;
@@ -222,7 +209,10 @@ int gps_main(int argc, char *argv[])
 
 		}
 
-		// TODO: update that new data is available
+		/* Inform the other processes that there is new gps data available */
+		pthread_cond_broadcast(&gps_data.cond);
+
+
 
 //    	//Send GPS information in message queue
 //	    //test for queue
@@ -266,5 +256,29 @@ int gps_main(int argc, char *argv[])
 
     return 0;
 }
+
+int open_port(char * port)
+{
+	int fd; // File descriptor for the port
+
+	// Open serial port
+	// O_RDWR - Read and write
+	// O_NOCTTY - Ignore special chars like CTRL-C
+	fd = open(port, O_CREAT|O_RDWR | O_NOCTTY);
+	if (fd == -1)
+	{
+	   // Could not open the port.
+	   printf("Error: could not open the GPS port\n");
+	   return(-1);
+	}
+	return (fd);
+}
+
+
+void close_port(int fd)
+{
+       close(fd);
+}
+
 
 

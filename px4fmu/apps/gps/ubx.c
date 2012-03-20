@@ -182,10 +182,11 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
+						pthread_mutex_lock(&gps_data.mutex);
 						gps_data.lat = packet->lat;
 						gps_data.lon = packet->lon;
 						gps_data.alt = packet->height_msl;
-
+						pthread_mutex_unlock(&gps_data.mutex);
 						ret = 1;
 					}
 					else
@@ -207,7 +208,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
+						pthread_mutex_lock(&gps_data.mutex);
 						gps_data.fix_type = packet->gpsFix;
+						pthread_mutex_unlock(&gps_data.mutex);
 
 						ret = 1;
 					}
@@ -230,8 +233,10 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
+						pthread_mutex_lock(&gps_data.mutex);
 						gps_data.eph =  packet->hDOP;
 						gps_data.epv =  packet->vDOP;
+						pthread_mutex_unlock(&gps_data.mutex);
 
 						ret = 1;
 					}
@@ -263,8 +268,11 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						timeinfo.tm_sec = packet->sec;
 
 						time_t epoch = mktime(&timeinfo);
+
+						pthread_mutex_lock(&gps_data.mutex);
 						gps_data.time_usec = epoch * 1e6; //TODO: test this
 						gps_data.time_usec += packet->time_nanoseconds*1e-3;
+						pthread_mutex_unlock(&gps_data.mutex);
 
 						ret = 1;
 					}
@@ -303,6 +311,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						gps_bin_nav_svinfo_part2_packet_t* packet_part2;
 						char gps_rx_buffer_part2[length_part2]; //for temporal storage
 
+						pthread_mutex_lock(&gps_data.mutex);
 						int i;
 						for(i = 0; i < packet_part1->numCh; i++) //for each channel
 						{
@@ -354,6 +363,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 							gps_data.satellite_elevation[i] = 0;
 							gps_data.satellite_azimuth[i] = 0;
 						}
+						pthread_mutex_unlock(&gps_data.mutex);
 
 						ret = 1;
 					}
@@ -377,8 +387,10 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
 					{
+						pthread_mutex_lock(&gps_data.mutex);
 						gps_data.vel = (uint16_t)packet->speed;
 						gps_data.cog = (uint16_t)((float)(packet->heading) *1e-3) ;
+						pthread_mutex_unlock(&gps_data.mutex);
 
 						ret = 1;
 					}
@@ -403,7 +415,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					//Check if checksum is valid and the store the gps information
 					if (ubx_state->ck_a == gps_rx_buffer[ubx_state->rx_count -1] && gps_rx_buffer[ubx_state->rx_count])
 					{
+						pthread_mutex_lock(&gps_data.mutex);
 						gps_data.satellites_visible = packet->numVis;
+						pthread_mutex_unlock(&gps_data.mutex);
 
 						ret = 1;
 					}

@@ -7,33 +7,30 @@
 
 #ifndef GPS_H_
 #define GPS_H_
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
-#include <termios.h>
+
+#include <nuttx/config.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <signal.h>
+#include <fcntl.h>
+#include "nmealib/nmea/nmea.h" // the nmea library
+#include "nmea_helper.h" //header files for interacting with the nmea library
+#include "custom.h" //header files for the custom protocol for the mediatek diydrones chip
+#include "ubx.h" //header files for the ubx protocol
+#include <mqueue.h>
+#include "../mq_config.h"
+#include "../gps_data_t.h" //for storage of gps information
+#include <termios.h>
 
 
-int open_port(char * port)
-{
-	int fd; // File descriptor for the port
 
-	// Open serial port
-	// O_RDWR - Read and write
-	// O_NOCTTY - Ignore special chars like CTRL-C
-	fd = open(port, O_CREAT|O_RDWR | O_NOCTTY);
-	if (fd == -1)
-	{
-	   // Could not open the port.
-	   printf("Error: could not open the GPS port\n");
-	   return(-1);
-	}
-	return (fd);
-}
+int open_port(char * port);
 
 
-void close_port(int fd)
-{
-       close(fd);
-}
+void close_port(int fd);
+
 
 #endif /* GPS_H_ */

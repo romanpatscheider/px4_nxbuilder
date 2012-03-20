@@ -221,7 +221,7 @@ uint8_t NUTTX_SPEKTRUM_Rx(int fd, uint8_t * buf, uint8_t buf_len)
     receive_timer = 0;
   }
   //Sync between Frames
-  NUTTX_SPEKTRUM_Supervisor();
+//  NUTTX_SPEKTRUM_Supervisor();
 
   /* put the channel data in the buf variable */
   buf = channel_data;

@@ -112,7 +112,10 @@ int spektrum_main(int argc, char *argv[]) {
         n_reads = atoi(argv[2]);
         while(n_reads){
       
-         if(NUTTX_SPEKTRUM_Rx(fd, rx_buf, NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS)){
+         int ret;
+         ret = NUTTX_SPEKTRUM_Rx(fd, rx_buf, NUTTX_SPEKTRUM_NUMBER_OF_CHANNELS)
+
+         if (ret){
             printf("No succes receiving Sbus channel data\n");
             return ERROR;
           }
@@ -130,7 +133,7 @@ int spektrum_main(int argc, char *argv[]) {
       }
     }
     else {
-      printf("Usage: spektrum_test <cmd> <value>\n Availabale commands:\t bind, read");
+      printf("Usage: spektrum_test <cmd> <value>\n Availabale commands:\t bind, read\n");
       return ERROR;
   
   

@@ -65,7 +65,7 @@ int sensors_main(int argc, char *argv[])
 	//wait for threads to complete:
 	pthread_join(gyro_accelerometer_thread, NULL);
     pthread_join(magnetometer_thread, NULL);
-//    pthread_join(pressure_sensor_thread, NULL);
+//  pthread_join(pressure_sensor_thread, NULL);
 
 
 
@@ -88,7 +88,7 @@ static void *gyro_accelerometer_loop(void * arg)
 	uint8_t read_success = 0;
 
 	/* open gyro */
-	fd_gyro = open("/dev/l3gd20", O_RDONLY | O_NONBLOCK); //
+	fd_gyro = open("/dev/l3gd20", O_RDONLY ); //| O_NONBLOCK
 	if (fd_gyro < 0)
 	{
 		printf("L3GD20: open fail\n");
@@ -199,8 +199,10 @@ static void *magnetometer_loop(void * arg)
 	int	ret_magnetometer;
 	int16_t buf_magnetometer[3];
 
-//	int counter = 0; // only printf every 20iest
-	uint8_t read_success = 0;
+	int counter = 0; // only printf every 20iest
+
+	printf("\tbefore 10seconds of sleep\n");
+	sleep(10); // does not work
 
 	/* open magnetometer */
 	fd_magnetometer = open("/dev/hmc5883l", O_RDONLY);
@@ -209,6 +211,8 @@ static void *magnetometer_loop(void * arg)
 		printf("\thmc5883l: open fail\n");
 //		return ERROR;
 	}
+	usleep(1000000); // does not work, something is wrong
+
 	/* configure magnetometer */ // to be used or not to be used?
 	//	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
 	//	    ioctl(fd, LIS331_SETRANGE, LIS331_RANGE_4G)) {
@@ -225,7 +229,7 @@ static void *magnetometer_loop(void * arg)
 		if (ret_magnetometer != sizeof(buf_magnetometer))
 		{
 			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
-			return ERROR;
+//			return ERROR;
 		}
 		else
 		{
@@ -236,14 +240,14 @@ static void *magnetometer_loop(void * arg)
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 			global_data_broadcast(&global_data_sensors_raw.access_conf);
 
-//			if(counter%20==0)
-//			{
-//				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
-//			}
+			if(counter%20==0)
+			{
+				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
+			}
 		}
 
-//		counter++;
-		usleep(20000); // 50 Hz !?
+		counter++;
+		usleep(25000); // 50 Hz !?
 	}
 }
 
@@ -255,7 +259,6 @@ static void *pressure_sensor_loop(void * arg)
 	int16_t buf_pressure_sensor[2];
 
 	int counter = 0; // only printf every 20iest
-	uint8_t read_success = 0;
 
 	/* open pressure sensor */
 	fd_pressure_sensor = open("/dev/ms5611", O_RDONLY);

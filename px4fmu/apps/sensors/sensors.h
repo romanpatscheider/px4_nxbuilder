@@ -17,6 +17,7 @@
 #include <arch/board/drv_bma180.h>
 #include <arch/board/drv_l3gd20.h>
 #include <arch/board/drv_hmc5883l.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <fcntl.h>

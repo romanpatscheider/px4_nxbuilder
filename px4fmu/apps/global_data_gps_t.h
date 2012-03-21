@@ -1,4 +1,6 @@
-//Structure for storage of shared variables
+/* Structure for storage of shared variables */
+
+/* global_data_gps  stores the gps sensor values */
 
 #ifndef GLOBAL_DATA_GPS_T_H_ //adjust this line!
 #define GLOBAL_DATA_GPS_T_H_ //adjust this line!

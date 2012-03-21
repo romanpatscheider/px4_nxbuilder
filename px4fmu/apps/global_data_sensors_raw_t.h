@@ -1,4 +1,6 @@
-//Structure for storage of shared variables
+/* Structure for storage of shared variables */
+
+/* global_data_sensors_raw stores the raw sensor values for gyro, accelerometer, magnetometer and pressure sensor */
 
 #ifndef GLOBAL_DATA_SENSORS_RAW_T_H_ //adjust this line!
 #define GLOBAL_DATA_SENSORS_RAW_T_H_ //adjust this line!
@@ -11,10 +13,7 @@ typedef struct
 
 	access_conf_t access_conf; //don't remove this line!
 
-	/* use of a counter and timestamp recommended (but not necessary) */
-
-	uint16_t counter; //incremented by the writing thread everytime new data is stored
-	uint32_t timestamp; //in milliseconds
+	/* global_data_sensors_raw has individual counters for each sensor --> no counter and timestamp defined here */
 
 	/* Actual data, this is specific to the type of data which is stored in this struct */
 

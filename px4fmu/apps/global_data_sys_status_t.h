@@ -1,4 +1,6 @@
-//Structure for storage of shared variables
+/* Structure for storage of shared variables */
+
+/* global_data_sys_status stores the system status bitfields (see SYS_STATUS mavlink message) */
 
 #ifndef GLOBAL_DATA_SYS_STATUS_T_H_ //adjust this line!
 #define GLOBAL_DATA_SYS_STATUS_T_H_ //adjust this line!
@@ -10,6 +12,11 @@ typedef struct
 	/* Struct which stores the access configuration, this is the same for all shared structs */
 
 	access_conf_t access_conf; //don't remove this line!
+
+	/* use of a counter and timestamp recommended (but not necessary) */
+
+	uint16_t counter; //incremented by the writing thread everytime new data is stored
+	uint32_t timestamp; //in milliseconds
 
 	/* Actual data, this is specific to the type of data which is stored in this struct */
 

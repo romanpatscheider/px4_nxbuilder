@@ -17,6 +17,7 @@
 //UBX Protocoll definitions (this is the subset of the messages that are parsed)
 #define UBX_CLASS_NAV 0x01
 #define UBX_CLASS_RXM 0x02
+#define UBX_CLASS_ACK 0x05
 #define UBX_MESSAGE_NAV_POSLLH 0x02
 #define UBX_MESSAGE_NAV_SOL 0x06
 #define UBX_MESSAGE_NAV_TIMEUTC 0x21
@@ -24,6 +25,9 @@
 #define UBX_MESSAGE_NAV_SVINFO 0x30
 #define UBX_MESSAGE_NAV_VELNED 0x12
 #define UBX_MESSAGE_RXM_SVSI 0x20
+#define UBX_MESSAGE_ACK_ACK 0x01
+#define UBX_MESSAGE_ACK_NAK 0x00
+
 
 // ************
 // the structures of the binary packets
@@ -182,7 +186,8 @@ enum UBX_MESSAGE_CLASSES
 {
 	CLASS_UNKNOWN = 0,
 	NAV = 1,
-	RXM = 2
+	RXM = 2,
+	ACK = 3
 };
 
 enum UBX_MESSAGE_IDS
@@ -195,8 +200,9 @@ enum UBX_MESSAGE_IDS
 	NAV_DOP = 4,
 	NAV_SVINFO = 5,
 	NAV_VELNED = 6,
-	RXM_SVSI = 7
-
+	RXM_SVSI = 7,
+	ACK_ACK = 8,
+	ACK_NAK = 9
 };
 
 enum UBX_DECODE_STATES
@@ -227,6 +233,8 @@ typedef struct
     enum UBX_MESSAGE_CLASSES  message_class;
     enum UBX_MESSAGE_IDS message_id;
 
+    uint8_t last_ack_message[2];
+
 }  __attribute__((__packed__)) type_gps_bin_ubx_state;
 
 typedef type_gps_bin_ubx_state gps_bin_ubx_state_t;
@@ -239,7 +247,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 
 void calculate_ubx_checksum(uint8_t * message, uint8_t length);
 
-int configure_gps_ubx(int fd);
+int configure_gps_ubx(int fd, gps_bin_ubx_state_t * ubx_state);
 
 int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state);
 

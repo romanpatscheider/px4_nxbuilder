@@ -144,7 +144,7 @@ int gps_main(int argc, char *argv[])
     	printf("ubx mode\n");
     	//set parameters for ubx
 
-		if (configure_gps_ubx(fd) != 0)
+		if (configure_gps_ubx(fd,ubx_state) != 0)
 		{
 			printf("Configuration of gps module to ubx failed\n");
 

@@ -186,6 +186,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.lat = packet->lat;
 						global_data_gps.lon = packet->lon;
 						global_data_gps.alt = packet->height_msl;
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 						ret = 1;
 					}
@@ -210,6 +211,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					{
 						global_data_lock(&global_data_gps.access_conf);
 						global_data_gps.fix_type = packet->gpsFix;
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
 						ret = 1;
@@ -236,6 +238,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_lock(&global_data_gps.access_conf);
 						global_data_gps.eph =  packet->hDOP;
 						global_data_gps.epv =  packet->vDOP;
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
 						ret = 1;
@@ -272,6 +275,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_lock(&global_data_gps.access_conf);
 						global_data_gps.time_usec = epoch * 1e6; //TODO: test this
 						global_data_gps.time_usec += packet->time_nanoseconds*1e-3;
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
 						ret = 1;
@@ -363,6 +367,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 							global_data_gps.satellite_elevation[i] = 0;
 							global_data_gps.satellite_azimuth[i] = 0;
 						}
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
 						ret = 1;
@@ -390,6 +395,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_lock(&global_data_gps.access_conf);
 						global_data_gps.vel = (uint16_t)packet->speed;
 						global_data_gps.cog = (uint16_t)((float)(packet->heading) *1e-3) ;
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
 						ret = 1;
@@ -417,6 +423,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					{
 						global_data_lock(&global_data_gps.access_conf);
 						global_data_gps.satellites_visible = packet->numVis;
+						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
 						ret = 1;

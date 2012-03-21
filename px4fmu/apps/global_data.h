@@ -48,6 +48,7 @@ int global_data_wait(access_conf_t * access_conf);
 /* Send notification to all processes which are waiting that new data is available (no lock/unlock required here) */
 void global_data_broadcast(access_conf_t * access_conf);
 
-
+/* Get a timestamp in milliseconds, use this to set the timestamp in the shared struct (if available) */
+uint64_t global_data_get_timestamp_milliseconds();
 
 #endif /* GLOBAL_DATA_H_ */

@@ -225,7 +225,7 @@ static void *magnetometer_loop(void * arg)
 		if (ret_magnetometer != sizeof(buf_magnetometer))
 		{
 			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
-//			return ERROR;
+			return ERROR;
 		}
 		else
 		{

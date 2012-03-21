@@ -41,7 +41,7 @@ void global_data_broadcast(access_conf_t * access_conf)
 	pthread_cond_broadcast(&(access_conf->cond));
 }
 
-uint64_t global_data_get_timestamp_milliseconds()
+uint64_t global_data_get_timestamp_milliseconds(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);

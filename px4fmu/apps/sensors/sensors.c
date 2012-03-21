@@ -60,12 +60,12 @@ int sensors_main(int argc, char *argv[])
 	//create pthreads
 	pthread_create (&gyro_accelerometer_thread, NULL, gyro_accelerometer_loop, NULL);
 	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
-	pthread_create (&pressure_sensor_thread, NULL, pressure_sensor_loop, NULL);
+//	pthread_create (&pressure_sensor_thread, NULL, pressure_sensor_loop, NULL);
 
 	//wait for threads to complete:
 	pthread_join(gyro_accelerometer_thread, NULL);
     pthread_join(magnetometer_thread, NULL);
-    pthread_join(pressure_sensor_thread, NULL);
+//    pthread_join(pressure_sensor_thread, NULL);
 
 
 
@@ -84,7 +84,7 @@ static void *gyro_accelerometer_loop(void * arg)
 	int16_t buf_gyro[3];
 	int16_t buf_accelerometer[3];
 
-	int counter = 0; // only printf every 20iest
+//	int counter = 0; // only printf every 20iest
 	uint8_t read_success = 0;
 
 	/* open gyro */
@@ -153,10 +153,10 @@ static void *gyro_accelerometer_loop(void * arg)
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 
 			/* printf to debug, every 20iest time */
-			if(counter%20==0)
-    		{
-    			printf("\tl3gd20 values #1: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.gyro_raw[0], global_data_sensors_raw.gyro_raw[1], global_data_sensors_raw.gyro_raw[2]);
-    		}
+//			if(counter%20==0)
+//    		{
+//    			printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.gyro_raw[0], global_data_sensors_raw.gyro_raw[1], global_data_sensors_raw.gyro_raw[2]);
+//    		}
     	}
 
     	/* check accelerometer result */
@@ -174,10 +174,10 @@ static void *gyro_accelerometer_loop(void * arg)
 			global_data_sensors_raw.accelerometer_raw_counter++;
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 
-    		if(counter%20==0)
-    		{
-    			printf("\tbma180 values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.accelerometer_raw[0], global_data_sensors_raw.accelerometer_raw[1], global_data_sensors_raw.accelerometer_raw[2]);
-    		}
+//    		if(counter%20==0)
+//    		{
+//    			printf("\tbma180 values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.accelerometer_raw[0], global_data_sensors_raw.accelerometer_raw[1], global_data_sensors_raw.accelerometer_raw[2]);
+//    		}
     	}
 
     	if(1==read_success) // broadcast if at least one new sensor reading is available
@@ -185,7 +185,7 @@ static void *gyro_accelerometer_loop(void * arg)
     		global_data_broadcast(&global_data_sensors_raw.access_conf);
     	}
 
-    	counter++;
+//    	counter++;
     	usleep(2000); // 500 Hz !?
     }
 
@@ -199,7 +199,7 @@ static void *magnetometer_loop(void * arg)
 	int	ret_magnetometer;
 	int16_t buf_magnetometer[3];
 
-	int counter = 0; // only printf every 20iest
+//	int counter = 0; // only printf every 20iest
 	uint8_t read_success = 0;
 
 	/* open magnetometer */
@@ -236,13 +236,13 @@ static void *magnetometer_loop(void * arg)
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 			global_data_broadcast(&global_data_sensors_raw.access_conf);
 
-			if(counter%20==0)
-			{
-				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
-			}
+//			if(counter%20==0)
+//			{
+//				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
+//			}
 		}
 
-		counter++;
+//		counter++;
 		usleep(20000); // 50 Hz !?
 	}
 }
@@ -293,13 +293,13 @@ static void *pressure_sensor_loop(void * arg)
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 			global_data_broadcast(&global_data_sensors_raw.access_conf);
 
-			if(counter%20==0)
-			{
-				printf("\tms5611 values: pressure raw:%d\ttemp raw:%d\n", global_data_sensors_raw.pressure_sensor_raw[0], global_data_sensors_raw.pressure_sensor_raw[1]);
-			}
+//			if(counter%20==0)
+//			{
+//				printf("\tms5611 values: pressure raw:%d\ttemp raw:%d\n", global_data_sensors_raw.pressure_sensor_raw[0], global_data_sensors_raw.pressure_sensor_raw[1]);
+//			}
 		}
 
-		counter++;
+//		counter++;
 		usleep(20000); // 50 Hz !?
 	}
 }

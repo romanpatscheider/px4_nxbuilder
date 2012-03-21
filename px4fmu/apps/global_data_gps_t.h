@@ -11,6 +11,11 @@ typedef struct
 
 	access_conf_t access_conf; //don't remove this line!
 
+	/* use of a counter and timestamp recommended (but not necessary) */
+
+	uint16_t counter; //incremented by the writing thread everytime new data is stored
+	uint32_t timestamp; //in milliseconds
+
 	/* Actual data, this is specific to the type of data which is stored in this struct */
 
 	//***** Start: Add your variables here *****

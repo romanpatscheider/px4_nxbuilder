@@ -16,7 +16,7 @@ typedef struct
 	/* use of a counter and timestamp recommended (but not necessary) */
 
 	uint16_t counter; //incremented by the writing thread everytime new data is stored
-	uint32_t timestamp; //in milliseconds
+	uint64_t timestamp; //in milliseconds since system start, is set whenever the writing thread stores new data
 
 	/* Actual data, this is specific to the type of data which is stored in this struct */
 

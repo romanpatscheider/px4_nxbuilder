@@ -40,3 +40,10 @@ void global_data_broadcast(access_conf_t * access_conf)
 {
 	pthread_cond_broadcast(&(access_conf->cond));
 }
+
+uint64_t global_data_get_timestamp_milliseconds()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return ((uint64_t)tv.tv_sec) * 1000 + tv.tv_usec * 1e-3;
+}

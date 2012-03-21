@@ -54,13 +54,6 @@ int gps_main(int argc, char *argv[])
     printf("Hello, GPS!\n");
     usleep(100000);
 
-    // Define attributes for message queue to send GPS information
-//    struct mq_attr attr;
-//    attr.mq_flags = 0;
-//    attr.mq_maxmsg = 10;
-//    attr.mq_msgsize = 2;
-//    attr.mq_curmsgs = 0;
-
     /* initialize shared data structures */
     global_data_init(&global_data_gps.access_conf);
     global_data_init(&global_data_sys_status.access_conf);
@@ -161,6 +154,8 @@ int gps_main(int argc, char *argv[])
 			global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
 			global_data_sys_status.onboard_control_sensors_enabled &= ~(1 << 5);
 			global_data_sys_status.onboard_control_sensors_health &= ~(1 << 5);
+			global_data_sys_status.counter++;
+			global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
 			global_data_unlock(&global_data_sys_status.access_conf);
 		}
 		else
@@ -173,6 +168,8 @@ int gps_main(int argc, char *argv[])
 			global_data_lock(&global_data_sys_status.access_conf);
 			global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
 			global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
+			global_data_sys_status.counter++;
+			global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
 			global_data_unlock(&global_data_sys_status.access_conf);
 		}
 
@@ -224,7 +221,10 @@ int gps_main(int argc, char *argv[])
 		{
 			global_data_lock(&global_data_sys_status.access_conf);
 			global_data_sys_status.onboard_control_sensors_health |= 1 << 5;
+			global_data_sys_status.counter++;
+			global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
 			global_data_unlock(&global_data_sys_status.access_conf);
+
 			first_received = 1;
 		}
 

@@ -23,7 +23,13 @@
 #include "../global_data_sensors_raw_t.h"
 
 pthread_t gyro_accelerometer_thread;
+pthread_t magnetometer_thread;
+pthread_t pressure_sensor_thread;
 
 static void *gyro_accelerometer_loop(void * arg);
+
+static void *magnetometer_loop(void * arg);
+
+static void *pressure_sensor_loop(void * arg);
 
 #endif /* SENSORS_H_ */

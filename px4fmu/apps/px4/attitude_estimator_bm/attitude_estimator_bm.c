@@ -154,10 +154,20 @@ static int attitude_estimator_bm_read_sensors()
 		return ERROR;
 	}
 
-	ret = read(mag, mag_raw, sizeof(mag_raw));
-	if (ret != sizeof(mag_raw)) {
-		printf("Mag read failed!\n");
+	static int magcounter = 1;
+
+	// Read out every 5th time
+	if (magcounter == 5)
+	{
+		ret = read(mag, mag_raw, sizeof(mag_raw));
+		if (ret != sizeof(mag_raw)) {
+			printf("Mag read failed!\n");
+		}
+		magcounter = 0;
 	}
+	magcounter++;
+
+	//printf("RAW: %d, %d, %d, %d, %d, %d, %d, %d, %d\n", acc_raw[0], acc_raw[1], acc_raw[2], gyro_raw[0], gyro_raw[1], gyro_raw[2], mag_raw[0], mag_raw[1], mag_raw[2]);
 
 	// XXX determine range overflows based on magic sensor values for these cases
 
@@ -231,7 +241,9 @@ int attitude_estimator_bm_main(int argc, char *argv[])
     	/* send out as message queue */
 
     	// XXX Remove
-    	printf("ATT:\t%d\t%d\t%d\n", euler.x*57, euler.y*57, euler.z*57);
+    	printf("ATT:\t%d\t%d\t%d\n", (int)(euler.x*57), (int)(euler.y*57), (int)(acc_raw[0]));
+    	//printf("ABC: %d - %d - %d\n", 0);
+    	//printf("RAW X:\t%d\t%d\t%d\n", 0, 0, 0);//gyro_raw[0], acc_raw[0], mag_raw[0]);
 
     	/* measure how long the calculations took,
     	 * sleep this amount of time less.
@@ -247,7 +259,7 @@ int attitude_estimator_bm_main(int argc, char *argv[])
     	last_run = now;
     	if (time_elapsed < loop_interval)
     	{
-    		usleep(loop_interval - time_elapsed);
+    		//usleep(loop_interval - time_elapsed);
     	}
     	else
     	{
@@ -261,6 +273,8 @@ int attitude_estimator_bm_main(int argc, char *argv[])
 
     		overloadcounter++;
     	}
+
+    	usleep(5000);
 
     }
     

@@ -26,10 +26,10 @@
 #include "../global_data.h"
 #include <termios.h>
 
+#define APPNAME "Gps"
 
 
 int open_port(char * port);
-
 
 void close_port(int fd);
 

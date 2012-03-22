@@ -143,12 +143,12 @@ void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool sele
 	case PX4_SPIDEV_GYRO:
 		/* Making sure the other peripheral is not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_GYRO, !selected);
-		//stm32_gpiowrite(GPIO_SPI_CS_ACCEL, selected);
+		stm32_gpiowrite(GPIO_SPI_CS_ACCEL, selected);
 		break;
 	case PX4_SPIDEV_ACCEL:
 		/* Making sure the other peripheral is not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_ACCEL, !selected);
-		//stm32_gpiowrite(GPIO_SPI_CS_GYRO, selected);
+		stm32_gpiowrite(GPIO_SPI_CS_GYRO, selected);
 		break;
 	default:
 		spidbg("devid: %d - unexpected\n", devid);

@@ -121,7 +121,7 @@ int nsh_archinitialize(void)
   spi1 = up_spiinitialize(1);
   if (!spi1)
   {
-	  message("nsh_archinitialize: Failed to initialize SPI port 0\n");
+	  message("nsh_archinitialize: Failed to initialize SPI port 1\n");
 	  up_ledon(LED_AMBER);
 	  return -ENODEV;
   }
@@ -135,7 +135,7 @@ int nsh_archinitialize(void)
   SPI_SELECT(spi1, PX4_SPIDEV_ACCEL, false);
   usleep(20);
 
-  message("nsh_archinitialize: Successfully initialized SPI port 0\n");
+  message("nsh_archinitialize: Successfully initialized SPI port 1\n");
 
   int gyro_attempts = 1;
   int gyro_ok = 0;
@@ -151,13 +151,13 @@ int nsh_archinitialize(void)
   int acc_attempts = 1;
   int acc_ok = 0;
 
-//  while (acc_attempts < 10)
-//  {
-//	  acc_ok = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
-//	  acc_attempts++;
-//	  if (acc_ok == 0) break;
-//	  usleep(50);
-//  }
+  while (acc_attempts < 10)
+  {
+	  acc_ok = bma180_attach(spi1, PX4_SPIDEV_ACCEL);
+	  acc_attempts++;
+	  if (acc_ok == 0) break;
+	  usleep(50);
+  }
 
   // FIXME Report back sensor status
   if (acc_ok || gyro_ok)

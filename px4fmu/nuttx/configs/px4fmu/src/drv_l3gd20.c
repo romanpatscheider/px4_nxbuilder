@@ -93,7 +93,7 @@
 
 #define REG4_BDU					(1<<7)
 #define REG4_BLE					(1<<6)
-#define REG4_SPI_3WIRE				(1<<0)
+//#define REG4_SPI_3WIRE				(1<<0)
 
 #define REG5_FIFO_ENABLE			(1<<6)
 #define REG5_REBOOT_MEMORY			(1<<7)
@@ -188,7 +188,7 @@ set_rate(uint8_t rate)
 }
 
 static bool
-read_fifo(uint16_t *data)
+read_fifo(int16_t *data)
 {
 	struct {					/* status register and data as read back from the device */
 		uint8_t		cmd;
@@ -205,6 +205,10 @@ read_fifo(uint16_t *data)
 	SPI_LOCK(dev.spi, true);
 
 	SPI_SELECT(dev.spi, dev.spi_id, true);
+
+	read_reg(ADDR_WHO_AM_I);
+
+
 	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
 	SPI_SELECT(dev.spi, dev.spi_id, false);
 
@@ -222,7 +226,7 @@ l3gd20_read(struct file *filp, char *buffer, size_t buflen)
 {
 	/* if the buffer is large enough, and data are available, return success */
 	if (buflen >= 6) {
-		if (read_fifo((uint16_t *)buffer))
+		if (read_fifo((int16_t *)buffer))
 			return 6;
 
 		/* no data */
@@ -285,26 +289,36 @@ l3gd20_attach(struct spi_dev_s *spi, int spi_id)
 		/* set default configuration */
 		write_reg(ADDR_CTRL_REG2, 0);			/* disable high-pass filters */
 		write_reg(ADDR_CTRL_REG3, 0);			/* no interrupts - we don't use them */
-		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
-		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
+		write_reg(ADDR_CTRL_REG5, 0);
+
+		//		write_reg(ADDR_CTRL_REG5, 0 | REG5_FIFO_ENABLE);	  /* disable wake-on-interrupt */
+//		write_reg(ADDR_FIFO_CTRL_REG, FIFO_CTRL_STREAM_MODE); /* Enable FIFO, old data is overwritten */
 
 		if ((set_range(L3GD20_RANGE_500DPS) != 0) ||
-		(set_rate(L3GD20_RATE_760HZ_LP_50HZ) != 0))	/* takes device out of low-power mode */
+				(set_rate(L3GD20_RATE_760HZ) != 0))	/* takes device out of low-power mode */
 		{
+			SPI_LOCK(dev.spi, false);
 			errno = EIO;
 		} else {
+			SPI_LOCK(dev.spi, false);
+			/* Read out the first few funky values */
+			int16_t dummy[3];
+			read_fifo(dummy);
+			read_fifo(dummy);
+			read_fifo(dummy);
 
-		/* make ourselves available */
-		register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
+			/* make ourselves available */
+			register_driver("/dev/l3gd20", &l3gd20_fops, 0666, NULL);
 
-		result = 0;
+			result = 0;
 		}
 
 	} else {
+		SPI_LOCK(dev.spi, false);
 		errno = EIO;
 	}
 
-	SPI_LOCK(dev.spi, false);
+
 
 	return result;
 }

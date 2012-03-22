@@ -50,11 +50,10 @@ endif
 
 APPNAME		= mavlink
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-#STACKSIZE	= 1400
-STACKSIZE	= 8000
+STACKSIZE	= 1400
 
 
-CFLAGS		+= -I $(PWD)/mavlink/include
+CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
 CSRCS		= mavlink.c
@@ -102,7 +101,7 @@ context: .context
 
 # Mavlink includes
 include:
-	@./generate.sh
+	#@./generate.sh
 
 # Create dependencies
 

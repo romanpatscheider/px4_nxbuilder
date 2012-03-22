@@ -41,7 +41,6 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <arch/board/board.h>
 
 #include "nuttx_spektrum.h"
 

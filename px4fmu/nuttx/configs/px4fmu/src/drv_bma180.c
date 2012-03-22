@@ -73,10 +73,13 @@
 #define ADDR_CTRL_REG0			0x0D
 #define ADDR_CTRL_REG1			0x0E
 #define ADDR_CTRL_REG2			0x0F
+#define ADDR_BWTCS				0x20
 #define ADDR_CTRL_REG3			0x21
 #define ADDR_CTRL_REG4			0x22
+#define ADDR_OLSB1				0x35
 
 #define ADDR_ACC_X_LSB			0x02
+#define ADDR_ACC_Z_MSB			0x07
 #define ADDR_TEMPERATURE		0x08
 
 #define ADDR_STATUS_REG1		0x09
@@ -85,40 +88,31 @@
 #define ADDR_STATUS_REG4		0x0C
 
 #define ADDR_RESET				0x10
+#define SOFT_RESET				0xB6
 
-//#define ADDR_CTRL_REG1		0x20		/* sample rate constants are in the public header */
-//#define REG1_POWER_NORMAL		(1<<5)
-//#define REG1_RATE_MASK			(3<<3)
-//#define REG1_Z_ENABLE			(1<<2)
-//#define REG1_Y_ENABLE			(1<<1)
-//#define REG1_X_ENABLE			(1<<0)
-//
-//#define ADDR_CTRL_REG2		0x21
-//
-//#define ADDR_CTRL_REG3		0x22
-//
-//#define ADDR_CTRL_REG4		0x23
-//#define REG4_BDU			(1<<7)
-//#define REG4_BIG_ENDIAN			(1<<6)
-//#define REG4_RANGE_MASK			(3<<4)
-//#define REG4_SPI_3WIRE			(1<<0)
-//
-//#define ADDR_CTRL_REG5		0x24
-//
-//#define ADDR_HP_FILTER_RESET	0x25
-//#define ADDR_REFERENCE		0x26
-//#define STATUS_ZYXOR			(1<<7)
-//#define SATAUS_ZOR			(1<<6)
-//#define STATUS_YOR			(1<<5)
-//#define STATUS_XOR			(1<<4)
-//#define STATUS_ZYXDA			(1<<3)
-//#define STATUS_ZDA			(1<<2)
-//#define STATUS_YDA			(1<<1)
-//#define STATUS_XDA			(1<<0)
-//
-//#define ADDR_OUT_X		0x28	/* 16 bits */
-//#define ADDR_OUT_Y		0x2A	/* 16 bits */
-//#define ADDR_OUT_Z		0x2C	/* 16 bits */
+#define ADDR_DIS_I2C         	0x27
+
+#define REG0_WRITE_ENABLE		0x10
+
+#define BWTCS_LP_10HZ			(0<<4)
+#define BWTCS_LP_20HZ			(1<<4)
+#define BWTCS_LP_40HZ			(2<<4)
+#define BWTCS_LP_75HZ			(3<<4)
+#define BWTCS_LP_150HZ			(4<<4)
+#define BWTCS_LP_300HZ			(5<<4)
+#define BWTCS_LP_600HZ			(6<<4)
+#define BWTCS_LP_1200HZ			(7<<4)
+
+#define RANGE_1G				(0<<1)
+#define RANGE_1_5G				(1<<1)
+#define RANGE_2G				(2<<1)
+#define RANGE_3G				(3<<1)
+#define RANGE_4G				(4<<1)
+#define RANGE_8G				(5<<1)
+#define RANGE_16G				(6<<1)
+
+#define RANGEMASK 0x0E
+#define BWMASK 0xF0
 
 
 static ssize_t	bma180_read(struct file *filp, FAR char *buffer, size_t buflen);
@@ -178,27 +172,40 @@ read_fifo(uint16_t *data)
 		int16_t		y;
 		int16_t		z;
 		uint8_t		temp;
-		uint8_t		status1;
-		uint8_t		status2;
-		uint8_t		status3;
-		uint8_t		status4;
 	} __attribute__((packed))	report;
 
 	report.cmd = ADDR_ACC_X_LSB | DIR_READ | ADDR_INCREMENT;
 
 	/* exchange the report structure with the device */
+//	SPI_LOCK(dev.spi, true);
+//	SPI_SELECT(dev.spi, dev.spi_id, true);
+//	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
+//	SPI_SELECT(dev.spi, dev.spi_id, false);
+//	SPI_LOCK(dev.spi, false);
+
 	SPI_LOCK(dev.spi, true);
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	report.x = read_reg(ADDR_ACC_X_LSB);
+	report.x |= (read_reg(ADDR_ACC_X_LSB+1) << 8);
+	report.y = read_reg(ADDR_ACC_X_LSB+2);
+	report.y |= (read_reg(ADDR_ACC_X_LSB+3) << 8);
+	report.z = read_reg(ADDR_ACC_X_LSB+4);
+	report.z |= (read_reg(ADDR_ACC_X_LSB+5) << 8);
+	report.temp = read_reg(ADDR_ACC_X_LSB+6);
 	SPI_LOCK(dev.spi, false);
+
+	// Collect status and remove two top bits
+
+	uint8_t new_data = (report.x & 0x01) + (report.x & 0x01) + (report.x & 0x01);
+	report.x = (report.x >> 2);
+	report.y = (report.y >> 2);
+	report.z = (report.z >> 2);
 
 	data[0] = report.x;
 	data[1] = report.y;
 	data[2] = report.z;
     
-	// FIXME REPORT STATUS PROPERLY
-	return true;//report.status;
+	/* return 1 for all three axes new */
+	return (new_data > 2);
 }
 
 static void
@@ -277,13 +284,37 @@ bma180_attach(struct spi_dev_s *spi, int spi_id)
 	/* verify that the device is attached and functioning */
 	if (read_reg(ADDR_CHIP_ID) == CHIP_ID) {
         
-		/* set default configuration */
-		//write_reg(ADDR_CTRL_REG2, 0);	/* disable interrupt-generating high-pass filters */
-		//write_reg(ADDR_CTRL_REG3, 0);	/* no interrupts - we don't use them */
-		//write_reg(ADDR_CTRL_REG5, 0);	/* disable wake-on-interrupt */
-        
-		//set_range(LIS331_RANGE_4G);
-		//set_rate(LIS331_RATE_400Hz);	/* takes device out of low-power mode */
+//		write_reg(ADDR_RESET, SOFT_RESET);             // page 48
+//		usleep(12000);                        // wait 12 ms, see page 49
+
+		// Configuring the BMA180
+
+		/* enable writing to chip config */
+		uint8_t ctrl0 = read_reg(ADDR_CTRL_REG0);
+		ctrl0 |= REG0_WRITE_ENABLE;
+		write_reg(ADDR_CTRL_REG0, ctrl0);
+
+		/* disable I2C interface, datasheet page 31 */
+		uint8_t disi2c = read_reg(ADDR_DIS_I2C);
+		disi2c |= 0x01;
+		write_reg(ADDR_DIS_I2C, disi2c);
+
+		/* set bandwidth */
+		uint8_t bwtcs = read_reg(ADDR_BWTCS);
+		bwtcs &= (~BWMASK);
+		bwtcs |= (BWTCS_LP_600HZ);// & BWMASK);
+		write_reg(ADDR_BWTCS, bwtcs);
+
+		/* set range */
+		uint8_t olsb1 = read_reg(ADDR_OLSB1);
+		olsb1 &= (~RANGEMASK);
+		olsb1 |= (RANGE_4G);// & RANGEMASK);
+		write_reg(ADDR_OLSB1, olsb1);
+
+		/* block writing to chip config */
+		ctrl0 = read_reg(ADDR_CTRL_REG0);
+		ctrl0 &= (~REG0_WRITE_ENABLE);
+		write_reg(ADDR_CTRL_REG0, ctrl0);
         
 		/* make ourselves available */
 		register_driver("/dev/bma180", &bma180_fops, 0666, NULL);

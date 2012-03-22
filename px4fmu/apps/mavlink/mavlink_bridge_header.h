@@ -7,7 +7,7 @@
 //use efficient approach, see mavlink_helpers.h
 #define MAVLINK_SEND_UART_BYTES mavlink_send_uart_bytes
  
-#include "mavlink-1.0/mavlink_types.h"
+#include "v1.0/mavlink_types.h"
 
  
 /* Struct that stores the communication settings of this system.
@@ -22,8 +22,8 @@
  */
 extern mavlink_system_t mavlink_system;
 
-FILE * uart_read;
-FILE * uart_write;
+int uart_read;
+int uart_write;
  
 /**
  * @brief Send one char (uint8_t) over a comm channel
@@ -36,35 +36,8 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
 
     if (chan == MAVLINK_COMM_0)
     {
-//
-//		FILE *uart;
-//		uart = fopen("/dev/ttyS0","wb");
-		fwrite (ch, 1, length, uart_write);
-//		fclose(uart);
-
-
+		write (uart_write, ch, length);
     }
 }
-
-/**
- * @brief Read one char (uint8_t) over a comm channel
- *
- * @param chan MAVLink channel to use, usually MAVLINK_COMM_0 = UART0
- * @param ch Character to read
- */
-static inline void comm_receive_ch(mavlink_channel_t chan, 	uint8_t  * ch)
-{
-
-//	uint8_t ch = EOF;
-
-    if (chan == MAVLINK_COMM_0)
-    {
-//    	ch = fgetc (uart_read);
-    	fread ( ch, 1, 1, uart_read );
-    	//printf("Mavlink: read character: %c\n",ch);
-    }
-//    return ch;
-}
-
 
 #endif /* MAVLINK_BRIDGE_HEADER_H */

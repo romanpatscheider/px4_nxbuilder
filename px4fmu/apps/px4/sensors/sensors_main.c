@@ -228,12 +228,13 @@ int sensors_main(int argc, char *argv[])
 
 	// Configure sensors
 	l3gd20_test_configure(spi);
+	bma180_test_configure(spi);
 
 	int i;
 	for (i = 0; i < 10; i++)
 	{
 		l3gd20_test_read(spi);
-		//bma180_test(spi);
+		bma180_test_read(spi);
 		printf("# %d of 10\n", i+1);
 		usleep(50000);
 	}

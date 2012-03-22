@@ -14,10 +14,19 @@
 #include <math.h>
 #include <stdbool.h>
 
+
+//internal definitions (not depending on the ubx protocol
+#define CONFIGURE_UBX_FINISHED 0
+#define CONFIGURE_UBX_MESSAGE_ACKNOWLEDGED 1
+#define CONFIGURE_UBX_MESSAGE_NOT_ACKNOWLEDGED 2
+
+#define APPNAME "gps: ubx"
+
 //UBX Protocoll definitions (this is the subset of the messages that are parsed)
 #define UBX_CLASS_NAV 0x01
 #define UBX_CLASS_RXM 0x02
 #define UBX_CLASS_ACK 0x05
+#define UBX_CLASS_CFG 0x06
 #define UBX_MESSAGE_NAV_POSLLH 0x02
 #define UBX_MESSAGE_NAV_SOL 0x06
 #define UBX_MESSAGE_NAV_TIMEUTC 0x21
@@ -178,6 +187,28 @@ typedef struct
 
 typedef type_gps_bin_rxm_svsi_packet gps_bin_rxm_svsi_packet_t;
 
+typedef struct
+{
+	uint8_t clsID;
+	uint8_t msgId;
+
+	uint8_t ck_a;
+	uint8_t ck_b;
+}  __attribute__((__packed__)) type_gps_bin_ack_ack_packet;
+
+typedef type_gps_bin_ack_ack_packet gps_bin_ack_ack_packet_t;
+
+typedef struct
+{
+	uint8_t clsID;
+	uint8_t msgId;
+
+	uint8_t ck_a;
+	uint8_t ck_b;
+}  __attribute__((__packed__)) type_gps_bin_ack_nak_packet;
+
+typedef type_gps_bin_ack_nak_packet gps_bin_ack_nak_packet_t;
+
 
 // END the structures of the binary packets
 // ************
@@ -216,6 +247,22 @@ enum UBX_DECODE_STATES
 	UBX_DECODE_GOT_LENGTH2 = 6
 };
 
+enum UBX_CONFIG_STATES
+{
+	UBX_CONFIGURE_NOTHING = 0,
+
+	UBX_CONFIGURE_CFG_PRT = 1,
+	UBX_CONFIGURE_CFG_NAV_POSLLH = 2,
+	UBX_CONFIGURE_CFG_NAV_TIMEUTC = 3,
+	UBX_CONFIGURE_CFG_NAV_DOP = 4,
+	UBX_CONFIGURE_CFG_NAV_SVINFO = 5,
+	UBX_CONFIGURE_CFG_NAV_SOL = 6,
+	UBX_CONFIGURE_CFG_NAV_VELNED = 7,
+	UBX_CONFIGURE_CFG_RXM_SVSI = 8,
+
+	UBX_CONFIGURE_FINISHED = 9
+};
+
 typedef struct
 {
 	union {
@@ -233,7 +280,9 @@ typedef struct
     enum UBX_MESSAGE_CLASSES  message_class;
     enum UBX_MESSAGE_IDS message_id;
 
-    uint8_t last_ack_message[2];
+    enum UBX_CONFIG_STATES last_ack_message_received;
+    enum UBX_CONFIG_STATES last_config_message_sent;
+    bool last_config_failed; //set if ack_nak message is received
 
 }  __attribute__((__packed__)) type_gps_bin_ubx_state;
 
@@ -250,6 +299,8 @@ void calculate_ubx_checksum(uint8_t * message, uint8_t length);
 int configure_gps_ubx(int fd, gps_bin_ubx_state_t * ubx_state);
 
 int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state);
+
+int write_config_message_ubx(uint8_t * message, size_t length, int fd);
 
 
 #endif /* UBX_H_ */

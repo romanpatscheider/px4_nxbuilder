@@ -26,7 +26,8 @@
 #include "../global_data.h"
 #include <termios.h>
 
-#define APPNAME "Gps"
+#define APPNAME "gps"
+#define GPS_COUNTER_LIMIT 150
 
 
 int open_port(char * port);

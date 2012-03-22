@@ -96,7 +96,7 @@ int gps_main(int argc, char *argv[])
 	//Initialize GPS stuff
     int buffer_size = 1000;
     nmeaINFO * info = malloc(sizeof(nmeaINFO));
-    uint8_t first_received = 0;
+    bool health_set = false;
 
     //open port (baud rate is set in defconfig file)
 	int fd = open_port(device);
@@ -106,7 +106,7 @@ int gps_main(int argc, char *argv[])
 	}
 	else
 	{
-		printf("\t%s: Could not open port, exciting gps app!\n", APPNAME);
+		printf("\t%s: Could not open port, exiting gps app!\n", APPNAME);
 		sleep(1);
 		return 0;
 	}
@@ -127,17 +127,19 @@ int gps_main(int argc, char *argv[])
 
 
 
-
-
 	if( !strcmp("custom",mode) )
 	{
 		printf("\t%s: custom mode\n",APPNAME);
 //		configure_gps_custom(fd); // ?
 
-		while(1)
-		{
-			//TODO: execute custom read
-		}
+
+//		while(1)
+//
+//		if (configure_gps_ubx(fd, ubx_state) != 0)
+//
+//		{
+//			//TODO: execute custom read
+//		}
 
 	}
 	else if( !strcmp("ubx",mode) )
@@ -147,8 +149,12 @@ int gps_main(int argc, char *argv[])
 
     	//ubx state
 		gps_bin_ubx_state_t * ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
+	   	printf("%s: ubx_state created\n",APPNAME);
 		ubx_decode_init(ubx_state);
 		ubx_state->print_errors = false;
+		ubx_state->last_config_message_sent = UBX_CONFIGURE_NOTHING;
+		ubx_state->last_ack_message_received = UBX_CONFIGURE_NOTHING;
+		ubx_state->last_config_failed = false;
     	int config_not_finished = 1; //is set to 0 as soon as all configurations are completed
     	bool configured = false;
     	uint16_t counter = 0;
@@ -162,12 +168,14 @@ int gps_main(int argc, char *argv[])
 		global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
 		global_data_unlock(&global_data_sys_status.access_conf);
 
+		fflush(fd);
+
     	while(1)
     	{
-    		if(config_not_finished == 1)
+    		if(config_not_finished != 0)
     		{
     			config_not_finished = configure_gps_ubx(fd, ubx_state);
-    			if(config_not_finished == 0) // finished now
+    			if(config_not_finished == CONFIGURE_UBX_FINISHED) // finished now
     			{
     				/* Write shared variable sys_status */
 					global_data_lock(&global_data_sys_status.access_conf);
@@ -178,11 +186,14 @@ int gps_main(int argc, char *argv[])
 					global_data_unlock(&global_data_sys_status.access_conf);
     			}
     		}
-    		read_gps_ubx(fd, gps_rx_buffer, buffer_size, ubx_state);
-    		counter++;
 
-    		/* if this is the first received message set health information */
-			if(config_not_finished == 0 && counter >= 30)
+    		read_gps_ubx(fd, gps_rx_buffer, buffer_size, ubx_state);
+			counter++;
+			printf("counter=%d\n", counter);
+
+//
+    		/* set health to true if config is finished after certain time (only executed once) */
+			if(config_not_finished == 0 && counter >= GPS_COUNTER_LIMIT && false == health_set)
 			{
 				global_data_lock(&global_data_sys_status.access_conf);
 				global_data_sys_status.onboard_control_sensors_health |= 1 << 5;
@@ -190,28 +201,32 @@ int gps_main(int argc, char *argv[])
 				global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
 				global_data_unlock(&global_data_sys_status.access_conf);
 
-				first_received = 1;
+				health_set = true;
+
+				printf("%s: gps configuration successful\n",APPNAME);
 			}
+			else if (config_not_finished != 0 && counter >= GPS_COUNTER_LIMIT)
+			{
+				//reset state machine
+				ubx_decode_init(ubx_state);
+				ubx_state->print_errors = false;
+				ubx_state->last_config_message_sent = UBX_CONFIGURE_NOTHING;
+				ubx_state->last_ack_message_received = UBX_CONFIGURE_NOTHING;
+				ubx_state->last_config_failed = false;
+		    	config_not_finished = 1; //is set to 0 as soon as all configurations are completed
+		    	bool configured = false;
+		    	counter = 0;
+
+
+				printf("%s: gps configuration probably failed, exiting now\n",APPNAME);
+//				sleep(1);
+//				return 0;
+			}
+
+    		/* Inform the other processes that there is new gps data available */
+    		global_data_broadcast(&global_data_gps.access_conf);
     	}
 
-//		if (configure_gps_ubx(fd,ubx_state) != 0)
-//		{
-//			printf("Configuration of gps module to ubx failed\n");
-//
-//
-//
-
-//		}
-//		else
-//		{
-//			printf("Configuration of gps module to ubx successful\n");
-//
-//
-//
-//		}
-//
-//		/* Inform the other processes that there is new gps data available */
-//		global_data_broadcast(&global_data_sys_status.access_conf);
 	}
 	else if( !strcmp("nmea",mode) )
 	{
@@ -258,8 +273,7 @@ int gps_main(int argc, char *argv[])
 
 
 
-		/* Inform the other processes that there is new gps data available */
-		global_data_broadcast(&global_data_gps.access_conf);
+
 
 	}
 

@@ -44,28 +44,39 @@
 global_data_gps_t global_data_gps = {.access_conf.initialized = 0};
 
 /* Threads */
-pthread_t gps_thread;
-pthread_t watchdog_thread;
+pthread_t ubx_thread;
+pthread_t ubx_watchdog_thread;
 
 
 /****************************************************************************
  * Pthread loops
  ****************************************************************************/
 
+static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
+{
+	/* if some values are to old restart the other thread */
+	//TODO:...
+	int i;
+	//for(i = 0; i < UBX_NO_OF_MESSAGES; i++)
+//	{
+		//check all elements of the array last_message_timestamps
+
+	//TODO: Problem: last_message_timestamps is not global...
+//	}
+
+	usleep(200000); //TODO: adjust, make configurable
+}
+
 static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
 		/* Retrieve file descriptor */
 		int fd = *((int *)arg);
-
-
 
 		/* Initialize gps stuff */
 	    int buffer_size = 1000;
 	    nmeaINFO * info = malloc(sizeof(nmeaINFO));
 	    bool health_set = false;
 		char * gps_rx_buffer = malloc(buffer_size*sizeof(char));
-
-
 
 		/* gps parser (nmea) */
 		nmeaPARSER parser;
@@ -332,15 +343,20 @@ int gps_main(int argc, char *argv[])
 		return 0;
 	}
 
-
+//TODO: add mode if here (reads from arguments and configuration, watchdog will look for changes in mode configuration while running (?))
 
     /* create pthreads */
-    pthread_create (&gps_thread, NULL, ubx_loop, (void *)&fd);
-//    pthread_create (&watchdog_thread, NULL, watchdogloop, NULL);
+    pthread_create (&ubx_thread, NULL, ubx_loop, (void *)&fd);
+
+
+    /* wait before starting watchdog */
+
+    sleep(2);
+//    pthread_create (&ubx_watchdog_thread, NULL, ubx_watchdog_loop, NULL);
 
     /* wait for threads to complete */
-	pthread_join(gps_thread, NULL);
-//	pthread_join(watchdog_thread, NULL);
+	pthread_join(ubx_thread, NULL);
+//	pthread_join(ubx_watchdog_thread, NULL);
 
 }
 

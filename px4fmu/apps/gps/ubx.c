@@ -10,7 +10,6 @@
 
 //Definitions for ubx, last two bytes are checksum which is calculated below
 uint8_t UBX_CONFIG_MESSAGE_PRT[] = {0xB5 , 0x62 , 0x06 , 0x00 , 0x14 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0xD0 , 0x08 , 0x00 , 0x00 , 0x80 , 0x25 , 0x00 , 0x00 , 0x07 , 0x00 , 0x01 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0xA0 , 0xA9};
-//uint8_t UBX_CONFIG_MESSAGE_CFG[] = {b5, 62, 06, 00, 01, 00, 01, 08, 22};
 uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_POSLLH[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x02,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x21, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_DOP[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x04,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
@@ -18,7 +17,6 @@ uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_SVINFO[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x0
 uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_SOL[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x06,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_VELNED[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x12,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
 uint8_t UBX_CONFIG_MESSAGE_MSG_RXM_SVSI[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x02, 0x20,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00,   0x00, 0x00};
-//uint8_t UBX_CONFIG_MESSAGE_SAVE[] = {0xB5, 0x62, 0x06, 0x09, 0x0d, 0x00,   0x00, 0x00, 0x00,0x00,   0xFF,0xFF,0x00,0x00,   0x00,0x00,0x00,0x00, 0x07,  0x00,0x00};
 
 void ubx_decode_init(gps_bin_ubx_state_t* ubx_state)
 {
@@ -78,10 +76,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 				ubx_state->decode_state = UBX_DECODE_GOT_CLASS;
 				ubx_state->message_class = RXM;
 			break;
-			case UBX_CLASS_ACK: //ACK
-				ubx_state->decode_state = UBX_DECODE_GOT_CLASS;
-				ubx_state->message_class = ACK;
-			break;
 			default: //unknown class: reset state machine
 				ubx_decode_init(ubx_state);
 			break;
@@ -140,22 +134,6 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					break;
 				}
 				break;
-			case ACK:
-				switch(b)
-				{
-				case UBX_MESSAGE_ACK_ACK:
-					ubx_state->decode_state = UBX_DECODE_GOT_MESSAGEID;
-					ubx_state->message_id = ACK_ACK;
-					break;
-				case UBX_MESSAGE_ACK_NAK:
-					ubx_state->decode_state = UBX_DECODE_GOT_MESSAGEID;
-					ubx_state->message_id = ACK_NAK;
-					break;
-				default: //unknown class: reset state machine, should not happen
-					ubx_decode_init(ubx_state);
-					break;
-				}
-				break;
 			default: //should not happen
 				ubx_decode_init(ubx_state);
 				break;
@@ -207,6 +185,8 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.alt = packet->height_msl;
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
+
+						ubx_state->last_message_timestamps[NAV_POSLLH-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
@@ -233,6 +213,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						ubx_state->last_message_timestamps[NAV_SOL-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
@@ -260,6 +241,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						ubx_state->last_message_timestamps[NAV_DOP-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
@@ -297,6 +279,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						ubx_state->last_message_timestamps[NAV_TIMEUTC-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
@@ -389,6 +372,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						ubx_state->last_message_timestamps[NAV_SVINFO-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
@@ -417,6 +401,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						ubx_state->last_message_timestamps[NAV_VELNED-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
@@ -445,60 +430,12 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						ubx_state->last_message_timestamps[RXM_SVSI-1] = global_data_get_timestamp_milliseconds();
 						ret = 1;
 					}
 					else
 					{
 						printf("RXM_SVSI: checksum invalid\n");
-						ret = 0;
-					}
-					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
-					return ret;
-
-					break;
-				}
-				case ACK_ACK:
-				{
-					printf("GOT ACK_ACK MESSAGE\n");
-					gps_bin_ack_ack_packet_t* packet = (gps_bin_ack_ack_packet_t*) gps_rx_buffer;
-
-					//Check if checksum is valid and the store the gps information
-					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
-					{
-						if(packet->clsID ==UBX_CLASS_CFG)
-						{
-							ubx_state->last_ack_message_received++;
-							ubx_state->last_config_failed = false;
-						}
-//						printf("ACK_ACK: checksum valid\n");
-						ret = 1;
-					}
-					else
-					{
-						printf("ACK_ACK: checksum invalid\n");
-						ret = 0;
-					}
-					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
-					return ret;
-
-					break;
-				}
-				case ACK_NAK:
-				{
-//					printf("GOT ACK_NAK MESSAGE\n");
-					gps_bin_ack_nak_packet_t* packet = (gps_bin_ack_nak_packet_t*) gps_rx_buffer;
-
-					//Check if checksum is valid and the store the gps information
-					if (ubx_state->ck_a == packet->ck_a && ubx_state->ck_b == packet->ck_b)
-					{
-						ubx_state->last_config_failed = true;
-						ret = 1;
-					}
-					else
-					{
-						printf("ACK_NAK: checksum invalid\n");
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
@@ -541,78 +478,48 @@ void calculate_ubx_checksum(uint8_t * message, uint8_t length)
 	message[length-1] = ck_b;
 }
 
-int configure_gps_ubx(int fd, gps_bin_ubx_state_t * ubx_state) //returns CONFIGURE_UBX_FINISHED if finished configuring, CONFIGURE_UBX_MESSAGE_ACKNOWLEDGED if last config message was acknowledged, CONFIGURE_UBX_MESSAGE_NOT_ACKNOWLEDGED if last config message was not acknowledged
+int configure_gps_ubx(int fd)
 {
-//	printf("%s: in configure_gps_ubx\n", APPNAME);
+	int success = 0;
+    size_t result_write;
 
-	/* depending on last acknowledge sent, check if received and then send next */
-	int ret = CONFIGURE_UBX_MESSAGE_NOT_ACKNOWLEDGED;
-	printf("%s: compare %d and %d\n", APPNAME, ubx_state->last_ack_message_received, ubx_state->last_config_message_sent);
-	if(ubx_state->last_ack_message_received == ubx_state->last_config_message_sent)
-	{
-		printf("%s: acknowledged------------------------------------------\n", APPNAME);
-		/* the last config message was acknowledged, send next one */
-		ret = CONFIGURE_UBX_MESSAGE_ACKNOWLEDGED;
-		ubx_state->last_config_message_sent++;
-//		usleep(100000);
-		fflush(fd);
-		switch(ubx_state->last_config_message_sent) //the next message
-		{
-		case UBX_CONFIGURE_CFG_PRT:
-//			printf("%s: write UBX_CONFIG_MESSAGE_PRT", APPNAME);
-//			write_config_message_ubx(UBX_CONFIG_MESSAGE_PRT, sizeof(UBX_CONFIG_MESSAGE_PRT)/sizeof(uint8_t) ,fd);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_PRT, sizeof(UBX_CONFIG_MESSAGE_PRT)/sizeof(uint8_t) ,fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_NAV_POSLLH:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_NAV_POSLLH\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_POSLLH, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_POSLLH)/sizeof(uint8_t), fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_NAV_TIMEUTC:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC)/sizeof(uint8_t), fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_NAV_DOP:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_NAV_DOP\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_DOP, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_DOP)/sizeof(uint8_t), fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_NAV_SVINFO:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_NAV_SVINFO\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_SVINFO, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_SVINFO)/sizeof(uint8_t), fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_NAV_SOL:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_NAV_SOL\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_SOL, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_SOL)/sizeof(uint8_t), fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_NAV_VELNED:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_NAV_VELNED\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_VELNED, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_VELNED)/sizeof(uint8_t), fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_CFG_RXM_SVSI:
-//			printf("%s: write UBX_CONFIG_MESSAGE_MSG_RXM_SVSI\n", APPNAME);
-			if(write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_RXM_SVSI, sizeof(UBX_CONFIG_MESSAGE_MSG_RXM_SVSI)/sizeof(uint8_t),fd) != 0) ubx_state->last_config_message_sent--;
-			break;
-		case UBX_CONFIGURE_FINISHED:
-//			printf("%s: FINISHED\n", APPNAME);
-			ret = CONFIGURE_UBX_FINISHED;
-			break;
-		}
+	//TODO: write this in a loop once it is tested
+	//UBX_CFG_PRT_PART1:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_PRT, sizeof(UBX_CONFIG_MESSAGE_PRT)/sizeof(uint8_t) ,fd);
+	usleep(100000);
 
-	}
-	else
-	{
-		printf("%s: not acknowledged\n", APPNAME);
-		/* the last config message was not acknowledged */
+	//NAV_POSLLH:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_POSLLH, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_POSLLH)/sizeof(uint8_t) ,fd);
+	usleep(100000);
 
-		if(ubx_state->last_config_failed) //got ACK-NAK
-		{
-			printf("ERROR: %s: Got a Message-Not-Acknowledged from the gps device during configuration", APPNAME);
-			ubx_state->last_config_failed = false;
-		}
+	//NAV_TIMEUTC:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC)/sizeof(uint8_t) ,fd);
+	usleep(100000);
 
-		ret = CONFIGURE_UBX_MESSAGE_NOT_ACKNOWLEDGED;
-	}
 
-	return ret;
+	//NAV_DOP:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_DOP, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_DOP)/sizeof(uint8_t) ,fd);
+	usleep(100000);
+
+	//NAV_SOL:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_SOL, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_SOL)/sizeof(uint8_t) ,fd);
+	usleep(100000);
+
+
+	//NAV_SVINFO:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_SVINFO, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_SVINFO)/sizeof(uint8_t) ,fd);
+	usleep(100000);
+
+	//NAV_VELNED:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_VELNED, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_VELNED)/sizeof(uint8_t) ,fd);
+	usleep(100000);
+
+
+	//RXM_SVSI:
+	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_RXM_SVSI, sizeof(UBX_CONFIG_MESSAGE_MSG_RXM_SVSI)/sizeof(uint8_t) ,fd);
+	usleep(100000);
+
+	return 0;
 }
 
 int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state)

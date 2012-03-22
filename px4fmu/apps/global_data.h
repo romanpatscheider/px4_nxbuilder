@@ -49,6 +49,6 @@ int global_data_wait(access_conf_t * access_conf);
 void global_data_broadcast(access_conf_t * access_conf);
 
 /* Get a timestamp in milliseconds, use this to set the timestamp in the shared struct (if available) */
-uint64_t global_data_get_timestamp_milliseconds();
+uint64_t global_data_get_timestamp_milliseconds(void);
 
 #endif /* GLOBAL_DATA_H_ */

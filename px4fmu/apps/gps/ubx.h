@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include "../global_data.h"
 #include "../global_data_gps_t.h" //for storage of gps information
 #include <math.h>
 #include <stdbool.h>
@@ -19,6 +20,7 @@
 #define CONFIGURE_UBX_FINISHED 0
 #define CONFIGURE_UBX_MESSAGE_ACKNOWLEDGED 1
 #define CONFIGURE_UBX_MESSAGE_NOT_ACKNOWLEDGED 2
+#define UBX_NO_OF_MESSAGES 7
 
 #define APPNAME "gps: ubx"
 
@@ -231,9 +233,7 @@ enum UBX_MESSAGE_IDS
 	NAV_DOP = 4,
 	NAV_SVINFO = 5,
 	NAV_VELNED = 6,
-	RXM_SVSI = 7,
-	ACK_ACK = 8,
-	ACK_NAK = 9
+	RXM_SVSI = 7
 };
 
 enum UBX_DECODE_STATES
@@ -245,22 +245,6 @@ enum UBX_DECODE_STATES
 	UBX_DECODE_GOT_MESSAGEID = 4,
 	UBX_DECODE_GOT_LENGTH1 = 5,
 	UBX_DECODE_GOT_LENGTH2 = 6
-};
-
-enum UBX_CONFIG_STATES
-{
-	UBX_CONFIGURE_NOTHING = 0,
-
-	UBX_CONFIGURE_CFG_PRT = 1,
-	UBX_CONFIGURE_CFG_NAV_POSLLH = 2,
-	UBX_CONFIGURE_CFG_NAV_TIMEUTC = 3,
-	UBX_CONFIGURE_CFG_NAV_DOP = 4,
-	UBX_CONFIGURE_CFG_NAV_SVINFO = 5,
-	UBX_CONFIGURE_CFG_NAV_SOL = 6,
-	UBX_CONFIGURE_CFG_NAV_VELNED = 7,
-	UBX_CONFIGURE_CFG_RXM_SVSI = 8,
-
-	UBX_CONFIGURE_FINISHED = 9
 };
 
 typedef struct
@@ -279,10 +263,7 @@ typedef struct
 
     enum UBX_MESSAGE_CLASSES  message_class;
     enum UBX_MESSAGE_IDS message_id;
-
-    enum UBX_CONFIG_STATES last_ack_message_received;
-    enum UBX_CONFIG_STATES last_config_message_sent;
-    bool last_config_failed; //set if ack_nak message is received
+    uint8_t last_message_timestamps[UBX_NO_OF_MESSAGES];
 
 }  __attribute__((__packed__)) type_gps_bin_ubx_state;
 
@@ -296,7 +277,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 
 void calculate_ubx_checksum(uint8_t * message, uint8_t length);
 
-int configure_gps_ubx(int fd, gps_bin_ubx_state_t * ubx_state);
+int configure_gps_ubx(int fd);
 
 int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state);
 

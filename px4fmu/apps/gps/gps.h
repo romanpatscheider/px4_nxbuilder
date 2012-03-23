@@ -26,6 +26,7 @@
 #include "../global_data.h"
 #include <termios.h>
 #include <signal.h>
+#include <unistd.h>
 
 #define APPNAME "gps"
 #define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 2000

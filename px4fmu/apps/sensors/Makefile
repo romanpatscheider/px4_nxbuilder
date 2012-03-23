@@ -48,7 +48,7 @@ endif
 # gps Application
 # TODO: appname can be automatically extracted from the directory name
 
-APPNAME		= gps
+APPNAME		= sensors_old
 PRIORITY	= SCHED_PRIORITY_DEFAULT
 STACKSIZE	= 10000
 

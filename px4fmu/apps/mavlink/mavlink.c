@@ -424,7 +424,6 @@ void handleMessage(mavlink_message_t * msg) {
 			global_data_quad_motors_setpoint.motor_right_ne = quad_motors_setpoint.motor_right_ne;
 			global_data_quad_motors_setpoint.motor_back_se = quad_motors_setpoint.motor_back_se;
 			global_data_quad_motors_setpoint.motor_left_sw = quad_motors_setpoint.motor_left_sw;
-			global_data_quad_motors_setpoint.target_system = quad_motors_setpoint.target_system;
 
 			global_data_quad_motors_setpoint.counter++;
 			global_data_quad_motors_setpoint.timestamp = global_data_get_timestamp_milliseconds();

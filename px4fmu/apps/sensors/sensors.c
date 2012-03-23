@@ -59,12 +59,12 @@ int sensors_main(int argc, char *argv[])
 
 	//create pthreads
 	pthread_create (&gyro_accelerometer_thread, NULL, gyro_accelerometer_loop, NULL);
-	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
+//	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
 //	pthread_create (&pressure_sensor_thread, NULL, pressure_sensor_loop, NULL);
 
 	//wait for threads to complete:
 	pthread_join(gyro_accelerometer_thread, NULL);
-    pthread_join(magnetometer_thread, NULL);
+//    pthread_join(magnetometer_thread, NULL);
 //  pthread_join(pressure_sensor_thread, NULL);
 
 

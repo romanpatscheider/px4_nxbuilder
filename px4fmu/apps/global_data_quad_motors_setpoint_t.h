@@ -26,7 +26,6 @@ typedef struct
 	 uint16_t motor_right_ne; ///< Right motor in + configuration, front right motor in x configuration
 	 uint16_t motor_back_se; ///< Back motor in + configuration, back right motor in x configuration
 	 uint16_t motor_left_sw; ///< Left motor in + configuration, back left motor in x configuration
-	 uint8_t target_system; ///< System ID of the system that should set these motor commands
 
 	//*****END: Add your variables here *****
 

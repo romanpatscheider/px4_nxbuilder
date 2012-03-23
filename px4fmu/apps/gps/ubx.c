@@ -27,6 +27,7 @@ void ubx_decode_init(gps_bin_ubx_state_t* ubx_state)
 	ubx_state->message_class = CLASS_UNKNOWN;
 	ubx_state->message_id = ID_UNKNOWN;
 	ubx_state->payload_size = 0;
+	ubx_state->print_errors = false;
 }
 
 void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b)
@@ -37,7 +38,7 @@ void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b)
 
 
 
-int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state) //adapted from GTOP_BIN_CUSTOM_update_position
+int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state, pthread_mutex_t * watchdog_mutex) //adapted from GTOP_BIN_CUSTOM_update_position
 {
 //	printf("b=%x\n",b);
 		if (ubx_state->decode_state == UBX_DECODE_UNINIT)
@@ -186,7 +187,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[NAV_POSLLH-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -213,7 +216,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[NAV_SOL-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -241,7 +246,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[NAV_DOP-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -279,7 +286,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[NAV_TIMEUTC-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -372,7 +381,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[NAV_SVINFO-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -401,7 +412,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[NAV_VELNED-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -430,7 +443,9 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						global_data_gps.counter++;
 						global_data_unlock(&global_data_gps.access_conf);
 
+						pthread_mutex_lock(watchdog_mutex);
 						ubx_state->last_message_timestamps[RXM_SVSI-1] = global_data_get_timestamp_milliseconds();
+						pthread_mutex_unlock(watchdog_mutex);
 						ret = 1;
 					}
 					else
@@ -470,6 +485,7 @@ int configure_gps_ubx(int fd)
 	//TODO: write this in a loop once it is tested
 	//UBX_CFG_PRT_PART:
 	write_config_message_ubx(UBX_CONFIG_MESSAGE_PRT, sizeof(UBX_CONFIG_MESSAGE_PRT)/sizeof(uint8_t) ,fd);
+
 	usleep(100000);
 
 	//NAV_POSLLH:
@@ -506,7 +522,7 @@ int configure_gps_ubx(int fd)
 
 }
 
-int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state)
+int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state, pthread_mutex_t * watchdog_mutex)
 {
 
 	uint8_t c;
@@ -520,32 +536,32 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_stat
 	// This blocks the task until there is something on the buffer
 	while (read(fd, &c, 1) > 0)
 	{
-//		printf("Read %x\n",c);
-		if (rx_count >= buffer_size)
-		{
-			// The buffer is already full and we haven't found a valid ubx sentence.
-			// Flush the buffer and note the overflow event.
-			gpsRxOverflow++;
-			start_flag = 0;
-			found_cr = 0;
-			rx_count = 0;
-			ubx_decode_init(ubx_state);
-			printf("Buffer full\n");
-		}
-		else
-		{
-			   //gps_rx_buffer[rx_count] = c;
-			   rx_count++;
-
-		}
-
-		int msg_read = ubx_parse(c, gps_rx_buffer, ubx_state);
-
-		if(msg_read > 0)
-		{
-//			printf("Found sequence\n");
-			break;
-		}
+		printf("Read %x\n",c);
+//		if (rx_count >= buffer_size)
+//		{
+//			// The buffer is already full and we haven't found a valid ubx sentence.
+//			// Flush the buffer and note the overflow event.
+//			gpsRxOverflow++;
+//			start_flag = 0;
+//			found_cr = 0;
+//			rx_count = 0;
+//			ubx_decode_init(ubx_state);
+//			printf("Buffer full\n");
+//		}
+//		else
+//		{
+//			   //gps_rx_buffer[rx_count] = c;
+//			   rx_count++;
+//
+//		}
+//
+//		int msg_read = ubx_parse(c, gps_rx_buffer, ubx_state, watchdog_mutex);
+//
+//		if(msg_read > 0)
+//		{
+////			printf("Found sequence\n");
+//			break;
+//		}
 
 	}
 

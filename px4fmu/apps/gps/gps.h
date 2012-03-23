@@ -25,9 +25,24 @@
 #include "../global_data_sys_status_t.h"
 #include "../global_data.h"
 #include <termios.h>
+#include <signal.h>
 
 #define APPNAME "gps"
 #define GPS_COUNTER_LIMIT 150
+#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 1000
+#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 200000
+
+
+/* Threads */
+pthread_t ubx_thread;
+pthread_t ubx_watchdog_thread;
+
+/* Mutexes */
+pthread_mutex_t ubx_mutex;
+
+gps_bin_ubx_state_t * ubx_state;
+
+int gps_fd;
 
 
 int open_port(char * port);

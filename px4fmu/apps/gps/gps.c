@@ -43,28 +43,59 @@
 /* Struct for storage of gps information and transmission to mavlink app  */
 global_data_gps_t global_data_gps = {.access_conf.initialized = 0};
 
-/* Threads */
-pthread_t ubx_thread;
-pthread_t ubx_watchdog_thread;
-
-
 /****************************************************************************
  * Pthread loops
  ****************************************************************************/
 
 static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
+
 	/* if some values are to old restart the other thread */
-	//TODO:...
 	int i;
-	//for(i = 0; i < UBX_NO_OF_MESSAGES; i++)
-//	{
-		//check all elements of the array last_message_timestamps
+	pthread_mutex_lock(&ubx_mutex);
+	bool all_okay = true;
+	uint64_t timestamp_now = global_data_get_timestamp_milliseconds();
+	for(i = 0; i < UBX_NO_OF_MESSAGES; i++)
+	{
+		if(timestamp_now - ubx_state->last_message_timestamps[i] > GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS)
+		{
+			all_okay = false;
+		}
+	}
+	pthread_mutex_unlock(&ubx_mutex);
 
-	//TODO: Problem: last_message_timestamps is not global...
-//	}
+	if(!all_okay)
+	{
+		/* gps error */
+		printf("GPS Watchdog detected gps not running or having problems\n");
 
-	usleep(200000); //TODO: adjust, make configurable
+		global_data_lock(&global_data_sys_status.access_conf);
+		global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
+		global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
+		global_data_sys_status.onboard_control_sensors_health &= ~(1 << 5);
+		global_data_sys_status.counter++;
+		global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
+		global_data_unlock(&global_data_sys_status.access_conf);
+
+		/* trying to fix the gps configuration */
+
+//		int killres = pthread_kill(&ubx_thread, SIGKILL);
+//		printf("killres=%d",killres);
+//		sleep(1);
+//		pthread_create (&ubx_thread, NULL, ubx_loop, (void *)&fd);
+	}
+	else
+	{
+		global_data_lock(&global_data_sys_status.access_conf);
+		global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
+		global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
+		global_data_sys_status.onboard_control_sensors_health |= 1 << 5;
+		global_data_sys_status.counter++;
+		global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
+		global_data_unlock(&global_data_sys_status.access_conf);
+	}
+
+	usleep(GPS_WATCHDOG_WAIT_TIME_MICROSECONDS);
 }
 
 static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
@@ -74,21 +105,21 @@ static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/de
 
 		/* Initialize gps stuff */
 	    int buffer_size = 1000;
-	    nmeaINFO * info = malloc(sizeof(nmeaINFO));
+//	    nmeaINFO * info = malloc(sizeof(nmeaINFO));
 	    bool health_set = false;
 		char * gps_rx_buffer = malloc(buffer_size*sizeof(char));
 
 		/* gps parser (nmea) */
-		nmeaPARSER parser;
-		nmea_parser_init(&parser);
-		nmea_zero_INFO(info);
-		float lat_dec = 0;
-		float lon_dec = 0;
+//		nmeaPARSER parser;
+//		nmea_parser_init(&parser);
+//		nmea_zero_INFO(info);
+//		float lat_dec = 0;
+//		float lon_dec = 0;
 
 		/* custom (mediatek custom) */
-		gps_bin_custom_state_t * mtk_state = malloc(sizeof(gps_bin_custom_state_t));
-		mtk_decode_init(mtk_state);
-		mtk_state->print_errors = false;
+//		gps_bin_custom_state_t * mtk_state = malloc(sizeof(gps_bin_custom_state_t));
+//		mtk_decode_init(mtk_state);
+//		mtk_state->print_errors = false;
 
 
 
@@ -112,31 +143,10 @@ static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/de
 	    	printf("\t%s: ubx mode\n",APPNAME);
 	    	//set parameters for ubx
 
-	    	//ubx state
-			gps_bin_ubx_state_t * ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
-		   	printf("%s: ubx_state created\n",APPNAME);
-			ubx_decode_init(ubx_state);
-			ubx_state->print_errors = false;
 	    	int config_not_finished = 1; //is set to 0 as soon as all configurations are completed
 	    	bool configured = false;
 
 	    	/* set parameters for ubx */
-
-			if (configure_gps_ubx(fd) != 0)
-			{
-				printf("Configuration of gps module to ubx failed\n");
-
-				/* Write shared variable sys_status */
-
-				global_data_lock(&global_data_sys_status.access_conf);
-				global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
-				global_data_sys_status.onboard_control_sensors_enabled &= ~(1 << 5);
-				global_data_sys_status.onboard_control_sensors_health &= ~(1 << 5);
-				global_data_sys_status.counter++;
-				global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
-				global_data_unlock(&global_data_sys_status.access_conf);
-			}//set parameters for ubx
-
 			if (configure_gps_ubx(fd) != 0)
 			{
 				printf("Configuration of gps module to ubx failed\n");
@@ -176,7 +186,7 @@ static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/de
 	    	{
 
 
-	    		read_gps_ubx(fd, gps_rx_buffer, buffer_size, ubx_state);
+	    		read_gps_ubx(fd, gps_rx_buffer, buffer_size, ubx_state, &ubx_mutex);
 
 	//
 	//    		/* set health to true if config is finished after certain time (only executed once) */
@@ -265,14 +275,14 @@ static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/de
 	//	}
 
 		free(gps_rx_buffer);
-		free(info);
+//		free(info);
 
 
 		//close port
 		close_port(fd);
 
 		//destroy gps parser
-		nmea_parser_destroy(&parser);
+//		nmea_parser_destroy(&parser);
 
 	    return 0;
 
@@ -295,9 +305,9 @@ int gps_main(int argc, char *argv[])
 
 
     /* default values */
-    	    char * commandline_usage = "\tusage: gps -d devicename -m mode\n";
-    	    char * device = "/dev/ttyS3";
-    	    char * mode = "nmea";
+	char * commandline_usage = "\tusage: gps -d devicename -m mode\n";
+	char * device = "/dev/ttyS3";
+	char * mode = "nmea";
 
 	/* read arguments */
 	int i;
@@ -345,6 +355,13 @@ int gps_main(int argc, char *argv[])
 
 //TODO: add mode if here (reads from arguments and configuration, watchdog will look for changes in mode configuration while running (?))
 
+	/* Init mutex for datasharing between ubx gps reading thrad (ubx_thread) and  ubx_watchdog thread*/
+	pthread_mutex_init(&ubx_mutex, NULL);
+
+	/* Initialize ubx state */
+	ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
+	ubx_decode_init(ubx_state);
+
     /* create pthreads */
     pthread_create (&ubx_thread, NULL, ubx_loop, (void *)&fd);
 
@@ -356,7 +373,9 @@ int gps_main(int argc, char *argv[])
 
     /* wait for threads to complete */
 	pthread_join(ubx_thread, NULL);
-//	pthread_join(ubx_watchdog_thread, NULL);
+	pthread_join(ubx_watchdog_thread, (void *)&fd);
+
+	return 0;
 
 }
 

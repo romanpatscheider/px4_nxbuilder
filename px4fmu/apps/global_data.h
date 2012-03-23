@@ -9,6 +9,7 @@
 #define GLOBAL_DATA_H_
 
 #include <pthread.h>
+#include <time.h>
 
 /* Definitions */
 #define GLOBAL_DATA_WAIT 2 //seconds

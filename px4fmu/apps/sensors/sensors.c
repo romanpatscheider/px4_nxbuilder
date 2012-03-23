@@ -229,7 +229,7 @@ static void *magnetometer_loop(void * arg)
 		if (ret_magnetometer != sizeof(buf_magnetometer))
 		{
 			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
-//			return ERROR;
+			return ERROR;
 		}
 		else
 		{
@@ -240,14 +240,14 @@ static void *magnetometer_loop(void * arg)
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 			global_data_broadcast(&global_data_sensors_raw.access_conf);
 
-			if(counter%20==0)
+			if(counter%1==0)
 			{
 				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
 			}
 		}
 
 		counter++;
-		usleep(25000); // 50 Hz !?
+		usleep(50000); // 50 Hz !?
 	}
 }
 

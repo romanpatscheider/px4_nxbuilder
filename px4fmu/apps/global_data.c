@@ -47,3 +47,10 @@ uint64_t global_data_get_timestamp_milliseconds(void)
 	gettimeofday(&tv, NULL);
 	return ((uint64_t)tv.tv_sec) * 1000 + tv.tv_usec * 1e-3;
 }
+
+uint64_t global_data_get_timestamp_useconds(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return ((uint64_t)tv.tv_sec) * 1e6 + tv.tv_usec;
+}

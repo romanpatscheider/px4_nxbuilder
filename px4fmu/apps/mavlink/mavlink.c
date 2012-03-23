@@ -50,6 +50,7 @@
 #include "v1.0/pixhawk/pixhawk.h"
 #include <arch/board/drv_led.h>
 #include "../global_data_gps_t.h"
+#include "../global_data_sensors_raw_t.h"
 #include "../global_data_sys_status_t.h"
 #include <time.h>
 #include "../global_data.h"
@@ -67,6 +68,7 @@ global_data_sys_status_t global_data_sys_status = {.access_conf.initialized = 0}
 pthread_t heartbeat_thread;
 pthread_t receive_thread;
 pthread_t gps_receive_thread;
+pthread_t sensors_raw_receive_thread;
 
 int leds;
 bool foo;
@@ -243,6 +245,33 @@ static void *gps_receiveloop(void * arg) //runs as a pthread and listens message
 //		}
 
 		global_data_unlock(&global_data_gps.access_conf);
+	}
+
+}
+
+static void *sensors_raw_receiveloop(void * arg) //runs as a pthread and listens messages from raw sensor
+{
+	uint16_t counter = 0;
+	uint64_t timestamp;
+	while(1)
+	{
+		if(0 == global_data_wait(&global_data_sensors_raw.access_conf)) //only send if pthread_cond_timedwait received a con signal
+		{
+			// TODO: send data to mavlink
+			if(counter%100 == 0)
+			{
+				//mavlink_msg_statustext_send(chan,0,"sensor information incoming");
+				timestamp =  global_data_get_timestamp_useconds();
+				mavlink_msg_raw_imu_send(MAVLINK_COMM_0, timestamp, global_data_sensors_raw.accelerometer_raw[0], global_data_sensors_raw.accelerometer_raw[1], global_data_sensors_raw.accelerometer_raw[2], global_data_sensors_raw.gyro_raw[0], global_data_sensors_raw.gyro_raw[1], global_data_sensors_raw.gyro_raw[2], global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
+			}
+		}
+//		else
+//		{
+//			mavlink_msg_statustext_send(chan,0,"timeout");
+//		}
+
+		global_data_unlock(&global_data_gps.access_conf);
+		counter++;
 	}
 
 }
@@ -460,16 +489,19 @@ int mavlink_main(int argc, char *argv[])
     /* initialize shared data structures */
     global_data_init(&global_data_gps.access_conf);
     global_data_init(&global_data_sys_status.access_conf);
+    global_data_init(&global_data_sensors_raw.access_conf);
 
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
     pthread_create (&receive_thread, NULL, receiveloop, NULL);
     pthread_create (&gps_receive_thread, NULL, gps_receiveloop, NULL);
+    pthread_create (&sensors_raw_receive_thread, NULL, sensors_raw_receiveloop, NULL);
 
     //wait for threads to complete:
     pthread_join(heartbeat_thread, NULL);
     pthread_join(receive_thread, NULL);
     pthread_join(gps_receive_thread, NULL);
+    pthread_join(sensors_raw_receive_thread, NULL);
 
 
 	//close uart

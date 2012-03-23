@@ -44,6 +44,13 @@ gps_bin_ubx_state_t * ubx_state;
 
 int gps_fd;
 
+#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 1000
+#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 200000
+
+
+
+
+//extern gps_bin_ubx_state_t * ubx_state;
 
 int open_port(char * port);
 

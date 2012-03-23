@@ -14,6 +14,7 @@
 #include "../global_data_gps_t.h" //for storage of gps information
 #include <math.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 
 //internal definitions (not depending on the ubx protocol
@@ -269,17 +270,23 @@ typedef struct
 
 typedef type_gps_bin_ubx_state gps_bin_ubx_state_t;
 
-void ubx_decode_init(gps_bin_ubx_state_t* ubx_state);
+extern gps_bin_ubx_state_t * ubx_state;
+
+void ubx_decode_init(void);
 
 void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b);
 
-int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state, pthread_mutex_t * watchdog_mutex);
+
+
+int ubx_parse(uint8_t b,  char * gps_rx_buffer, pthread_mutex_t * watchdog_mutex);
 
 int configure_gps_ubx(int fd);
 
-int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state, pthread_mutex_t * watchdog_mutex);
+int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, pthread_mutex_t * watchdog_mutex);
 
 int write_config_message_ubx(uint8_t * message, size_t length, int fd);
+
+void calculate_ubx_checksum(uint8_t * message, uint8_t length);
 
 
 #endif /* UBX_H_ */

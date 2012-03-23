@@ -50,18 +50,7 @@
  * Definitions
  ************************************************************************************/
 
-/* How many SPI modules does this chip support? Most support 2 SPI modules (others
- * may support more -- in such case, the following must be expanded).
- */
-
-#if STM32_NSPI < 1
-#  undef CONFIG_STM32_SPI1
-#  undef CONFIG_STM32_SPI2
-#elif STM32_NSPI < 2
-#  undef CONFIG_STM32_SPI2
-#endif
-
-/* PX4IO-EVAL GPIOs **************************************************************/
+/* PX4IO GPIOs **********************************************************************/
 /* LEDs */
 
 #define GPIO_LED1       (GPIO_OUTPUT|GPIO_CNF_OUTPP|GPIO_MODE_50MHz|\

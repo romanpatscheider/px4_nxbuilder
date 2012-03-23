@@ -59,12 +59,12 @@ int sensors_main(int argc, char *argv[])
 
 	//create pthreads
 	pthread_create (&gyro_accelerometer_thread, NULL, gyro_accelerometer_loop, NULL);
-	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
+//	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
 //	pthread_create (&pressure_sensor_thread, NULL, pressure_sensor_loop, NULL);
 
 	//wait for threads to complete:
 	pthread_join(gyro_accelerometer_thread, NULL);
-    pthread_join(magnetometer_thread, NULL);
+//    pthread_join(magnetometer_thread, NULL);
 //  pthread_join(pressure_sensor_thread, NULL);
 
 
@@ -228,8 +228,8 @@ static void *magnetometer_loop(void * arg)
 
 		if (ret_magnetometer != sizeof(buf_magnetometer))
 		{
-			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
-			return ERROR;
+//			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
+//			return ERROR;
 		}
 		else
 		{
@@ -240,10 +240,10 @@ static void *magnetometer_loop(void * arg)
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 			global_data_broadcast(&global_data_sensors_raw.access_conf);
 
-			if(counter%1==0)
-			{
-				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
-			}
+//			if(counter%10==0)
+//			{
+//				printf("\thmc5883l values: x:%d\ty:%d\tz:%d\n", global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
+//			}
 		}
 
 		counter++;

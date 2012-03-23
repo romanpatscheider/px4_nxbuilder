@@ -14,6 +14,7 @@
 #include "../global_data_gps_t.h" //for storage of gps information
 #include <math.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 
 //internal definitions (not depending on the ubx protocol
@@ -280,6 +281,8 @@ int configure_gps_ubx(int fd);
 int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state);
 
 int write_config_message_ubx(uint8_t * message, size_t length, int fd);
+
+void calculate_ubx_checksum(uint8_t * message, uint8_t length);
 
 
 #endif /* UBX_H_ */

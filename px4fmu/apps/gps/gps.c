@@ -122,20 +122,6 @@ static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/de
 
 	    	/* set parameters for ubx */
 
-			if (configure_gps_ubx(fd) != 0)
-			{
-				printf("Configuration of gps module to ubx failed\n");
-
-				/* Write shared variable sys_status */
-
-				global_data_lock(&global_data_sys_status.access_conf);
-				global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
-				global_data_sys_status.onboard_control_sensors_enabled &= ~(1 << 5);
-				global_data_sys_status.onboard_control_sensors_health &= ~(1 << 5);
-				global_data_sys_status.counter++;
-				global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
-				global_data_unlock(&global_data_sys_status.access_conf);
-			}//set parameters for ubx
 
 			if (configure_gps_ubx(fd) != 0)
 			{

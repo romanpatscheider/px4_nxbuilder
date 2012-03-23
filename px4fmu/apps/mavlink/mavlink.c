@@ -51,6 +51,7 @@
 #include <arch/board/drv_led.h>
 #include "../global_data_gps_t.h"
 #include "../global_data_sys_status_t.h"
+#include "../global_data_quad_motors_setpoint_t.h"
 #include <time.h>
 #include "../global_data.h"
 
@@ -61,6 +62,7 @@
 
 /* Struct for storage of system status (global)  */
 global_data_sys_status_t global_data_sys_status = {.access_conf.initialized = 0};
+global_data_quad_motors_setpoint_t global_data_quad_motors_setpoint  = {.access_conf.initialized = 0};
 
 
 //threads:
@@ -406,6 +408,33 @@ void handleMessage(mavlink_message_t * msg) {
 			}
 		}
 	}
+
+
+	/* Handle quadrotor motor setpoints */
+
+	if(msg->msgid == MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT)
+	{
+		mavlink_set_quad_motors_setpoint_t quad_motors_setpoint;
+		mavlink_msg_set_quad_motors_setpoint_decode(msg, &quad_motors_setpoint);
+
+		if(quad_motors_setpoint.target_system == mavlink_system.sysid)
+		{
+			global_data_lock(&global_data_quad_motors_setpoint.access_conf);
+			global_data_quad_motors_setpoint.motor_front_nw = quad_motors_setpoint.motor_front_nw;
+			global_data_quad_motors_setpoint.motor_right_ne = quad_motors_setpoint.motor_right_ne;
+			global_data_quad_motors_setpoint.motor_back_se = quad_motors_setpoint.motor_back_se;
+			global_data_quad_motors_setpoint.motor_left_sw = quad_motors_setpoint.motor_left_sw;
+			global_data_quad_motors_setpoint.target_system = quad_motors_setpoint.target_system;
+
+			global_data_quad_motors_setpoint.counter++;
+			global_data_quad_motors_setpoint.timestamp = global_data_get_timestamp_milliseconds();
+			global_data_unlock(&global_data_quad_motors_setpoint.access_conf);
+
+			/* Inform the other processes that there is new gps data available */
+			global_data_broadcast(&global_data_quad_motors_setpoint.access_conf);
+		}
+
+	}
 }
 
 /****************************************************************************
@@ -460,6 +489,7 @@ int mavlink_main(int argc, char *argv[])
     /* initialize shared data structures */
     global_data_init(&global_data_gps.access_conf);
     global_data_init(&global_data_sys_status.access_conf);
+    global_data_init(&global_data_quad_motors_setpoint.access_conf);
 
     //create pthreads
     pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);

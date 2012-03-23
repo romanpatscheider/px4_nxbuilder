@@ -462,29 +462,13 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 
 }
 
-void calculate_ubx_checksum(uint8_t * message, uint8_t length)
-{
-	uint8_t ck_a;
-	uint8_t ck_b;
-
-	int i;
-	for(i = 2; i < length - 2; i++)
-	{
-		ck_a = ck_a + message[i];
-		ck_b = ck_b + ck_a;
-	}
-
-	message[length-2] = ck_a;
-	message[length-1] = ck_b;
-}
-
 int configure_gps_ubx(int fd)
 {
 	int success = 0;
-    size_t result_write;
+	size_t result_write;
 
 	//TODO: write this in a loop once it is tested
-	//UBX_CFG_PRT_PART1:
+	//UBX_CFG_PRT_PART:
 	write_config_message_ubx(UBX_CONFIG_MESSAGE_PRT, sizeof(UBX_CONFIG_MESSAGE_PRT)/sizeof(uint8_t) ,fd);
 	usleep(100000);
 
@@ -495,7 +479,6 @@ int configure_gps_ubx(int fd)
 	//NAV_TIMEUTC:
 	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_TIMEUTC)/sizeof(uint8_t) ,fd);
 	usleep(100000);
-
 
 	//NAV_DOP:
 	write_config_message_ubx(UBX_CONFIG_MESSAGE_MSG_NAV_DOP, sizeof(UBX_CONFIG_MESSAGE_MSG_NAV_DOP)/sizeof(uint8_t) ,fd);
@@ -520,6 +503,7 @@ int configure_gps_ubx(int fd)
 	usleep(100000);
 
 	return 0;
+
 }
 
 int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state)
@@ -571,8 +555,22 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_stat
 int write_config_message_ubx(uint8_t * message, size_t length, int fd)
 {
 	//calculate and write checksum to the end
+	uint8_t ck_a;
+	uint8_t ck_b;
 
-	calculate_ubx_checksum(message, length);
+	int i;
+	for(i = 2; i < length - 2; i++)
+	{
+		ck_a = ck_a + message[i];
+		ck_b = ck_b + ck_a;
+	}
+
+	message[length-2] = ck_a;
+	message[length-1] = ck_b;
+
+	printf("[%x,%x]", ck_a, ck_b);
+
+	printf("[%x,%x]\n", message[length-2], message[length-1]);
 
 	int result_write =  write(fd, message, length);
 	return (result_write != length); //return 0 as success

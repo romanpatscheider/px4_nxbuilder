@@ -258,12 +258,12 @@ static void *sensors_raw_receiveloop(void * arg) //runs as a pthread and listens
 		if(0 == global_data_wait(&global_data_sensors_raw.access_conf)) //only send if pthread_cond_timedwait received a con signal
 		{
 			// TODO: send data to mavlink
-			if(counter%100 == 0)
-			{
+//			if(counter%100 == 0)
+//			{
 				//mavlink_msg_statustext_send(chan,0,"sensor information incoming");
 				timestamp =  global_data_get_timestamp_useconds();
 				mavlink_msg_raw_imu_send(MAVLINK_COMM_0, timestamp, global_data_sensors_raw.accelerometer_raw[0], global_data_sensors_raw.accelerometer_raw[1], global_data_sensors_raw.accelerometer_raw[2], global_data_sensors_raw.gyro_raw[0], global_data_sensors_raw.gyro_raw[1], global_data_sensors_raw.gyro_raw[2], global_data_sensors_raw.magnetometer_raw[0], global_data_sensors_raw.magnetometer_raw[1], global_data_sensors_raw.magnetometer_raw[2]);
-			}
+//			}
 		}
 //		else
 //		{

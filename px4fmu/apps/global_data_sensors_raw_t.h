@@ -28,8 +28,7 @@ typedef struct
 	uint32_t pressure_sensor_raw[2]; //ms5611
 	uint16_t pressure_sensor_raw_counter;
 
-
-	//*****END: Add your variables here *****
+	//***** End: Add your variables here *****
 
 } global_data_sensors_raw_t; //adjust this line!
 

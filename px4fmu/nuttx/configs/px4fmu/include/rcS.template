@@ -2,4 +2,5 @@
 
 #Start apps
 mavlink -d /dev/ttyS2 &
-gps -d /dev/ttyS1 -m ubx &
+sensors &
+#gps -d /dev/ttyS1 -m ubx &

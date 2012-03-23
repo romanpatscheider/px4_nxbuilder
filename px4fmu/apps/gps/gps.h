@@ -28,9 +28,8 @@
 #include <signal.h>
 
 #define APPNAME "gps"
-#define GPS_COUNTER_LIMIT 150
-#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 1000
-#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 200000
+#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 2000
+#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 300000
 
 
 /* Threads */
@@ -43,10 +42,6 @@ pthread_mutex_t ubx_mutex;
 gps_bin_ubx_state_t * ubx_state;
 
 int gps_fd;
-
-#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 1000
-#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 200000
-
 
 
 

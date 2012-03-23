@@ -49,64 +49,74 @@ gps_bin_ubx_state_t * ubx_state;
  ****************************************************************************/
 
 
-//static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
-//{
-//
-//	/* if some values are to old reconfigure gps */
-//	int i;
-//	pthread_mutex_lock(&ubx_mutex);
-//	bool all_okay = true;
-//	uint64_t timestamp_now = global_data_get_timestamp_milliseconds();
-//	for(i = 0; i < UBX_NO_OF_MESSAGES; i++)
-//	{
-//		if(timestamp_now - ubx_state->last_message_timestamps[i] > GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS)
-//		{
-//			all_okay = false;
-//		}
-//	}
-//	pthread_mutex_unlock(&ubx_mutex);
-//
-//	if(!all_okay)
-//	{
-//		/* gps error */
-//		printf("GPS Watchdog detected gps not running or having problems\n");
-//
-//		global_data_lock(&global_data_sys_status.access_conf);
-//		global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
-//		global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
-//		global_data_sys_status.onboard_control_sensors_health &= ~(1 << 5);
-//		global_data_sys_status.counter++;
-//		global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
-//		global_data_unlock(&global_data_sys_status.access_conf);
-//
-//		/* trying to fix the gps configuration */
-//
-////		int killres = pthread_kill(&ubx_thread, SIGKILL);
-////		printf("killres=%d",killres);
-////		sleep(1);
-////		pthread_create (&ubx_thread, NULL, ubx_loop, (void *)&fd);
-//	}
-//	else
-//	{
-//		global_data_lock(&global_data_sys_status.access_conf);
-//		global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
-//		global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
-//		global_data_sys_status.onboard_control_sensors_health |= 1 << 5;
-//		global_data_sys_status.counter++;
-//		global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
-//		global_data_unlock(&global_data_sys_status.access_conf);
-//	}
-//
-//	usleep(GPS_WATCHDOG_WAIT_TIME_MICROSECONDS);
-//}
+static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
+{
+	/* Retrieve file descriptor */
+	int fd = *((int *)arg);
+
+	while(1)
+	{
+		/* if some values are to old reconfigure gps */
+		int i;
+		pthread_mutex_lock(&ubx_mutex);
+		bool all_okay = true;
+		uint64_t timestamp_now = global_data_get_timestamp_milliseconds();
+		for(i = 0; i < UBX_NO_OF_MESSAGES; i++)
+		{
+			if(timestamp_now - ubx_state->last_message_timestamps[i] > GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS)
+			{
+				printf("Warning: GPS ubx message %d not received for a long time\n", i);
+				all_okay = false;
+			}
+		}
+		pthread_mutex_unlock(&ubx_mutex);
+
+		if(!all_okay)
+		{
+			/* gps error */
+			printf("GPS Watchdog detected gps not running or having problems\n");
+
+			global_data_lock(&global_data_sys_status.access_conf);
+			global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
+			global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
+			global_data_sys_status.onboard_control_sensors_health &= ~(1 << 5);
+			global_data_sys_status.counter++;
+			global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
+			global_data_unlock(&global_data_sys_status.access_conf);
+
+			/* trying to reconfigure the gps configuration */
+			configure_gps_ubx(fd);
+			sleep(1);
+
+	//		int killres = pthread_kill(&ubx_thread, SIGKILL);
+	//		printf("killres=%d",killres);
+	//		sleep(1);
+	//		pthread_create (&ubx_thread, NULL, ubx_loop, (void *)&fd);
+		}
+		else
+		{
+			/* gps healthy */
+
+			global_data_lock(&global_data_sys_status.access_conf);
+			global_data_sys_status.onboard_control_sensors_present |= 1 << 5;//TODO: write wrapper for bitmask
+			global_data_sys_status.onboard_control_sensors_enabled |= 1 << 5;
+			global_data_sys_status.onboard_control_sensors_health |= 1 << 5;
+			global_data_sys_status.counter++;
+			global_data_sys_status.timestamp = global_data_get_timestamp_milliseconds();
+			global_data_unlock(&global_data_sys_status.access_conf);
+		}
+
+		usleep(GPS_WATCHDOG_WAIT_TIME_MICROSECONDS);
+	}
+}
 
 
 static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
 {
 
 	/* Initialize ubx state */
-	ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
-	ubx_decode_init();
+//	ubx_state = malloc(sizeof(gps_bin_ubx_state_t));
+//	ubx_decode_init();
 
 
 		/* Retrieve file descriptor */
@@ -392,7 +402,7 @@ int gps_main(int argc, char *argv[])
     /* wait before starting watchdog */
 
     sleep(2);
-//    pthread_create (&ubx_watchdog_thread, NULL, ubx_watchdog_loop, NULL);
+    pthread_create (&ubx_watchdog_thread, NULL, ubx_watchdog_loop, (void *)&fd);
 
     /* wait for threads to complete */
 	pthread_join(ubx_thread, NULL);

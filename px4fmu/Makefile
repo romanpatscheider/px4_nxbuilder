@@ -4,6 +4,7 @@ CONFIG		 = px4fmu/nsh
 
 include ../etc/nuttx-build.mk
 
+
 upload-usb:
 	@../../px4_bootloader/px_mkfw.py --board_id 5 > px4flow_prototype.px4
 	@../../px4_bootloader/px_mkfw.py --prototype px4flow_prototype.px4 --image ../build/px4fmu/nuttx/nuttx.bin > px4flow.px4

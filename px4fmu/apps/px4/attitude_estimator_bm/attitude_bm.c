@@ -5,17 +5,19 @@
  *  Created on: 21.12.2010
  *      Author: Laurens Mackay, Tobias Naegeli
  */
+
+#include <math.h>
 #include "attitude_bm.h"
 #include "kalman.h"
 
-#include "math.h"
+
 #define TIME_STEP (1.0f / 200.0f)
 
 kalman_t attitude_blackmagic_kal;
 
 void vect_norm(float_vect3 *vect)
 {
-	float length = sqrt(
+	float length = sqrtf(
 			vect->x * vect->x + vect->y * vect->y + vect->z * vect->z);
 	if (length != 0)
 	{
@@ -24,7 +26,6 @@ void vect_norm(float_vect3 *vect)
 		vect->z /= length;
 	}
 }
-
 
 
 void vect_cross_product(const float_vect3 *a, const float_vect3 *b,
@@ -220,42 +221,6 @@ void attitude_blackmagic(const float_vect3 *accel, const float_vect3 *mag, const
 	{ };
 	m_elem mask[9] =
 	{ 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
-
-//	float_vect3 acc;
-//	float_vect3 mag;
-//	float_vect3 gyro;
-
-
-
-	//	acc.x = global_data.accel_raw.x * 9.81f /690;
-	//	acc.y = global_data.accel_raw.y * 9.81f / 690;
-	//	acc.z = global_data.accel_raw.z * 9.81f / 690;
-
-//	acc.x = global_data.accel_raw.x;
-//	acc.y = global_data.accel_raw.y;
-//	acc.z = global_data.accel_raw.z;
-
-
-
-	//	mag.x = (global_data.magnet_corrected.x ) * 1.f / 510.f;
-	//	mag.y = (global_data.magnet_corrected.y) * 1.f / 510.f;
-	//	mag.z = (global_data.magnet_corrected.z) * 1.f / 510.f;
-//	mag.x = (global_data.magnet_corrected.x ) ;
-//	mag.y = (global_data.magnet_corrected.y) ;
-//	mag.z = (global_data.magnet_corrected.z) ;
-
-
-//	gyro.x = -(global_data.gyros_raw.x-global_data.param[PARAM_GYRO_OFFSET_X]) * 0.000955;
-//	gyro.y = (global_data.gyros_raw.y-global_data.param[PARAM_GYRO_OFFSET_Y]) * 0.000955;
-//	gyro.z = -(global_data.gyros_raw.z-global_data.param[PARAM_GYRO_OFFSET_Z]) * 0.001010;
-
-//	gyro.x = -(global_data.gyros_raw.x-global_data.param[PARAM_GYRO_OFFSET_X]) * 0.001008;
-//	gyro.y = (global_data.gyros_raw.y-global_data.param[PARAM_GYRO_OFFSET_Y]) * 0.001008;
-//	gyro.z = -(global_data.gyros_raw.z-global_data.param[PARAM_GYRO_OFFSET_Z]) * 0.001010;
-
-
-
-
 
 	measurement[0] = accel->x;
 	measurement[1] = accel->y;

@@ -29,6 +29,21 @@
 #define APPNAME "gps"
 #define GPS_COUNTER_LIMIT 150
 
+#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 1000
+#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 200000
+
+
+/* Threads */
+pthread_t ubx_thread;
+pthread_t ubx_watchdog_thread;
+
+/* Mutexes */
+pthread_mutex_t ubx_mutex;
+
+int gps_fd;
+
+
+//extern gps_bin_ubx_state_t * ubx_state;
 
 int open_port(char * port);
 

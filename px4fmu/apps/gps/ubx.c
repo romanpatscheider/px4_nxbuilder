@@ -18,7 +18,7 @@ uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_SOL[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 
 uint8_t UBX_CONFIG_MESSAGE_MSG_NAV_VELNED[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x01, 0x12,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
 uint8_t UBX_CONFIG_MESSAGE_MSG_RXM_SVSI[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,   0x02, 0x20,   0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
 
-void ubx_decode_init(gps_bin_ubx_state_t* ubx_state)
+void ubx_decode_init(void)
 {
 	ubx_state->ck_a = 0;
 	ubx_state->ck_b = 0;
@@ -37,7 +37,8 @@ void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b)
 
 
 
-int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state) //adapted from GTOP_BIN_CUSTOM_update_position
+
+int ubx_parse(uint8_t b,  char * gps_rx_buffer, pthread_mutex_t * watchdog_mutex) //adapted from GTOP_BIN_CUSTOM_update_position
 {
 //	printf("b=%x\n",b);
 		if (ubx_state->decode_state == UBX_DECODE_UNINIT)
@@ -57,7 +58,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 			else
 			{
 				// Second start symbol was wrong, reset state machine
-				ubx_decode_init(ubx_state);
+				ubx_decode_init();
 			}
 		}
 		else if (ubx_state->decode_state == UBX_DECODE_GOT_SYNC2)
@@ -77,7 +78,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 				ubx_state->message_class = RXM;
 			break;
 			default: //unknown class: reset state machine
-				ubx_decode_init(ubx_state);
+				ubx_decode_init();
 			break;
 			}
 
@@ -118,7 +119,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					ubx_state->message_id = NAV_VELNED;
 					break;
 				default: //unknown class: reset state machine, should not happen
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					break;
 				}
 				break;
@@ -130,12 +131,12 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					ubx_state->message_id = RXM_SVSI;
 					break;
 				default: //unknown class: reset state machine, should not happen
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					break;
 				}
 				break;
 			default: //should not happen
-				ubx_decode_init(ubx_state);
+				ubx_decode_init();
 				break;
 			}
 		}
@@ -195,7 +196,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
@@ -222,7 +223,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
@@ -250,7 +251,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
@@ -288,7 +289,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
@@ -382,7 +383,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 					}
 
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
@@ -410,7 +411,7 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
@@ -439,13 +440,13 @@ int ubx_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_ubx_state_t * ubx_state)
 						ret = 0;
 					}
 					// Reset state machine to decode next packet
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 					return ret;
 
 					break;
 				}
 				default: //something went wrong
-					ubx_decode_init(ubx_state);
+					ubx_decode_init();
 
 					break;
 				}
@@ -614,7 +615,8 @@ int configure_gps_ubx(int fd)
 
 }
 
-int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_state_t * ubx_state)
+
+int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, pthread_mutex_t * watchdog_mutex)
 {
 
 	uint8_t c;
@@ -637,7 +639,7 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_stat
 			start_flag = 0;
 			found_cr = 0;
 			rx_count = 0;
-			ubx_decode_init(ubx_state);
+			ubx_decode_init();
 			printf("Buffer full\n");
 		}
 		else
@@ -647,7 +649,7 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, gps_bin_ubx_stat
 
 		}
 
-		int msg_read = ubx_parse(c, gps_rx_buffer, ubx_state);
+		int msg_read = ubx_parse(c, gps_rx_buffer, watchdog_mutex);
 
 		if(msg_read > 0)
 		{
@@ -673,12 +675,7 @@ int write_config_message_ubx(uint8_t * message, size_t length, int fd)
 		ck_b = ck_b + ck_a;
 	}
 
-//	message[length-2] = ck_a;
-//	message[length-1] = ck_b;
-
-	printf("[%x,%x]\n", ck_a, ck_b);
-
-//	printf("[%x,%x]\n", message[length-2], message[length-1]);
+//	printf("[%x,%x]\n", ck_a, ck_b);
 
 	int result_write =  write(fd, message, length);
 	result_write +=  write(fd, &ck_a, 1);

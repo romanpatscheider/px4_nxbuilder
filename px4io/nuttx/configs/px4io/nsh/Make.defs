@@ -41,7 +41,7 @@ include ${TOPDIR}/.config
 #
 
 CROSSDEV = arm-none-eabi-
-MAXOPTIMIZATION = -O2
+MAXOPTIMIZATION = -Os
 ARCHCPUFLAGS = -mcpu=cortex-m3 -mthumb
 
 LDSCRIPT = ld.script
@@ -76,7 +76,7 @@ ARCHCCVERSION = ${shell $(CC) -v 2>&1 | sed -n '/^gcc version/p' | sed -e 's/^gc
 ARCHCCMAJOR = ${shell echo $(ARCHCCVERSION) | cut -d'.' -f1}
 
 ifeq ("${CONFIG_DEBUG_SYMBOLS}","y")
-  ARCHOPTIMIZATION = -g
+  ARCHOPTIMIZATION = -g -Os
 else
   ARCHOPTIMIZATION = $(MAXOPTIMIZATION) -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer
 endif

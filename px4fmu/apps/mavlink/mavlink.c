@@ -71,14 +71,15 @@ static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("
 	mavlink_message_t msg;
 	mavlink_status_t status;
 
-	while(1) {
+	while(1)
+	{
 		/* blocking read on next byte */
-		read(uart_read, &ch, 1);
+		read(uart_read, &ch, sizeof(uint8_t));
 
 		if (mavlink_parse_char(chan,ch,&msg,&status)) //parse the char
 			handleMessage(&msg);
 
-		usleep(1); //pthread_yield seems not to work
+		pthread_yield();
 	}
 
 }
@@ -98,7 +99,7 @@ static void *heartbeatloop(void * arg)
  * Public Functions
  ****************************************************************************/
 void handleMessage(mavlink_message_t * msg) {
-	printf("Mavlink: got a message \n");
+//	printf("Mavlink: got a message \n");
 
 	//check for terminate command
 	if(msg->msgid == MAVLINK_MSG_ID_COMMAND_LONG)

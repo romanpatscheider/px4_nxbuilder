@@ -65,7 +65,7 @@ CONFIGURED_APPS += reboot
 # Testing stuff
 #CONFIGURED_APPS	+= px4/px4io
 CONFIGURED_APPS += px4/gpsd
-CONFIGURED_APPS += px4/sensors
+#CONFIGURED_APPS += px4/sensors
 CONFIGURED_APPS += examples/ostest
 CONFIGURED_APPS += px4/tests
 CONFIGURED_APPS += px4/ardrone_offboard_control

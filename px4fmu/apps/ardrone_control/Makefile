@@ -56,7 +56,7 @@ STACKSIZE	= 10000
 #CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
-CSRCS		= ardrone_control.c ../global_data.c
+CSRCS		= ardrone_control.c ardrone_motor_control_new.c ../global_data.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))

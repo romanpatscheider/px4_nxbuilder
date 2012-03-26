@@ -21,6 +21,7 @@
 #include "../global_data_gps_t.h"
 #include "../global_data.h"
 #include <termios.h>
+#include "ardrone_motor_control_new.h"
 
 
 /****************************************************************************
@@ -58,6 +59,10 @@ sensors_raw_t sensors_raw;
 /* Quad Motors Setpoint (last copy of the global values), The controller should access these*/
 quad_motors_setpoint_t quad_motors_setpoint_desired;
 
+/*File descriptors */
+static int ardrone_write;
+static int gpios;
+
 
 /****************************************************************************
  * Private Function Prototypes
@@ -74,6 +79,8 @@ void read_gps(void);
 
 /* The controlloop which runs as a pthread */
 static void *controlloop(void * arg);
+
+void control_step(void);
 
 
 #endif /* ARDRONE_CONTROL_H_ */

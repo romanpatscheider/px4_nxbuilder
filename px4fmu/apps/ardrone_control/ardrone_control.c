@@ -53,34 +53,38 @@
 void read_sensors_raw(void)
 {
 
-	global_data_trylock(&global_data_sensors_raw.access_conf);//TODO: check if trylock is the right choice, maybe only lock?
+	if(0 == global_data_trylock(&global_data_sensors_raw.access_conf));//TODO: check if trylock is the right choice, maybe only lock?
+	{
+		memcpy(sensors_raw.gyro_raw, global_data_sensors_raw.gyro_raw, sizeof(sensors_raw.gyro_raw));
+		memcpy(sensors_raw.accelerometer_raw, global_data_sensors_raw.accelerometer_raw, sizeof(sensors_raw.accelerometer_raw));
+		memcpy(sensors_raw.magnetometer_raw, global_data_sensors_raw.magnetometer_raw, sizeof(sensors_raw.magnetometer_raw));
+		memcpy(sensors_raw.pressure_sensor_raw, global_data_sensors_raw.pressure_sensor_raw, sizeof(sensors_raw.pressure_sensor_raw));
+		global_data_unlock(&global_data_sensors_raw.access_conf);
+	}
 
-	memcpy(sensors_raw.gyro_raw, global_data_sensors_raw.gyro_raw, sizeof(sensors_raw.gyro_raw));
-	memcpy(sensors_raw.accelerometer_raw, global_data_sensors_raw.accelerometer_raw, sizeof(sensors_raw.accelerometer_raw));
-	memcpy(sensors_raw.magnetometer_raw, global_data_sensors_raw.magnetometer_raw, sizeof(sensors_raw.magnetometer_raw));
-	memcpy(sensors_raw.pressure_sensor_raw, global_data_sensors_raw.pressure_sensor_raw, sizeof(sensors_raw.pressure_sensor_raw));
-
-	global_data_unlock(&global_data_sensors_raw.access_conf);
 }
 
 void read_quad_motors_setpoint(void)
 {
 
-	global_data_trylock(&global_data_quad_motors_setpoint.access_conf);//TODO: check if trylock is the right choice, maybe only lock?
+	if(0 == global_data_trylock(&global_data_quad_motors_setpoint.access_conf));//TODO: check if trylock is the right choice, maybe only lock?
+	{
+		quad_motors_setpoint_desired.motor_front_nw = global_data_quad_motors_setpoint.motor_front_nw;
+		quad_motors_setpoint_desired.motor_right_ne = global_data_quad_motors_setpoint.motor_right_ne;
+		quad_motors_setpoint_desired.motor_back_se = global_data_quad_motors_setpoint.motor_back_se;
+		quad_motors_setpoint_desired.motor_left_sw = global_data_quad_motors_setpoint.motor_left_sw;
 
-	quad_motors_setpoint_desired.motor_front_nw = global_data_quad_motors_setpoint.motor_front_nw;
-	quad_motors_setpoint_desired.motor_right_ne = global_data_quad_motors_setpoint.motor_right_ne;
-	quad_motors_setpoint_desired.motor_back_se = global_data_quad_motors_setpoint.motor_back_se;
-	quad_motors_setpoint_desired.motor_left_sw = global_data_quad_motors_setpoint.motor_left_sw;
-
-	global_data_unlock(&global_data_quad_motors_setpoint.access_conf);
+		global_data_unlock(&global_data_quad_motors_setpoint.access_conf);
+	}
 }
 
 void read_gps(void)
 {
-			global_data_trylock(&global_data_gps.access_conf);
-			//TODO: determine which gps data the controller needs and copy these here...
-			global_data_unlock(&global_data_gps.access_conf);
+	if(0 == global_data_trylock(&global_data_gps.access_conf));
+	{
+		//TODO: determine which gps data the controller needs and copy these here...
+		global_data_unlock(&global_data_gps.access_conf);
+	}
 }
 
 static void *controlloop(void * arg)

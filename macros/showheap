@@ -1,0 +1,31 @@
+define showheap
+	set $index = $arg0
+	set $MM_ALLOC_BIT = 0x80000000
+	printf "HEAP %d  %p - %p\n", $index, g_heapstart[$index], g_heapend[$index]
+	printf "ptr      size\n"
+	set $node = (char *)g_heapstart[$index] + sizeof(struct mm_allocnode_s)
+	while $node < g_heapend[$index]
+		printf "  %p", $node
+		set $nodestruct = (struct mm_allocnode_s *)$node
+		printf "  %u", $nodestruct->size
+		if !($nodestruct->preceding & $MM_ALLOC_BIT)
+			printf " FREE"
+		end
+		if ($nodestruct->size > g_heapsize) || (($node + $nodestruct->size) > g_heapend[$index])
+			printf "  (BAD SIZE)"
+		end
+		printf "\n"
+		set $node = $node + $nodestruct->size
+	end
+end
+
+define showheaps
+	set $nheaps = sizeof(g_heapstart) / sizeof(g_heapstart[0])
+	printf "Printing %d heaps\n", $nheaps
+	set $heapindex = (int)0
+	while $heapindex < $nheaps
+		showheap $heapindex
+		set $heapindex = $heapindex + 1
+	end
+end
+

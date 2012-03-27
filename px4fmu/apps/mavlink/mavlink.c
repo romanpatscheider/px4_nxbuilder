@@ -270,7 +270,7 @@ static void *sensors_raw_receiveloop(void * arg) //runs as a pthread and listens
 //			mavlink_msg_statustext_send(chan,0,"timeout");
 //		}
 
-		global_data_unlock(&global_data_gps.access_conf);
+		global_data_unlock(&global_data_sensors_raw.access_conf);
 		counter++;
 	}
 

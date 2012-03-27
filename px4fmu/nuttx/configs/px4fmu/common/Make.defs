@@ -45,12 +45,17 @@
 #
 
 CROSSDEV = arm-none-eabi-
+
 MAXOPTIMIZATION = -O2
 ifeq ($(CONFIG_ARCH_FPU),y)
   ARCHCPUFLAGS = -mcpu=cortex-m4 -mthumb -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 else
   ARCHCPUFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=soft
 endif
+
+LIBM		= "${shell $(CC) $(ARCHCPUFLAGS) -print-file-name=libm.a}"
+LIBC		= "${shell $(CC) $(ARCHCPUFLAGS) -print-file-name=libc.a}"
+EXTRA_LIBS	= $(LIBM) $(LIBC)
 
 LDSCRIPT = ld.script
 
@@ -89,14 +94,17 @@ else
   ARCHOPTIMIZATION = $(MAXOPTIMIZATION) -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer
 endif
 
-ARCHCFLAGS = -fno-builtin
+ARCHCFLAGS = -fno-builtin -std=gnu99
 ARCHCXXFLAGS = -fno-builtin -fno-exceptions -fno-rtti
 ARCHWARNINGS = -Wall -Wstrict-prototypes -Wshadow
 ARCHWARNINGSXX = -Wall -Wshadow
 ARCHDEFINES =
 ARCHPICFLAGS = -fpic -msingle-pic-base -mpic-register=r10
 
-CFLAGS = $(ARCHCFLAGS) $(ARCHWARNINGS) $(ARCHOPTIMIZATION) $(ARCHCPUFLAGS) $(ARCHINCLUDES) $(ARCHDEFINES) $(EXTRADEFINES) -pipe
+# this seems to be the only way to add linker flags
+ARCHSCRIPT += --warn-common
+
+CFLAGS = $(ARCHCFLAGS) $(ARCHWARNINGS) $(ARCHOPTIMIZATION) $(ARCHCPUFLAGS) $(ARCHINCLUDES) $(ARCHDEFINES) $(EXTRADEFINES) -pipe -fno-common
 CPICFLAGS = $(ARCHPICFLAGS) $(CFLAGS)
 CXXFLAGS = $(ARCHCXXFLAGS) $(ARCHWARNINGSXX) $(ARCHOPTIMIZATION) $(ARCHCPUFLAGS) $(ARCHXXINCLUDES) $(ARCHDEFINES) $(EXTRADEFINES) -pipe
 CXXPICFLAGS = $(ARCHPICFLAGS) $(CXXFLAGS)

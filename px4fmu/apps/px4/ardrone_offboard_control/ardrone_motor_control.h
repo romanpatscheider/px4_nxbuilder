@@ -1,5 +1,8 @@
-/*
- *   Copyright (C) 2012 Michael Smith. All rights reserved.
+/****************************************************************************
+ * px4/ardrone_offboard_control.h
+ *
+ *   Copyright (C) 2012 PX4 Autopilot Project. All rights reserved.
+ *   Author: Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -11,7 +14,7 @@
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- * 3. Neither the name of the author or the names of contributors may be
+ * 3. Neither the name NuttX nor the names of its contributors may be
  *    used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -27,24 +30,20 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
+/**
+ * @brief Generate the 8-byte motor set packet
+ *
+ * @return the number of bytes (8)
  */
+uint8_t* ar_get_motor_packet(uint16_t motor1, uint16_t motor2, uint16_t motor3, uint16_t motor4);
 
-#include <sys/ioctl.h>
+int ar_select_motor(int fd, uint8_t motor);
 
-#define _GPIOCBASE	0x6700
-#define GPIOC(_x)	_IOC(_GPIOCBASE, _x)
+void ar_enable_broadcast(int fd);
 
-/* set the GPIO identified by the argument */
-#define GPIO_SET	GPIOC(1)
+int ar_multiplexing_init(void);
+int ar_multiplexing_deinit(int fd);
 
-/* clear the GPIO identified by the argument */
-#define GPIO_CLEAR	GPIOC(2)
-
-/* read the GPIO identified by the argument */
-#define GPIO_GET	GPIOC(3)
-
-/* set the direction of all GPIOs to input (arg==0) or output (arg!=0) */
-#define GPIO_DIRECTION	GPIOC(4)
-
-#define GPIO_ALL_OUTPUTS 1
-#define GPIO_ALL_INPUTS 0

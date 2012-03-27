@@ -32,7 +32,7 @@ LOCAL_APPS	:= $(wildcard $(SRCROOT)/apps)
 
 $(info working in $(BUILDROOT))
 
-METATARGETS	 = installsrc cleanbuild
+METATARGETS	 = installsrc cleanbuild upload-usb-px4fmu
 
 ifeq ($(MAKECMDGOALS),)
 MAKECMDGOALS	 = all
@@ -60,9 +60,17 @@ endif
 	@echo Configuring...
 	@(cd $(BUILDROOT)/nuttx/tools && ./configure.sh $(CONFIG))
 
-upload:
-	$(SRCROOT)../../px4_bootloader/px_mkfw.py --prototype $(SRCROOT)../../px4_bootloader/prototype.px4 --image $(SRCROOT)../build/px4fmu/nuttx/nuttx.bin > $(SRCROOT)../nuttx.px4
-	python $(SRCROOT)../../px4_bootloader/px_uploader.py $(SRCROOT)../nuttx.px4 --port /dev/ttyACM0
+# Upload targets for all boards
+upload-jtag-px4io:
+	@echo Needs implementation
+
+upload-usb-px4fmu:
+	@echo Attempting to flash PX4FMU board via USB
+	@../../px4_bootloader/px_mkfw.py --board_id 5 > px4fmu_prototype.px4
+	@../../px4_bootloader/px_mkfw.py --prototype px4fmu_prototype.px4 --image ../build/px4fmu/nuttx/nuttx.bin > px4fmu.px4
+	../../px4_bootloader/px_uploader.py px4fmu.px4 --port "/dev/ttyACM5,/dev/ttyACM4,/dev/ttyACM3,/dev/ttyACM2,/dev/ttyACM1,/dev/ttyACM0,\\.\COM14,\\.\COM13,\\.\COM12,\\.\COM11,\\.\COM10,COM9,COM8,COM7,COM6,COM5,COM4,COM3,COM2,COM1,COM0,/dev/tty.usbmodemDEM4,/dev/tty.usbmodemDEM3,/dev/tty.usbmodemDEM2,/dev/tty.usbmodemDEM1"
+upload-usb:
+	@echo Finished upload attempt.
 
 cleanbuild:
 	@echo Cleaning build area...

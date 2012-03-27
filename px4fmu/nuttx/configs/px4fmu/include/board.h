@@ -223,18 +223,33 @@
  * XXX note that the NuttX PWM driver isn't sufficient for our needs; we
  * will need to implement something that can manage more than one output
  * value per timer.
+ *
+ * Pins:
+ *
+ * CTS - PA0 - TIM2CH1
+ * CTS - PA1 - TIM2CH2
+ * CTS - PA2 - TIM2CH3
+ * CTS - PA3 - TIM2CH4
+ *
  */
-#define GPIO_TIM2_CH1	GPIO_TIM2_CH1_1
-#define GPIO_TIM2_CH2	GPIO_TIM2_CH2_1
-#define GPIO_TIM2_CH3	GPIO_TIM2_CH3_1
-#define GPIO_TIM2_CH4	GPIO_TIM2_CH4_1
+#define GPIO_TIM2_CH1OUT	GPIO_TIM2_CH1OUT_1
+#define GPIO_TIM2_CH2OUT	GPIO_TIM2_CH2OUT_1
+#define GPIO_TIM2_CH3OUT	GPIO_TIM2_CH3OUT_1
+#define GPIO_TIM2_CH4OUT	GPIO_TIM2_CH4OUT_1
 
 /*
  * PPM
  *
- * PPM input is handled with Timer1, channel 2.
+ * PPM input is handled with Timer1, channel 3. (pin PA10)
  */
-#define GPIO_TIM1_CH2	GPIO_TIM1_CH2_1
+#define GPIO_TIM1_CH3IN	GPIO_TIM1_CH3IN_1
+
+/*
+ * Buzzer
+ *
+ * Buzzer output is handled with Timer3, channel 2. (pin PC8)
+ */
+#define GPIO_TIM3_CH3OUT GPIO_TIM3_CH3OUT_2
 
 /* 
  * CAN

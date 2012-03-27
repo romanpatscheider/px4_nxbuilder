@@ -1,6 +1,6 @@
 /************************************************************************************
- * configs/stm3240g-eval/src/up_adc.c
- * arch/arm/src/board/up_adc.c
+ * configs/stm3240g-eval/src/up_pwm.c
+ * arch/arm/src/board/up_pwm.c
  *
  *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -42,60 +42,44 @@
 
 #include <errno.h>
 #include <debug.h>
-#include <stdio.h>
 
-#include <nuttx/analog/adc.h>
+#include <nuttx/pwm.h>
 #include <arch/board/board.h>
 
 #include "chip.h"
 #include "up_arch.h"
-
-//#include "stm32_pwm.h"
-#include "stm32_adc.h"
+#include "stm32_pwm.h"
 #include "px4fmu-internal.h"
-
-#ifdef CONFIG_ADC
 
 /************************************************************************************
  * Definitions
  ************************************************************************************/
-
-/* Configuration ************************************************************/
-/* Up to 3 ADC interfaces are supported */
-
-#if STM32_NADC < 3
-#  undef CONFIG_STM32_ADC3
-#endif
-
-#if STM32_NADC < 2
-#  undef CONFIG_STM32_ADC2
-#endif
-
-#if STM32_NADC < 1
-#  undef CONFIG_STM32_ADC3
-#endif
-
-#if defined(CONFIG_STM32_ADC1) || defined(CONFIG_STM32_ADC2) || defined(CONFIG_STM32_ADC3)
-#ifndef CONFIG_STM32_ADC3
-#  warning "Channel information only available for ADC3"
-#endif
-
-#define ADC3_NCHANNELS 4
-
-/************************************************************************************
- * Private Data
- ************************************************************************************/
-/* The PX4FMU board has four ADC channels: ADC323 IN10-13
+/* Configuration *******************************************************************/
+/* PWM
+ *
+ * The PX4FMU has an alarm buzzer port at PC8. PC8 has these alternate functions:
+ * TIM8_CH3/SDIO_D0 /TIM3_CH3/ USART6_CK / DCMI_D2
  */
 
-/* Identifying number of each ADC channel: Variable Resistor. */
+#define HAVE_PWM 1
 
-#ifdef CONFIG_STM32_ADC3
-static const uint8_t  g_chanlist[ADC3_NCHANNELS] = {10, 11, 12, 13};
-
-/* Configurations of pins used byte each ADC channels */
-static const uint32_t g_pinlist[ADC3_NCHANNELS]  = {GPIO_ADC3_IN10, GPIO_ADC3_IN11, GPIO_ADC3_IN12, GPIO_ADC3_IN13};
+#ifndef CONFIG_PWM
+#  undef HAVE_PWM
 #endif
+
+#ifndef CONFIG_STM32_TIM3
+#  undef HAVE_PWM
+#endif
+
+#ifndef CONFIG_STM32_TIM3_PWM
+#  undef HAVE_PWM
+#endif
+
+#if CONFIG_STM32_TIM3_CHANNEL != BUZZER_PWM_CHANNEL
+#  undef HAVE_PWM
+#endif
+
+#ifdef HAVE_PWM
 
 /************************************************************************************
  * Private Functions
@@ -106,63 +90,48 @@ static const uint32_t g_pinlist[ADC3_NCHANNELS]  = {GPIO_ADC3_IN10, GPIO_ADC3_IN
  ************************************************************************************/
 
 /************************************************************************************
- * Name: adc_devinit
+ * Name: pwm_devinit
  *
  * Description:
  *   All STM32 architectures must provide the following interface to work with
- *   examples/adc.
+ *   examples/pwm.
  *
  ************************************************************************************/
 
-int adc_devinit(void)
+int pwm_devinit(void)
 {
-#ifdef CONFIG_STM32_ADC3
-	static bool initialized = false;
-	struct adc_dev_s *adc[ADC3_NCHANNELS];
-	int ret;
-	int i;
+  static bool initialized = false;
+  struct pwm_lowerhalf_s *pwm;
+  int ret;
 
-	/* Check if we have already initialized */
+  /* Have we already initialized? */
 
-	if (!initialized)
-	{
-		char name[11];
+  if (!initialized)
+    {
+      /* Call stm32_pwminitialize() to get an instance of the PWM interface */
 
+      pwm = stm32_pwminitialize(BUZZER_PWMTIMER);
+      if (!pwm)
+        {
+          dbg("Failed to get the STM32 PWM lower half for PWM device #%d, channel #%d\n", BUZZER_PWMTIMER, BUZZER_PWMCHANNEL);
+          return -ENODEV;
+        }
 
-		for (i = 0; i < ADC3_NCHANNELS; i++)
-		{
-			/* Configure the pins as analog inputs for the selected channels */
-			stm32_configgpio(g_pinlist[i]);
+      /* Register the PWM driver at "/dev/pwm0" */
 
-			/* Call stm32_adcinitialize() to get an instance of the ADC interface */
-			adc[i] = stm32_adcinitialize(3, &(g_chanlist[i]), 1);
-			if (adc == NULL)
-			{
-				adbg("ERROR: Failed to get ADC interface\n");
-				return -ENODEV;
-			}
+      ret = pwm_register("/dev/pwm0", pwm);
+      if (ret < 0)
+        {
+          adbg("pwm_register failed: %d\n", ret);
+          return ret;
+        }
 
+      /* Now we are initialized */
 
-			/* Register the ADC driver at "/dev/adc0" */
-			sprintf(name, "/dev/adc%d", i);
-			ret = adc_register(name, adc[i]);
-			if (ret < 0)
-			{
-				adbg("adc_register failed for adc %s: %d\n", name, ret);
-				return ret;
-			}
-		}
+      initialized = true;
+    }
 
-		/* Now we are initialized */
-
-		initialized = true;
-	}
-
-	return OK;
-#else
-	return -ENOSYS;
-#endif
+  return OK;
 }
 
-#endif /* CONFIG_STM32_ADC || CONFIG_STM32_ADC2 || CONFIG_STM32_ADC3 */
-#endif /* CONFIG_ADC */
+#endif /* HAVE_PWM */

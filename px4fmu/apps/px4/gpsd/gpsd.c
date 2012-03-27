@@ -1,8 +1,8 @@
 /****************************************************************************
- * examples/hello/main.c
+ * apps/reboot.c
  *
  *   Copyright (C) 2012 Lorenz Meier. All rights reserved.
- *   Author: Lorenz Meier <spudmonkey@racsa.co.cr>
+ *   Author: Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,76 +39,107 @@
 
 
 #include <nuttx/config.h>
-#include <pthread.h>
-#include <poll.h>
 #include <stdio.h>
+#include <signal.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
 
-#include <drv_led.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string.h>
+#include <errno.h>
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
 
-void handleMessage(mavlink_message_t * msg);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static void *receiveloop(void * arg) //runs as a pthread and listens to uart1 ("/dev/ttyS0")
-{
-	while(1) {
 
-		usleep(10000); //pthread_yield seems not to work
-
-	}
-
-}
-
-
-static void *heartbeatloop(void * arg)
-{
-	while(1) {
-		// sleep
-		usleep(100000);
-
-		mavlink_msg_heartbeat_send(chan,system_type,MAV_AUTOPILOT_GENERIC,MAV_MODE_PREFLIGHT,custom_mode,MAV_STATE_UNINIT);
-	}
-
-}
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-void handleMessage(mavlink_message_t * msg) {
-	printf("DEBUG: got a message \n");
-    mavlink_msg_statustext_send(chan,0,"received msg");
-}
 
 /****************************************************************************
  * user_start
  ****************************************************************************/
 
-int mavlink_main(int argc, char *argv[])
+
+
+/****************************************************************************
+ * Definitions
+ ****************************************************************************/
+
+int fd;
+
+static int gps_init()
+{
+	struct termios options;
+
+	fd = open("/dev/ttyS3", O_RDONLY | O_NOCTTY);
+	if (fd < 0) {
+		printf("GPS UART6: open fail\n");
+		return ERROR;
+	} else {
+		tcgetattr(fd, &options);
+		/* Set baud rate to 38400 */
+		//cfsetispeed(&options, B38400);
+		//cfsetospeed(&options, B38400);
+		/* Enable receiver and set local mode */
+		options.c_cflag |= (CLOCAL | CREAD);
+		/* Set the new options */
+		tcsetattr(fd, TCSANOW, &options);
+		printf("\tGPS configured..\n");
+	}
+	return 0;
+}
+
+/****************************************************************************
+ * Name: interrupt
+ ****************************************************************************/
+
+static void interrupt(int signo)
+{
+	printf("Exiting...\n");
+	fflush(stdout);
+	close(fd);
+	exit(0);
+}
+
+int gpsd_main(int argc, char *argv[])
 {
     // print text
-    printf("#INFO: SYSCTL ENABLED\n");
-    usleep(100000);
+    printf("GPS deamon ready\n\n");
 
-    //create pthreads
-    pthread_t heartbeat_thread;
-    pthread_t receive_thread;
 
-    pthread_create (&heartbeat_thread, NULL, heartbeatloop, NULL);
-    pthread_create (&receive_thread, NULL, receiveloop, NULL);
+    int	ret = gps_init();
 
-    //wait for threads to complete:
-    pthread_join(heartbeat_thread, NULL);
-    pthread_join(receive_thread, NULL);
+    fflush(stdout);
 
-    //close uart
-	fclose(uart_read);
-	fclose(uart_write);
+//	sigset_t sigset;
+//	sigemptyset(&sigset);
+//	sigaddset(SI_USER, &sigset);
+	struct sigaction act;
 
-    return 0;
+	act.sa_u._sa_handler = interrupt;
+//	act.sa_mask = sigset;
+
+    sigaction(SI_USER, &act, NULL);
+
+    while(true)
+    {
+    	char ch;
+    	/* blocking read on next byte */
+    	read (fd, &ch, 1);
+    	printf("%c", ch);
+    }
+
+    /* Should never reach here, only on error */
+    return ret;
 }
 
 

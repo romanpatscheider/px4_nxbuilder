@@ -1,8 +1,8 @@
 /****************************************************************************
- * apps/reboot.c
+ * px4/sensors/test_gpio.c
  *
- *   Copyright (C) 2012 Lorenz Meier. All rights reserved.
- *   Author: Lorenz Meier <lm@inf.ethz.ch>
+ *   Copyright (C) 2012 Michael Smith. All rights reserved.
+ *   Authors: Michael Smith <DrZiplok@me.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,13 +37,34 @@
  * Included Files
  ****************************************************************************/
 
-
 #include <nuttx/config.h>
+
+#include <sys/types.h>
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <debug.h>
+
+#include <nuttx/spi.h>
+
+#include "tests.h"
+
+#include <nuttx/analog/adc.h>
+
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+/****************************************************************************
+ * Private Function Prototypes
  ****************************************************************************/
 
 /****************************************************************************
@@ -51,117 +72,96 @@
  ****************************************************************************/
 
 /****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+
+/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * user_start
+ * Name: test_gpio
  ****************************************************************************/
 
-#include <arch/board/drv_led.h>
-#include <arch/board/drv_l3gd20.h>
-
-/****************************************************************************
- * Definitions
- ****************************************************************************/
-
-int leds;
-int gyro;
-
-/* gyro x, y, z raw values */
-int16_t	gyro_raw[3] = {0, 0, 0};
-/* gyro x, y, z metric values in rad/s */
-float gyro_rad_s[3] = {0.0f, 0.0f, 0.0f};
-
-static int led_init()
+int test_adc(int argc, char *argv[])
 {
-	leds = open("/dev/led", O_RDONLY | O_NONBLOCK);
-	if (leds < 0) {
-		printf("LED: open fail\n");
-		return ERROR;
-	}
+	int		fd0;
+	int		ret = 0;
+	struct adc_msg_s sample[4];
+	size_t readsize;
+	ssize_t nbytes;
+	int i;
+	int j;
+	int errval;
 
-	if (ioctl(leds, LED_ON, LED_BLUE) ||
-			ioctl(leds, LED_ON, LED_AMBER)) {
-
-		printf("LED: ioctl fail\n");
-		return ERROR;
-	}
-	return 0;
-}
-
-static int led_toggle(int led)
-{
-	static int last_blue = LED_ON;
-	static int last_amber = LED_ON;
-
-	if (led == LED_BLUE) last_blue = (last_blue == LED_ON) ? LED_OFF : LED_ON;
-	if (led == LED_AMBER) last_amber = (last_amber == LED_ON) ? LED_OFF : LED_ON;
-
-	return ioctl(leds, ((led == LED_BLUE) ? last_blue : last_amber), led);
-}
-
-static int gyro_init()
-{
-	gyro = open("/dev/l3gd20", O_RDONLY);
-	if (gyro < 0) {
-		printf("L3GD20: open fail\n");
-		return ERROR;
-	}
-
-	if (ioctl(gyro, L3GD20_SETRATE, L3GD20_RATE_760HZ_LP_50HZ) ||
-	    ioctl(gyro, L3GD20_SETRANGE, L3GD20_RANGE_500DPS)) {
-
-		printf("L3GD20: ioctl fail\n");
+	for (j = 0; j < 4; j++)
+	{
+		char name[11];
+		sprintf(name, "/dev/adc%d", j);
+	fd0 = open(name, O_RDONLY | O_NONBLOCK);
+	if (fd0 < 0)
+	{
+		printf("ADC: %s open fail\n", name);
 		return ERROR;
 	} else {
-		printf("\tgyro configured..\n");
+		printf("Opened %s successfully\n", name);
 	}
-	return 0;
-}
 
-static int gyro_read()
-{
-	int ret = read(gyro, gyro_raw, sizeof(gyro_raw));
-	if (ret != sizeof(gyro_raw)) {
-		printf("Gyro read failed!\n");
+	/* first adc read round */
+	readsize = 1 * sizeof(struct adc_msg_s);
+	nbytes = read(fd0, sample, readsize);
+
+    /* Handle unexpected return values */
+
+    if (nbytes < 0)
+      {
+        errval = errno;
+        if (errval != EINTR)
+          {
+            message("read %s failed: %d\n",
+                    name, errval);
+            errval = 3;
+            goto errout_with_dev;
+          }
+
+        message("\tInterrupted read...\n");
+      }
+    else if (nbytes == 0)
+      {
+        message("\tNo data read, Ignoring\n");
+      }
+
+    /* Print the sample data on successful return */
+
+    else
+    {
+    	int nsamples = nbytes / sizeof(struct adc_msg_s);
+    	if (nsamples * sizeof(struct adc_msg_s) != nbytes)
+    	{
+    		message("\tread size=%d is not a multiple of sample size=%d, Ignoring\n",
+    				nbytes, sizeof(struct adc_msg_s));
+    	}
+    	else
+    	{
+    		message("Sample:\n");
+    		for (i = 0; i < nsamples ; i++)
+    		{
+    			message("%d: channel: %d value: %d\n",
+    					i, sample[i].am_channel, sample[i].am_data);
+    		}
+    	}
+    }
 	}
+
+	printf("\t ADC test successful.\n");
+
+	errout_with_dev:
+	  if (fd0 != 0) close(fd0);
+
 	return ret;
 }
-
-int offboard_control_main(int argc, char *argv[])
-{
-    // print text
-    printf("Offboard Vicon Space Control Ready\n\n");
-
-    // Leds and sensors
-    int	ret = 0;
-
-    if ((led_init() != 0) || (gyro_init() != 0)) ret = ERROR;
-
-    fflush(stdout);
-
-    int testcounter = 0;
-    // Remove after testing
-
-    while(true)
-    {
-
-    	/* ROUGHLY 20hz, needs the high res-timer */
-    	gyro_read();
-    	printf("\tl3gd20 values: x:%d\ty:%d\tz:%d\n", gyro_raw[0], gyro_raw[1], gyro_raw[2]);
-    	led_toggle(LED_BLUE);
-    	led_toggle(LED_AMBER);
-    	usleep(49000);
-    	testcounter++;
-
-    	if (testcounter > 100) break;
-    }
-
-    
-    
-    /* Should never reach here, only on error */
-    return ret;
-}
-
-

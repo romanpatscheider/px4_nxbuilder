@@ -4,9 +4,12 @@ CONFIG		 = px4fmu/nsh
 
 include ../etc/nuttx-build.mk
 
+<<<<<<< HEAD
 upload-mac:
 	sh upload-mac.sh
 	
 upload-linux:
 	sh upload-linux.sh
 	
+upload-usb: upload-usb-px4fmu
+

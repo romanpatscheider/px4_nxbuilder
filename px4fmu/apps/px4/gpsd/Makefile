@@ -48,12 +48,12 @@ endif
 # Reboot Application
 # TODO: appname can be automatically extracted from the directory name
 
-APPNAME		= offboard_control
+APPNAME		= gpsd
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 5000
+STACKSIZE	= 300
 
 ASRCS		=
-CSRCS		= offboard_control.c
+CSRCS		= gpsd.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))
@@ -98,7 +98,7 @@ context: .context
 
 # Create dependencies
 
-.depend: Makefile $(SRCS) include
+.depend: Makefile $(SRCS)
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 

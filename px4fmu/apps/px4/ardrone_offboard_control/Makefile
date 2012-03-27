@@ -48,13 +48,16 @@ endif
 # Mavlink Application
 # TODO: appname can be automatically extracted from the directory name
 
-APPNAME		= sysctl
-PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 300
+APPNAME		= ardrone_offboard_control
+PRIORITY	= (SCHED_PRIORITY_MAX-1)
+STACKSIZE	= 2000
 
+
+CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include -std=gnu99
+CFLAGS		+= -I ../mavlink
 
 ASRCS		=
-CSRCS		= sysctl.c
+CSRCS		= ardrone_offboard_control.c ardrone_motor_control.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))
@@ -97,13 +100,9 @@ $(COBJS): %$(OBJEXT): %.c
 
 context: .context
 
-# Mavlink includes
-include:
-	@./generate.sh
-
 # Create dependencies
 
-.depend: Makefile $(SRCS) include
+.depend: Makefile $(SRCS)
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 

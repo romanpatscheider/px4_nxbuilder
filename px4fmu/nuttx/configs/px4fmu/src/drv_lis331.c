@@ -114,7 +114,7 @@ struct lis331_dev_s
 	struct lis331_buffer	*buffer;
 };
 
-static struct lis331_dev_s	dev;
+static struct lis331_dev_s	lis331_dev;
 
 static void	write_reg(uint8_t address, uint8_t data);
 static uint8_t	read_reg(uint8_t address);
@@ -127,9 +127,9 @@ write_reg(uint8_t address, uint8_t data)
 {
 	uint8_t cmd[2] = { address | DIR_WRITE, data };
 
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-      	SPI_SNDBLOCK(dev.spi, &cmd, sizeof(cmd));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_SELECT(lis331_dev.spi, lis331_dev.spi_id, true);
+      	SPI_SNDBLOCK(lis331_dev.spi, &cmd, sizeof(cmd));
+	SPI_SELECT(lis331_dev.spi, lis331_dev.spi_id, false);
 }
 
 static uint8_t
@@ -138,9 +138,9 @@ read_reg(uint8_t address)
 	uint8_t	cmd[2] = {address | DIR_READ, 0};
 	uint8_t data[2];
 
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-	SPI_EXCHANGE(dev.spi, cmd, data, sizeof(cmd));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
+	SPI_SELECT(lis331_dev.spi, lis331_dev.spi_id, true);
+	SPI_EXCHANGE(lis331_dev.spi, cmd, data, sizeof(cmd));
+	SPI_SELECT(lis331_dev.spi, lis331_dev.spi_id, false);
 
 	return data[1];	
 }
@@ -159,11 +159,11 @@ read_fifo(uint16_t *data)
 	report.cmd = ADDR_STATUS_REG | DIR_READ | ADDR_INCREMENT;
 
 	/* exchange the report structure with the device */
-	SPI_LOCK(dev.spi, true);
-	SPI_SELECT(dev.spi, dev.spi_id, true);
-	SPI_EXCHANGE(dev.spi, &report, &report, sizeof(report));
-	SPI_SELECT(dev.spi, dev.spi_id, false);
-	SPI_LOCK(dev.spi, false);
+	SPI_LOCK(lis331_dev.spi, true);
+	SPI_SELECT(lis331_dev.spi, lis331_dev.spi_id, true);
+	SPI_EXCHANGE(lis331_dev.spi, &report, &report, sizeof(report));
+	SPI_SELECT(lis331_dev.spi, lis331_dev.spi_id, false);
+	SPI_LOCK(lis331_dev.spi, false);
 
 	data[0] = report.x;
 	data[1] = report.y;
@@ -213,7 +213,7 @@ lis331_ioctl(struct file *filp, int cmd, unsigned long arg)
 		if ((arg & REG1_RATE_MASK) == arg) {
 			set_rate(arg);
 			result = 0;
-			dev.rate = arg;
+			lis331_dev.rate = arg;
 		}
 		break;
 
@@ -225,7 +225,7 @@ lis331_ioctl(struct file *filp, int cmd, unsigned long arg)
 		break;
 
 	case LIS331_SETBUFFER:
-		dev.buffer = (struct lis331_buffer *)arg;
+		lis331_dev.buffer = (struct lis331_buffer *)arg;
 		result = 0;
 		break;
 	}
@@ -240,9 +240,9 @@ lis331_attach(struct spi_dev_s *spi, int spi_id)
 {
 	int	result = ERROR;
 	
-	dev.spi = spi;
+	lis331_dev.spi = spi;
 
-	SPI_LOCK(dev.spi, true);
+	SPI_LOCK(lis331_dev.spi, true);
 
 	/* verify that the device is attached and functioning */
 	if (read_reg(ADDR_WHO_AM_I) == WHO_I_AM) {
@@ -263,7 +263,7 @@ lis331_attach(struct spi_dev_s *spi, int spi_id)
 		errno = EIO;
 	}
 
-	SPI_LOCK(dev.spi, false);
+	SPI_LOCK(lis331_dev.spi, false);
 
 	return result;
 }

@@ -40,20 +40,6 @@
 
 #include <nuttx/config.h>
 
-#include <errno.h>
-#include <debug.h>
-#include <stdio.h>
-
-#include <nuttx/analog/adc.h>
-#include <arch/board/board.h>
-
-#include "chip.h"
-#include "up_arch.h"
-
-//#include "stm32_pwm.h"
-#include "stm32_adc.h"
-#include "px4fmu-internal.h"
-
 #ifdef CONFIG_ADC
 
 /************************************************************************************
@@ -83,25 +69,6 @@
 #define ADC3_NCHANNELS 4
 
 /************************************************************************************
- * Private Data
- ************************************************************************************/
-/* The PX4FMU board has four ADC channels: ADC323 IN10-13
- */
-
-/* Identifying number of each ADC channel: Variable Resistor. */
-
-#ifdef CONFIG_STM32_ADC3
-static const uint8_t  g_chanlist[ADC3_NCHANNELS] = {10, 11, 12, 13};
-
-/* Configurations of pins used byte each ADC channels */
-static const uint32_t g_pinlist[ADC3_NCHANNELS]  = {GPIO_ADC3_IN10, GPIO_ADC3_IN11, GPIO_ADC3_IN12, GPIO_ADC3_IN13};
-#endif
-
-/************************************************************************************
- * Private Functions
- ************************************************************************************/
-
-/************************************************************************************
  * Public Functions
  ************************************************************************************/
 
@@ -114,55 +81,7 @@ static const uint32_t g_pinlist[ADC3_NCHANNELS]  = {GPIO_ADC3_IN10, GPIO_ADC3_IN
  *
  ************************************************************************************/
 
-int adc_devinit(void)
-{
-#ifdef CONFIG_STM32_ADC3
-	static bool initialized = false;
-	struct adc_dev_s *adc[ADC3_NCHANNELS];
-	int ret;
-	int i;
-
-	/* Check if we have already initialized */
-
-	if (!initialized)
-	{
-		char name[11];
-
-
-		for (i = 0; i < ADC3_NCHANNELS; i++)
-		{
-			/* Configure the pins as analog inputs for the selected channels */
-			stm32_configgpio(g_pinlist[i]);
-
-			/* Call stm32_adcinitialize() to get an instance of the ADC interface */
-			adc[i] = stm32_adcinitialize(3, &(g_chanlist[i]), 1);
-			if (adc == NULL)
-			{
-				adbg("ERROR: Failed to get ADC interface\n");
-				return -ENODEV;
-			}
-
-
-			/* Register the ADC driver at "/dev/adc0" */
-			sprintf(name, "/dev/adc%d", i);
-			ret = adc_register(name, adc[i]);
-			if (ret < 0)
-			{
-				adbg("adc_register failed for adc %s: %d\n", name, ret);
-				return ret;
-			}
-		}
-
-		/* Now we are initialized */
-
-		initialized = true;
-	}
-
-	return OK;
-#else
-	return -ENOSYS;
-#endif
-}
+int adc_devinit(void);
 
 #endif /* CONFIG_STM32_ADC || CONFIG_STM32_ADC2 || CONFIG_STM32_ADC3 */
 #endif /* CONFIG_ADC */

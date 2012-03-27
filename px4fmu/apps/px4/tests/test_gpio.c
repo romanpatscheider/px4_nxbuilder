@@ -48,11 +48,12 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <arch/board/board.h>
-
-#include <nuttx/spi.h>
+#include <nuttx/analog/adc.h>
 
 #include "tests.h"
+
+#include <arch/board/drv_gpio.h>
+
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -89,5 +90,106 @@
 
 int test_gpio(int argc, char *argv[])
 {
-	return 0;
+	int		fd;
+	int		adc;
+	int		ret = 0;
+
+	fd = open("/dev/gpio", O_RDONLY | O_NONBLOCK);
+	if (fd < 0) {
+		printf("GPIO: open fail\n");
+		return ERROR;
+	}
+
+	//	adc = open("/dev/adc0", O_RDONLY);
+	//	if (adc < 0) {
+	//		printf("GPIO: adc open fail\n");
+	//		return ERROR;
+	//	}
+
+	if (ioctl(fd, GPIO_DIRECTION, GPIO_ALL_OUTPUTS)) {
+
+		printf("GPIO: output direction set fail\n");
+		return ERROR;
+	}
+
+	/* change all gpios */
+	if (ioctl(fd, GPIO_SET, 0)) {
+
+		printf("GPIO: set fail for index 0\n");
+		return ERROR;
+	} else {
+		printf("GPIO: set success for index 0\n");
+	}
+
+	/* Wait for 20 ms */
+	usleep(20000);
+
+	if (ioctl(fd, GPIO_CLEAR, 0)) {
+
+		printf("GPIO: clear fail for index 0\n");
+		return ERROR;
+	} else {
+		printf("GPIO: clear success for index 0\n");
+	}
+
+	/* Wait for 20 ms */
+	usleep(20000);
+
+	if (ioctl(fd, GPIO_SET, 1)) {
+
+		printf("GPIO: set fail for index 1\n");
+		return ERROR;
+	} else {
+		printf("GPIO: set success for index 1\n");
+	}
+
+	/* Wait for 20 ms */
+	usleep(20000);
+
+	if (ioctl(fd, GPIO_CLEAR, 1)) {
+
+		printf("GPIO: clear fail for index 1\n");
+		return ERROR;
+	} else {
+		printf("GPIO: clear success for index 1\n");
+	}
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+	if (ioctl(fd, GPIO_SET, 2)) {
+
+		printf("GPIO: set fail for index 2\n");
+		return ERROR;
+	}
+
+	/* Wait for 20 ms */
+	usleep(20000);
+
+	if (ioctl(fd, GPIO_CLEAR, 2)) {
+
+		printf("GPIO: clear fail for index 2\n");
+		return ERROR;
+	}
+	if (ioctl(fd, GPIO_SET, 3)) {
+
+		printf("GPIO: set fail for index 3\n");
+		return ERROR;
+	}
+
+	/* Wait for 20 ms */
+	usleep(20000);
+
+	if (ioctl(fd, GPIO_CLEAR, 3)) {
+
+		printf("GPIO: clear fail for index 3\n");
+		return ERROR;
+	}
+#endif
+
+	/* Go back to default */
+	ioctl(fd, GPIO_DIRECTION, GPIO_ALL_INPUTS);
+	close(fd);
+	close(adc);
+
+	printf("\t GPIO test successful.\n");
+
+	return ret;
 }

@@ -4,7 +4,6 @@ CONFIG		 = px4fmu/nsh
 
 include ../etc/nuttx-build.mk
 
-<<<<<<< HEAD
 upload-mac:
 	sh upload-mac.sh
 	

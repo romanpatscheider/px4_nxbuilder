@@ -65,7 +65,7 @@ CONFIGURED_APPS += px4/sensors
 CONFIGURED_APPS += examples/ostest
 CONFIGURED_APPS += px4/tests
 CONFIGURED_APPS += px4/ardrone_offboard_control
-CONFIGURED_APPS += px4/attitude_estimator_bm
+#CONFIGURED_APPS += px4/attitude_estimator_bm
 
 ifeq ($(CONFIG_ADC),y)
 CONFIGURED_APPS += examples/adc

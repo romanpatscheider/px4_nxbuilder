@@ -50,7 +50,7 @@ endif
 
 APPNAME		= spektrum
 PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 10000
+STACKSIZE	= 1024
 
 ASRCS		=
 CSRCS		= spektrum_test.c nuttx_spektrum.c
@@ -98,7 +98,7 @@ context: .context
 
 # Create dependencies
 
-.depend: Makefile $(SRCS) include
+.depend: Makefile $(SRCS) 
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 

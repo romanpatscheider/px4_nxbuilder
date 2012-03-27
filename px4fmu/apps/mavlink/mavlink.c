@@ -239,10 +239,10 @@ static void *gps_receiveloop(void * arg) //runs as a pthread and listens message
 
 			mavlink_msg_gps_status_send(MAVLINK_COMM_0, global_data_gps.satellites_visible, global_data_gps.satellite_prn, global_data_gps.satellite_used, global_data_gps.satellite_elevation, global_data_gps.satellite_azimuth, global_data_gps.satellite_snr);
 		}
-//		else
-//		{
-//			mavlink_msg_statustext_send(chan,0,"timeout");
-//		}
+		else
+		{
+			mavlink_msg_statustext_send(chan,0,"timeout");
+		}
 
 		global_data_unlock(&global_data_gps.access_conf);
 	}

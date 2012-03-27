@@ -65,7 +65,7 @@ static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to ua
 		{
 			if(timestamp_now - ubx_state->last_message_timestamps[i] > GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS)
 			{
-				printf("Warning: GPS ubx message %d not received for a long time\n", i);
+//				printf("Warning: GPS ubx message %d not received for a long time\n", i);
 				all_okay = false;
 			}
 		}
@@ -86,7 +86,9 @@ static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to ua
 
 			/* trying to reconfigure the gps configuration */
 			configure_gps_ubx(fd);
+			fflush(stdout);
 			sleep(1);
+			printf("sleep finished\n");
 
 	//		int killres = pthread_kill(&ubx_thread, SIGKILL);
 	//		printf("killres=%d",killres);
@@ -205,6 +207,7 @@ static void *ubx_loop(void * arg) //runs as a pthread and listens to uart1 ("/de
 
 			/* Inform the other processes that there is new gps data available */
 			global_data_broadcast(&global_data_sys_status.access_conf);
+
 
 
 
@@ -401,6 +404,7 @@ int gps_main(int argc, char *argv[])
 
     /* wait before starting watchdog */
 
+    fflush(stdout);
     sleep(2);
     pthread_create (&ubx_watchdog_thread, NULL, ubx_watchdog_loop, (void *)&fd);
 

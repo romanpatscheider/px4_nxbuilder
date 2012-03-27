@@ -133,6 +133,7 @@ static void *gyro_accelerometer_loop(void * arg)
 
     while(1)
     {
+    	read_success = 0;
     	/* try reading */
     	ret_gyro = read(fd_gyro,buf_gyro, sizeof(buf_gyro));
     	ret_accelerometer = read(fd_accelerometer, buf_accelerometer, sizeof(buf_accelerometer));

@@ -98,7 +98,7 @@ context: .context
 
 # Create dependencies
 
-.depend: Makefile $(SRCS) include
+.depend: Makefile $(SRCS) 
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 

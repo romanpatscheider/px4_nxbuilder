@@ -45,10 +45,10 @@ ifeq ($(WINTOOL),y)
 INCDIROPT	= -w
 endif
 
-# gps Application
+# sensors Application
 # TODO: appname can be automatically extracted from the directory name
 
-APPNAME		= gps
+APPNAME		= sensors
 PRIORITY	= SCHED_PRIORITY_DEFAULT
 STACKSIZE	= 10000
 

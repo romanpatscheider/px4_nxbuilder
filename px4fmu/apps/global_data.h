@@ -13,7 +13,6 @@
 
 /* Definitions */
 #define GLOBAL_DATA_WAIT 2 //seconds
-static struct timespec time_to_wait = {0, 0};
 
 typedef struct
 {

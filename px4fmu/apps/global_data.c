@@ -30,6 +30,8 @@ void global_data_unlock(access_conf_t * access_conf)
 
 int global_data_wait(access_conf_t * access_conf)
 {
+
+	struct timespec time_to_wait = {0, 0};
 	time_to_wait.tv_sec = time(NULL) + GLOBAL_DATA_WAIT;
 
 	global_data_lock(access_conf);

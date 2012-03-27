@@ -140,7 +140,7 @@ static void *gyro_accelerometer_loop(void * arg)
     	/* check gyro result */
     	if (ret_gyro != sizeof(buf_gyro))
     	{
-    		printf("\tl3gd20: read fail (%d should have been %d)\n", ret_gyro, sizeof(buf_gyro));
+//    		printf("\tl3gd20: read fail (%d should have been %d)\n", ret_gyro, sizeof(buf_gyro));
     	}
     	else
     	{
@@ -162,7 +162,7 @@ static void *gyro_accelerometer_loop(void * arg)
     	/* check accelerometer result */
     	if (ret_accelerometer != sizeof(buf_accelerometer))
     	{
-    		printf("\tbma180: read fail (%d should have been %d)\n", ret_accelerometer, sizeof(buf_accelerometer));
+//    		printf("\tbma180: read fail (%d should have been %d)\n", ret_accelerometer, sizeof(buf_accelerometer));
     	}
     	else
     	{
@@ -284,7 +284,7 @@ static void *pressure_sensor_loop(void * arg)
 
 		if (ret_pressure_sensor != sizeof(buf_pressure_sensor))
 		{
-			printf("\tms5611: read fail (%d should have been %d)\n", ret_pressure_sensor, sizeof(buf_pressure_sensor));
+//			printf("\tms5611: read fail (%d should have been %d)\n", ret_pressure_sensor, sizeof(buf_pressure_sensor));
 //			return ERROR;
 		}
 		else

@@ -89,7 +89,7 @@
  * Name: user_start/adc_main
  ****************************************************************************/
 
-int sensors_main(int argc, char *argv[])
+int sensors_old_main(int argc, char *argv[])
 {
 	struct spi_dev_s *spi;
 	int result = -1;

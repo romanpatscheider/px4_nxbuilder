@@ -88,7 +88,6 @@ static void *ubx_watchdog_loop(void * arg) //runs as a pthread and listens to ua
 			configure_gps_ubx(fd);
 			fflush(stdout);
 			sleep(1);
-			printf("sleep finished\n");
 
 	//		int killres = pthread_kill(&ubx_thread, SIGKILL);
 	//		printf("killres=%d",killres);
@@ -403,9 +402,7 @@ int gps_main(int argc, char *argv[])
 
 
     /* wait before starting watchdog */
-
-    fflush(stdout);
-    sleep(2);
+	sleep(5);
     pthread_create (&ubx_watchdog_thread, NULL, ubx_watchdog_loop, (void *)&fd);
 
     /* wait for threads to complete */

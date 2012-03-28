@@ -130,7 +130,6 @@ static void *gyro_accelerometer_loop(void * arg)
 	global_data_sensors_raw.gyro_raw_counter = 0;
 	global_data_sensors_raw.accelerometer_raw_counter = 0;
 
-
     while(1)
     {
     	/* try reading */
@@ -140,7 +139,7 @@ static void *gyro_accelerometer_loop(void * arg)
     	/* check gyro result */
     	if (ret_gyro != sizeof(buf_gyro))
     	{
-//    		printf("\tl3gd20: read fail (%d should have been %d)\n", ret_gyro, sizeof(buf_gyro));
+    		printf("\tl3gd20: read fail (%d should have been %d)\n", ret_gyro, sizeof(buf_gyro));
     	}
     	else
     	{
@@ -162,7 +161,7 @@ static void *gyro_accelerometer_loop(void * arg)
     	/* check accelerometer result */
     	if (ret_accelerometer != sizeof(buf_accelerometer))
     	{
-//    		printf("\tbma180: read fail (%d should have been %d)\n", ret_accelerometer, sizeof(buf_accelerometer));
+    		printf("\tbma180: read fail (%d should have been %d)\n", ret_accelerometer, sizeof(buf_accelerometer));
     	}
     	else
     	{

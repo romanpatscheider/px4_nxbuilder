@@ -190,9 +190,9 @@ read_values(int16_t *data)
 	I2C_WRITEREAD(hmc5883l_dev.i2c, &cmd, 1, (uint8_t*)&(hmc_report.status), 1);
 
 	/* write values and clamp them to 12 bit */
-	data[0] = hmc_report.x & 0xFFF;
-	data[1] = hmc_report.y & 0xFFF;
-	data[2] = hmc_report.z & 0xFFF;
+	data[0] = hmc_report.x >> 4;//
+	data[1] = hmc_report.y >> 4;//
+	data[2] = hmc_report.z >> 4;//
 
 	/* return 1 if new data is available, 0 else */
 	return (hmc_report.status & STATUS_REG_DATA_READY);

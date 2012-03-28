@@ -126,7 +126,7 @@ static void *gyro_accelerometer_loop(void * arg)
 
 	usleep(10000);
 
-	/* initiialize counter */
+	/* initialize counter */
 	global_data_sensors_raw.gyro_raw_counter = 0;
 	global_data_sensors_raw.accelerometer_raw_counter = 0;
 
@@ -148,7 +148,13 @@ static void *gyro_accelerometer_loop(void * arg)
 
     		/* lock, increment counter, read, and unlock */
 			global_data_lock(&global_data_sensors_raw.access_conf);
-			memcpy(global_data_sensors_raw.gyro_raw, buf_gyro, sizeof(buf_gyro));
+			//memcpy(global_data_sensors_raw.gyro_raw buf_gyro, sizeof(buf_gyro));
+
+			/* copy sensor readings to global data and transform coordinates into px4fmu board frame */
+			global_data_sensors_raw.gyro_raw[0] = buf_gyro[1]; // x of the board is y of the sensor
+			global_data_sensors_raw.gyro_raw[1] = buf_gyro[0]; // y on the board is x of the sensor
+			global_data_sensors_raw.gyro_raw[2] = (-1)*buf_gyro[2]; // z of the board is -z of the sensor
+
 			global_data_sensors_raw.gyro_raw_counter++;
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 
@@ -170,7 +176,13 @@ static void *gyro_accelerometer_loop(void * arg)
 
     		/* lock, increment counter, read, and unlock */
 			global_data_lock(&global_data_sensors_raw.access_conf);
-			memcpy(global_data_sensors_raw.accelerometer_raw, buf_accelerometer, sizeof(buf_accelerometer));
+			//memcpy(global_data_sensors_raw.accelerometer_raw, buf_accelerometer, sizeof(buf_accelerometer));
+
+			/* copy sensor readings to global data and transform coordinates into px4fmu board frame */
+			global_data_sensors_raw.accelerometer_raw[0] = (-1)*buf_accelerometer[1]; // x of the board is -y of the sensor
+			global_data_sensors_raw.accelerometer_raw[1] = (-1)*buf_accelerometer[0]; // y on the board is -x of the sensor
+			global_data_sensors_raw.accelerometer_raw[2] = (-1)*buf_accelerometer[2]; // z of the board is -z of the sensor
+
 			global_data_sensors_raw.accelerometer_raw_counter++;
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 
@@ -232,7 +244,13 @@ static void *magnetometer_loop(void * arg)
 		{
 			/* lock, read, and unlock */
 			global_data_lock(&global_data_sensors_raw.access_conf);
-			memcpy(global_data_sensors_raw.magnetometer_raw, buf_magnetometer, sizeof(buf_magnetometer));
+			//memcpy(global_data_sensors_raw.magnetometer_raw, buf_magnetometer, sizeof(buf_magnetometer));
+
+			/* copy sensor readings to global data and transform coordinates into px4fmu board frame */
+			global_data_sensors_raw.magnetometer_raw[0] = buf_magnetometer[1]; // x of the board is y of the sensor
+			global_data_sensors_raw.magnetometer_raw[1] = buf_magnetometer[0]; // y on the board is x of the sensor
+			global_data_sensors_raw.magnetometer_raw[2] = (-1)*buf_magnetometer[2]; // z of the board is -z of the sensor
+
 			global_data_sensors_raw.magnetometer_raw_counter++;
 			global_data_unlock(&global_data_sensors_raw.access_conf);
 			global_data_broadcast(&global_data_sensors_raw.access_conf);

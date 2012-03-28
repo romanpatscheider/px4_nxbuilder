@@ -120,21 +120,41 @@ int gps_main(int argc, char *argv[])
 	}
 
 //TODO: add mode if here (reads from arguments and configuration, watchdog will look for changes in mode configuration while running (?))
-	ubx_init();
+	if(strcmp(mode, "ubx") == 0)
+	{
+
+		/* start ubx thread and watchdog */
+		ubx_init();
+		pthread_create (&gps_thread, NULL, ubx_loop, (void *)&fd);
+		sleep(5);
+		pthread_create (&gps_watchdog_thread, NULL, ubx_watchdog_loop, (void *)&fd);
+
+	    /* wait for threads to complete */
+		pthread_join(gps_thread, NULL);
+		pthread_join(gps_watchdog_thread, (void *)&fd);
+
+	}
+	if(strcmp(mode, "mtkcustom") == 0)
+	{
+		/* start mtk thread and watchdog */
+
+		mtk_init();
+		pthread_create (&gps_thread, NULL, mtk_loop, (void *)&fd);
+		sleep(5);
+		pthread_create (&gps_watchdog_thread, NULL, mtk_watchdog_loop, (void *)&fd);
+
+	    /* wait for threads to complete */
+		pthread_join(gps_thread, NULL);
+		pthread_join(gps_watchdog_thread, (void *)&fd)
+
+	}
 
 
 
-    /* create pthreads */
-    pthread_create (&ubx_thread, NULL, ubx_loop, (void *)&fd);
 
 
-    /* wait before starting watchdog */
-	sleep(5);
-    pthread_create (&ubx_watchdog_thread, NULL, ubx_watchdog_loop, (void *)&fd);
 
-    /* wait for threads to complete */
-	pthread_join(ubx_thread, NULL);
-	pthread_join(ubx_watchdog_thread, (void *)&fd);
+
 
 	return 0;
 

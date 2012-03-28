@@ -30,14 +30,10 @@
 #include <pthread.h>
 
 /* Threads */
-pthread_t ubx_thread;
-pthread_t ubx_watchdog_thread;
-
-
+pthread_t gps_thread;
+pthread_t gps_watchdog_thread;
 
 int gps_fd;
-
-
 
 //extern gps_bin_ubx_state_t * ubx_state;
 

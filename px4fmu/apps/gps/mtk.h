@@ -11,9 +11,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "nmealib/nmea/nmea.h"
+#include "../global_data.h"
+#include "../global_data_gps_t.h" //for storage of gps information
+#include "../global_data_sys_status_t.h"
 
-//Definition for custom mode
+//Definition for mtk custom mode
 #define MEDIATEK_REFRESH_RATE_4HZ "$PMTK220,250*29\r\n" //refresh rate - 4Hz - 250 milliseconds
 #define MEDIATEK_REFRESH_RATE_5HZ "$PMTK220,200*2C\r\n"
 #define MEDIATEK_REFRESH_RATE_10HZ "$PMTK220,100*2F\r\n" //refresh rate - 10Hz - 100 milliseconds
@@ -43,9 +45,9 @@ typedef struct
 	uint16_t hdop;
 	uint8_t ck_a;
 	uint8_t ck_b;
-}  __attribute__((__packed__)) type_gps_bin_custom_packet;
+}  __attribute__((__packed__)) type_gps_bin_mtk_packet;
 
-typedef type_gps_bin_custom_packet gps_bin_custom_packet_t;
+typedef type_gps_bin_mtk_packet gps_bin_mtk_packet_t;
 
 enum MTK_DECODE_STATES
 {
@@ -68,20 +70,22 @@ typedef struct
 //    uint8_t fix;
     bool print_errors;
     int16_t rx_count;
-}  __attribute__((__packed__)) type_gps_bin_custom_state;
 
-typedef type_gps_bin_custom_state gps_bin_custom_state_t;
+    uint64_t last_message_timestamp;
+}  __attribute__((__packed__)) type_gps_bin_mtk_state;
 
-void mtk_decode_init(gps_bin_custom_state_t* mtk_state);
+typedef type_gps_bin_mtk_state gps_bin_mtk_state_t;
+
+void mtk_decode_init();
 
 void mtk_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b);
 
+int mtk_parse(uint8_t b,  char * gps_rx_buffer);
 
+int read_gps_mtk(int fd, char * gps_rx_buffer, int buffer_size);
 
-int mtk_parse(uint8_t b,  char * gps_rx_buffer, gps_bin_custom_state_t * mtk_state, nmeaINFO * info); //adapted from GTOP_BIN_CUSTOM_update_position
+int configure_gps_mtk(int fd);
 
-int read_gps_custom(int fd, char * gps_rx_buffer, int buffer_size, nmeaINFO * info, gps_bin_custom_state_t * mtk_state);
-
-int configure_gps_custom(int fd);
+void *mtk_loop(void * arg);
 
 #endif /* MTK_H_ */

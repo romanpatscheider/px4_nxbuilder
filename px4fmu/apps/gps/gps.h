@@ -27,21 +27,13 @@
 #include "../global_data.h"
 #include <termios.h>
 #include <signal.h>
-
-
-#define APPNAME "gps"
-#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 2000
-#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 800000
-
+#include <pthread.h>
 
 /* Threads */
 pthread_t ubx_thread;
 pthread_t ubx_watchdog_thread;
 
-/* Mutexes */
-pthread_mutex_t ubx_mutex;
 
-gps_bin_ubx_state_t * ubx_state;
 
 int gps_fd;
 
@@ -52,6 +44,5 @@ int gps_fd;
 int open_port(char * port);
 
 void close_port(int fd);
-
 
 #endif /* GPS_H_ */

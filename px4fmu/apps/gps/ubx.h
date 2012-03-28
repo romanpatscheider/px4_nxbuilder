@@ -9,12 +9,15 @@
 #define UBX_H_
 
 #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 #include "../global_data.h"
 #include "../global_data_gps_t.h" //for storage of gps information
 #include <math.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include "../global_data_sys_status_t.h"
+#include <pthread.h>
 
 
 //internal definitions (not depending on the ubx protocol
@@ -22,6 +25,8 @@
 #define CONFIGURE_UBX_MESSAGE_ACKNOWLEDGED 1
 #define CONFIGURE_UBX_MESSAGE_NOT_ACKNOWLEDGED 2
 #define UBX_NO_OF_MESSAGES 7
+#define GPS_WATCHDOG_CRITICAL_TIME_MILLISECONDS 2000
+#define GPS_WATCHDOG_WAIT_TIME_MICROSECONDS 800000
 
 #define APPNAME "gps: ubx"
 
@@ -270,8 +275,6 @@ typedef struct
 
 typedef type_gps_bin_ubx_state gps_bin_ubx_state_t;
 
-extern gps_bin_ubx_state_t * ubx_state;
-
 void ubx_decode_init(void);
 
 void ubx_checksum(uint8_t b, uint8_t* ck_a, uint8_t* ck_b);
@@ -287,6 +290,12 @@ int read_gps_ubx(int fd, char * gps_rx_buffer, int buffer_size, pthread_mutex_t 
 int write_config_message_ubx(uint8_t * message, size_t length, int fd);
 
 void calculate_ubx_checksum(uint8_t * message, uint8_t length);
+
+void *ubx_watchdog_loop(void * arg);
+
+void *ubx_loop(void * arg);
+
+void ubx_init(void);
 
 
 #endif /* UBX_H_ */

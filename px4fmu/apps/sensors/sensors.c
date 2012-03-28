@@ -59,12 +59,12 @@ int sensors_main(int argc, char *argv[])
 
 	//create pthreads
 	pthread_create (&gyro_accelerometer_thread, NULL, gyro_accelerometer_loop, NULL);
-//	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
+	pthread_create (&magnetometer_thread, NULL, magnetometer_loop, NULL);
 //	pthread_create (&pressure_sensor_thread, NULL, pressure_sensor_loop, NULL);
 
 	//wait for threads to complete:
 	pthread_join(gyro_accelerometer_thread, NULL);
-//    pthread_join(magnetometer_thread, NULL);
+    pthread_join(magnetometer_thread, NULL);
 //  pthread_join(pressure_sensor_thread, NULL);
 
 
@@ -201,8 +201,6 @@ static void *magnetometer_loop(void * arg)
 
 	int counter = 0; // only printf every 20iest
 
-	printf("\tbefore 10seconds of sleep\n");
-	sleep(10); // does not work
 
 	/* open magnetometer */
 	fd_magnetometer = open("/dev/hmc5883l", O_RDONLY);
@@ -211,7 +209,6 @@ static void *magnetometer_loop(void * arg)
 		printf("\thmc5883l: open fail\n");
 //		return ERROR;
 	}
-	usleep(1000000); // does not work, something is wrong
 
 	/* configure magnetometer */ // to be used or not to be used?
 	//	if (ioctl(fd, LIS331_SETRATE, LIS331_RATE_50Hz) ||
@@ -228,7 +225,7 @@ static void *magnetometer_loop(void * arg)
 
 		if (ret_magnetometer != sizeof(buf_magnetometer))
 		{
-//			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
+			printf("\thmc5883l: read fail (%d should have been %d)\n", ret_magnetometer,  sizeof(buf_magnetometer));
 //			return ERROR;
 		}
 		else
@@ -247,7 +244,7 @@ static void *magnetometer_loop(void * arg)
 		}
 
 		counter++;
-		usleep(50000); // 50 Hz !?
+		usleep(20000); // 50 Hz !?
 	}
 }
 
@@ -284,7 +281,7 @@ static void *pressure_sensor_loop(void * arg)
 
 		if (ret_pressure_sensor != sizeof(buf_pressure_sensor))
 		{
-//			printf("\tms5611: read fail (%d should have been %d)\n", ret_pressure_sensor, sizeof(buf_pressure_sensor));
+			printf("\tms5611: read fail (%d should have been %d)\n", ret_pressure_sensor, sizeof(buf_pressure_sensor));
 //			return ERROR;
 		}
 		else
@@ -302,7 +299,7 @@ static void *pressure_sensor_loop(void * arg)
 //			}
 		}
 
-//		counter++;
+		counter++;
 		usleep(20000); // 50 Hz !?
 	}
 }

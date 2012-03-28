@@ -22,7 +22,7 @@ typedef struct
 	/* Pthread mutex used for locking access to data */
 	pthread_mutex_t mutex;
 
-	/* Pthread mutex used for locking access to data */
+	/* Set to 1 if initialized: */
 	uint8_t initialized;
 
 } access_conf_t;

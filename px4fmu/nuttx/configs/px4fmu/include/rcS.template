@@ -2,7 +2,7 @@
 
 #Start apps
 echo Starting apps now...
-mavlink -d /dev/ttyS2 &
+#mavlink -d /dev/ttyS2 &
 sensors &
-gps -d /dev/ttyS1 -m ubx &
+#gps -d /dev/ttyS1 -m ubx &
 echo All apps started

@@ -87,9 +87,9 @@ struct hmc5883l_buffer {
 	uint32_t	size;		/* number of entries in the samples[] array */
 	uint32_t	next;		/* the next entry that will be populated */
 	struct {
-		uint16_t	x;
-		uint16_t	y;
-		uint16_t	z;
+		int16_t	x;
+		int16_t	y;
+		int16_t	z;
 	} samples[];
 };
 

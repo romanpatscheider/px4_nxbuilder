@@ -189,10 +189,10 @@ read_values(int16_t *data)
 	cmd = ADDR_STATUS;
 	I2C_WRITEREAD(hmc5883l_dev.i2c, &cmd, 1, (uint8_t*)&(hmc_report.status), 1);
 
-	/* write values and clamp them to 12 bit */
-	data[0] = hmc_report.x >> 4;//
-	data[1] = hmc_report.y >> 4;//
-	data[2] = hmc_report.z >> 4;//
+	/* write values, and exchange the two 8bit blocks (big endian to little endian) */
+	data[0] = ((hmc_report.x & 0x00FF) << 8) | ((hmc_report.x & 0xFF00) >> 8);
+	data[1] = ((hmc_report.y & 0x00FF) << 8) | ((hmc_report.y & 0xFF00) >> 8);
+	data[2] = ((hmc_report.z & 0x00FF) << 8) | ((hmc_report.z & 0xFF00) >> 8);
 
 	/* return 1 if new data is available, 0 else */
 	return (hmc_report.status & STATUS_REG_DATA_READY);

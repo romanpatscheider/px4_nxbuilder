@@ -52,11 +52,13 @@
 #include <arch/board/drv_gpio.h>
 
 static int	px4fmu_gpio_ioctl(struct file *filep, int cmd, unsigned long arg);
+static ssize_t
+px4fmu_gpio_pseudoread(struct file *filp, FAR char *buffer, size_t buflen);
 
 static const struct file_operations px4fmu_gpio_fops = {
 	.open  = 0,
 	.close = 0,
-	.read  = 0,
+	.read  = px4fmu_gpio_pseudoread,
 	.write = 0,
 	.seek  = 0,
 	.ioctl = px4fmu_gpio_ioctl,
@@ -65,6 +67,12 @@ static const struct file_operations px4fmu_gpio_fops = {
 #endif
 };
 
+static ssize_t
+px4fmu_gpio_pseudoread(struct file *filp, FAR char *buffer, size_t buflen)
+{
+	return 0;
+}
+
 void
 px4fmu_gpio_init(void)
 {
@@ -72,6 +80,10 @@ px4fmu_gpio_init(void)
 	stm32_configgpio(GPIO_GPIO_DIR);
 	stm32_configgpio(GPIO_GPIO0_INPUT);
 	stm32_configgpio(GPIO_GPIO1_INPUT);
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+	stm32_configgpio(GPIO_GPIO2_INPUT);
+	stm32_configgpio(GPIO_GPIO3_INPUT);
+#endif
 
 	/* register the driver */
 	register_driver("/dev/gpio", &px4fmu_gpio_fops, 0666, NULL);
@@ -92,8 +104,17 @@ px4fmu_gpio_ioctl(struct file *filep, int cmd, unsigned long arg)
 		case 1:
 			stm32_gpiowrite(GPIO_GPIO1_OUTPUT, 1);
 			break;
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+		case 2:
+			stm32_gpiowrite(GPIO_GPIO2_OUTPUT, 1);
+			break;
+		case 3:
+			stm32_gpiowrite(GPIO_GPIO3_OUTPUT, 1);
+			break;
+#endif
 		default:
 			result = -1;
+			break;
 		}
 		break;
 
@@ -105,8 +126,17 @@ px4fmu_gpio_ioctl(struct file *filep, int cmd, unsigned long arg)
 		case 1:
 			stm32_gpiowrite(GPIO_GPIO1_OUTPUT, 0);
 			break;
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+		case 2:
+			stm32_gpiowrite(GPIO_GPIO2_OUTPUT, 0);
+			break;
+		case 3:
+			stm32_gpiowrite(GPIO_GPIO3_OUTPUT, 0);
+			break;
+#endif
 		default:
 			result = -1;
+			break;
 		}
 		break;
 
@@ -118,8 +148,17 @@ px4fmu_gpio_ioctl(struct file *filep, int cmd, unsigned long arg)
 		case 1:
 			result = stm32_gpioread(GPIO_GPIO1_INPUT);
 			break;
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+		case 2:
+			result = stm32_gpioread(GPIO_GPIO2_INPUT);
+			break;
+		case 3:
+			result = stm32_gpioread(GPIO_GPIO3_INPUT);
+			break;
+#endif
 		default:
 			result = -1;
+			break;
 		}
 		break;
 
@@ -129,9 +168,17 @@ px4fmu_gpio_ioctl(struct file *filep, int cmd, unsigned long arg)
 			stm32_gpiowrite(GPIO_GPIO_DIR, 1);
 			stm32_configgpio(GPIO_GPIO0_OUTPUT);
 			stm32_configgpio(GPIO_GPIO1_OUTPUT);
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+			stm32_configgpio(GPIO_GPIO2_OUTPUT);
+			stm32_configgpio(GPIO_GPIO3_OUTPUT);
+#endif
 		} else {
 			stm32_configgpio(GPIO_GPIO0_INPUT);
-			stm32_configgpio(GPIO_GPIO1_INPUT);			
+			stm32_configgpio(GPIO_GPIO1_INPUT);
+#ifdef CONFIG_PX4_UART2_RTS_CTS_AS_GPIO
+			stm32_configgpio(GPIO_GPIO2_INPUT);
+			stm32_configgpio(GPIO_GPIO3_INPUT);
+#endif
 			stm32_gpiowrite(GPIO_GPIO_DIR, 0);
 		}
 		break;

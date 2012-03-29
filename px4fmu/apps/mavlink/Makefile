@@ -49,14 +49,14 @@ endif
 # TODO: appname can be automatically extracted from the directory name
 
 APPNAME		= mavlink
-PRIORITY	= SCHED_PRIORITY_DEFAULT
-STACKSIZE	= 1400
+PRIORITY	= (SCHED_PRIORITY_MAX-2)
+STACKSIZE	= 2400
 
 
 CFLAGS		+= -I $(TOPDIR)/../../../../mavlink/include
 
 ASRCS		=
-CSRCS		= mavlink.c
+CSRCS		= mavlink.c mavlink_parameters.c waypoints.c ../global_data.c
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 COBJS		= $(CSRCS:.c=$(OBJEXT))
@@ -99,13 +99,9 @@ $(COBJS): %$(OBJEXT): %.c
 
 context: .context
 
-# Mavlink includes
-include:
-	#@./generate.sh
-
 # Create dependencies
 
-.depend: Makefile $(SRCS) include
+.depend: Makefile $(SRCS)
 	@$(MKDEP) $(ROOTDEPPATH) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 

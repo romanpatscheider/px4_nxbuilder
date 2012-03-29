@@ -35,7 +35,7 @@
 
 #include <sys/ioctl.h>
 
-#define _LIS331BASE	0x6100
+#define _LIS331BASE	0x6900
 #define LIS331C(_x)	_IOC(_LIS331BASE, _x)
 
 /* 

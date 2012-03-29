@@ -82,7 +82,10 @@
  * Public Function Prototypes
  ****************************************************************************/
 
-int	l3gd20_test(struct spi_dev_s *spi);
+int	l3gd20_test_configure(struct spi_dev_s *spi);
+int	l3gd20_test_read(struct spi_dev_s *spi);
+int	bma180_test_configure(struct spi_dev_s *spi);
+int	bma180_test_read(struct spi_dev_s *spi);
 int	bma180_test(struct spi_dev_s *spi);
 int hmc5883l_test(struct i2c_dev_s *i2c);
 

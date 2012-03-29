@@ -8,6 +8,7 @@
 #define MAVLINK_SEND_UART_BYTES mavlink_send_uart_bytes
  
 #include "v1.0/mavlink_types.h"
+#include <unistd.h>
 
  
 /* Struct that stores the communication settings of this system.
@@ -22,8 +23,10 @@
  */
 extern mavlink_system_t mavlink_system;
 
-int uart_read;
-int uart_write;
+
+mqd_t gps_queue;
+int uart;
+
  
 /**
  * @brief Send one char (uint8_t) over a comm channel
@@ -36,7 +39,7 @@ static inline void mavlink_send_uart_bytes(mavlink_channel_t chan, uint8_t * ch,
 
     if (chan == MAVLINK_COMM_0)
     {
-		write (uart_write, ch, length);
+		write (uart, ch, length);
     }
 }
 

@@ -1,0 +1,8 @@
+# Do nothing by default, just let NSH run
+
+#Start apps
+echo Starting apps now...
+mavlink -d /dev/ttyS2 &
+sensors &
+gps -d /dev/ttyS1 -m ubx &
+echo All apps started
